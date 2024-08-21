@@ -141,7 +141,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
           // Apply styles
           const style = new Style({
             stroke: new Stroke({
-              width: 5,
               color: [path.color_r, path.color_g, path.color_b, 1], // RGBA array
               width: path.thickness,
               lineDash:
