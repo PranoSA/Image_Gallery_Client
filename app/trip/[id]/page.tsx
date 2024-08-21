@@ -13,12 +13,15 @@ import { Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { HiEye } from 'react-icons/hi';
+import { HiX } from 'react-icons/hi';
 
 import axios from 'axios';
 import Image from 'next/image';
-import Modal from '@/components/Modal';
+import Modal from '@/components/PathModal';
 
 import { KML } from 'ol/format';
+import { HiOutlinePencil } from 'react-icons/hi';
 
 interface Image {
   id: string;
@@ -27,6 +30,8 @@ interface Image {
   long: number;
   lat: number;
   ol_id?: string;
+  name: string;
+  description: string;
 }
 
 interface Trip {
@@ -76,6 +81,8 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
 
   // Where the Image Selection Is Stored
   const [currentDay, setCurrentDay] = useState<string | null>(null);
+
+  const [comparingPhotos, setComparingPhotos] = useState<boolean>(false);
 
   useEffect(() => {
     console.log('id is', id);
@@ -148,6 +155,8 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
                   ? [4, 8]
                   : path.style === 'dotted'
                   ? [1, 4]
+                  : path.style === 'solid'
+                  ? []
                   : undefined,
             }),
           });
@@ -321,12 +330,12 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     }
   };
 
+  const [selectedImages, setSelectedImages] = useState<Image[]>([]);
+
   const handleImageClick = (image: Image) => {
-    console.log(selectedFeature.current);
-    // console log ids
-    console.log(selectedFeature.current?.getId());
-    console.log(selectedFeature.current?.get('ol_uid'));
-    console.log(selectedFeature.current?.get('id'));
+    // Will Behave Differently if Comparing Photos
+    // Then you Append to the Selected Images
+
     if (selectedFeature && selectedFeature.current?.get('id') === image.id) {
       imageVectorSource.current.removeFeature(selectedFeature.current);
       setSelectedImage(null);
@@ -381,6 +390,50 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     }
   };
 
+  const [doneSelectedImages, setDoneSelectedImages] = useState<boolean>(false);
+  const [editingImage, setEditingImage] = useState<boolean>(false);
+  const [editedImage, setEditedImage] = useState<Image | null>(null);
+
+  const handleEditImage = (image: Image) => {
+    setEditingImage(true);
+    setEditedImage(image);
+  };
+
+  const cancelEditImage = () => {
+    setEditingImage(false);
+    setEditedImage(null);
+  };
+
+  const handleEditedImageChange = (e: any) => {
+    const field = e.target.name;
+
+    const value = e.target.value;
+
+    if (!editedImage) return;
+
+    setEditedImage({
+      ...editedImage,
+      [field]: value,
+    });
+  };
+
+  const [previewImage, setPreviewImage] = useState<Image | null>(null);
+
+  const submitEditedImage = async () => {
+    if (!editedImage) return;
+
+    try {
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/${editedImage.id}`,
+        editedImage
+      );
+      setEditingImage(false);
+      setEditedImage(null);
+    } catch (err) {
+      console.error('Error editing image:', err);
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
 
@@ -420,8 +473,160 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
       });
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //Change the Date of the Edited Image
+    if (!editedImage) return;
+
+    //This will splitting the created_at and changing the date and joining the time back
+    const [date, time] = e.target.value.split('T');
+
+    const new_created_at = `${date}T${editedImage.created_at.split('T')[1]}`;
+
+    setEditedImage({
+      ...editedImage,
+      created_at: new_created_at,
+    });
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //Change the Time of the Edited Image
+    if (!editedImage) return;
+
+    //This will splitting the created_at and changing the time and joining the date back
+    const [date, time] = editedImage.created_at.split('T');
+
+    const new_created_at = `${editedImage.created_at.split('T')[0]}T${time}`;
+
+    setEditedImage({
+      ...editedImage,
+      created_at: new_created_at,
+    });
+  };
+
+  const handleComparePhotosSelection = (image: Image) => {
+    // Add Image to Selected Images
+    // unless, it is already in the selected images
+
+    const new_images = selectedImages.includes(image)
+      ? selectedImages.filter((i) => i !== image)
+      : [...selectedImages, image];
+
+    setSelectedImages(new_images);
+  };
+
+  if (doneSelectedImages) {
+    //This will show all the images in a larger gallery [say, the width of the screen]
+    //Then show an X button above each image
+    //when you click -> remove the image from the selected images
+    // Send DELETE request to the API
+    // /trip/:tripid/images/:id
+
+    const handleDeleteImage = async (image: Image) => {
+      try {
+        await axios.delete(
+          `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/${image.id}`
+        );
+        setSelectedImages(selectedImages.filter((i) => i !== image));
+
+        //also delete from trip.images
+
+        if (!trip) return;
+
+        const new_trip: Trip = {
+          ...trip,
+          images: trip.images.filter((i) => i.id !== image.id),
+        };
+
+        setTrip(new_trip);
+      } catch (err) {
+        console.error('Error deleting image:', err);
+      }
+    };
+
+    return (
+      <div className="flex flex-wrap space-around">
+        {selectedImages.map((image) => (
+          <div key={image.id} className="relative">
+            <Image
+              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+              alt={`Image for ${image.created_at}`}
+              width={500}
+              height={500}
+            />
+            <button className="" onClick={() => handleDeleteImage(image)}>
+              X
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={() => setDoneSelectedImages(false)}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            fontSize: '16px',
+            cursor: 'pointer',
+          }}
+        >
+          Done Selecting Images
+        </button>
+      </div>
+    );
+  }
+
+  if (comparingPhotos) {
+    // Have the Image Gallery for that day instead of the map
+    // select the images to compare
+    // then click a "done button"
+    // this sets doneSelectedImages to true
+    return (
+      <div className="">
+        <div className="gallery mt-4">
+          {trip?.images
+            .filter((i, v) => currentDay === i.created_at.split('T')[0])
+            .map((image) => (
+              <div key={image.id}>
+                <HiOutlinePencil />
+                <img
+                  key={image.id}
+                  src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+                  alt={`Image for ${image.created_at}`}
+                  onClick={() => handleComparePhotosSelection(image)}
+                  style={{
+                    cursor: 'pointer',
+                    margin: '10px',
+                    width: '100px',
+                    height: '100px',
+                    border: selectedImages.includes(image)
+                      ? '5px solid blue'
+                      : 'none',
+                  }}
+                />
+              </div>
+            ))}
+        </div>
+        <div className="flex justify-center items-center">
+          <button onClick={() => setComparingPhotos(false)}>Cancel</button>
+        </div>
+        <div className="flex justify-center items-center">
+          <button onClick={() => setDoneSelectedImages(true)}>
+            Finish Selecting Images
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
+      <div>
+        <button
+          className=""
+          onClick={() => setComparingPhotos(!comparingPhotos)}
+        >
+          {' '}
+          {comparingPhotos ? 'Stop Comparing Photos' : 'Compare Photos'}
+        </button>
+      </div>
       <Modal
         isOpen={pathModalOpen}
         onClose={() => setPathModalOpen(!pathModalOpen)}
@@ -447,24 +652,153 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
         {trip?.images
           .filter((i, v) => currentDay === i.created_at.split('T')[0])
           .map((image) => (
-            <img
-              key={image.id}
-              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-              alt={`Image for ${image.created_at}`}
-              onClick={() => handleImageClick(image)}
-              style={{
-                cursor: 'pointer',
-                margin: '10px',
-                width: '100px',
-                height: '100px',
-                border:
-                  selectedImage && selectedImage.id === image.id
-                    ? '3px solid blue'
+            <div key={image.id}>
+              <img
+                key={image.id}
+                src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+                alt={`Image for ${image.created_at}`}
+                onClick={() => handleImageClick(image)}
+                style={{
+                  cursor: 'pointer',
+                  margin: '10px',
+                  width: '100px',
+                  height: '100px',
+                  border: comparingPhotos
+                    ? selectedImages.includes(image)
+                      ? '5 px solid'
+                      : 'none'
+                    : selectedImage && selectedImage.id === image.id
+                    ? '5px solid blue'
                     : 'none',
-              }}
-            />
+                }}
+              />
+              <HiOutlinePencil
+                onClick={() => handleEditImage(image)}
+                className="cursor-pointer"
+              />
+              <HiEye
+                onClick={() => setPreviewImage(image)}
+                className="cursor-pointer"
+              />
+            </div>
           ))}
       </div>
+      {previewImage && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <span
+              className="absolute top-4 right-4 text-white text-3xl cursor-pointer"
+              onClick={() => setPreviewImage(null)}
+            >
+              &times;
+            </span>
+            <img
+              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${previewImage.file_path}`}
+              alt={`Image for ${previewImage.created_at}`}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+        </div>
+      )}
+      {editingImage && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg">
+            <span
+              className="absolute top-2 right-2 text-gray-500 cursor-pointer"
+              onClick={cancelEditImage}
+            >
+              &times;
+            </span>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitEditedImage();
+              }}
+            >
+              <div className="mb-4">
+                <label className="block text-gray-700">Description:</label>
+                <input
+                  type="text"
+                  name="description"
+                  value={editedImage?.description || ''}
+                  onChange={handleEditedImageChange}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700">Created At:</label>
+                <input
+                  type="text"
+                  name="created_at"
+                  value={editedImage?.created_at || ''}
+                  onChange={handleEditedImageChange}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              {/* Add created_at,  */}
+              <div className="mb-4">
+                <label className="block text-gray-700">Name:</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={editedImage?.name || ''}
+                  onChange={handleEditedImageChange}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-gray-700">Description:</label>
+                <input
+                  type="text"
+                  name="description"
+                  value={editedImage?.description || ''}
+                  onChange={handleEditedImageChange}
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700">Created At:</label>
+                <div className="flex space-x-2">
+                  <input
+                    type="date"
+                    value={editedImage?.created_at.split('T')[0]}
+                    onChange={handleDateChange}
+                    className="w-1/2 px-3 py-2 border rounded-lg"
+                  />
+                  <input
+                    type="time"
+                    value={
+                      editedImage?.created_at
+                        .split('T')[1]
+                        .split('+')[0]
+                        .split('-')[0]
+                    }
+                    onChange={handleTimeChange}
+                    className="w-1/2 px-3 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                onClick={submitEditedImage}
+              >
+                Save
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                onClick={cancelEditImage}
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <h2>Upload Images</h2>
       <form onSubmit={handleSubmit}>
         <div>

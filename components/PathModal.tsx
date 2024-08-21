@@ -61,7 +61,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSubmit }) => {
         {/* 
         somethign to handle Opening Modal
       */}
-        <button onClick={onClose}>Open Modal</button>
+        <button onClick={onClose}>Add Path</button>
       </div>
     );
 
