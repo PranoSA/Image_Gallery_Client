@@ -12,11 +12,18 @@ import { Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+import axios from 'axios';
+import Image from 'next/image';
+import Modal from '@/components/Modal';
+
+import { KML } from 'ol/format';
 
 interface Image {
   id: string;
-  image_path: string;
-  date: string;
+  file_path: string;
+  created_at: string;
   long: number;
   lat: number;
   ol_id?: string;
@@ -29,51 +36,145 @@ interface Trip {
   start_date: string;
   end_date: string;
   images: Image[];
+  paths: Path[];
 }
 
 interface Path {
   id: number;
   kml_file: string;
+  name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  color_g: number;
+  color_b: number;
+  color_r: number;
+  style: 'solid' | 'dashed' | 'dotted';
+  thickness: number;
 }
 
-const fetchTrip = async (): Promise<Trip> => {
-  // Pretend API call
-  return {
-    id: 1,
-    name: 'Trip to Paris',
-    description: 'A wonderful trip to Paris.',
-    start_date: '2023-10-01',
-    end_date: '2023-10-10',
-    images: [
-      {
-        //random uuid
-        id: '1',
-        image_path: 'path/to/image1.jpg',
-        date: '2023-10-01',
-        long: 2.3522,
-        lat: 48.8566,
-      },
-      {
-        id: '231231245-12312312-51231',
-        image_path: 'path/to/image2.jpg',
-        date: '2023-10-02',
-        long: 2.4,
-        lat: 48.9,
-      },
-      // Add more images as needed
-    ],
-  };
-};
+//process.env.NEXT_PUBLIC_API_URL
 
-export default function Page() {
+export default function Page({ params: { id } }: { params: { id: string } }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
   //populated on loading
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [kml_paths, setkmlPaths] = useState<Path[]>([]);
+
+  //useSearchParam is a hook that allows you to get the search params from the URL
+
+  const params = useSearchParams();
+
+  const [path, setPath] = useState<Path | null>(null);
+
+  const [pathModalOpen, setPathModalOpen] = useState(false);
 
   // Where the Image Selection Is Stored
   const [currentDay, setCurrentDay] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('id is', id);
+    if (id) {
+      const fetchTripDetails = async () => {
+        try {
+          const tripResponse = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}`
+          );
+          const photosResponse = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images`
+          );
+          const pathsResponse = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/paths`
+          );
+
+          const tripData = tripResponse.data[0];
+          tripData.images = photosResponse.data;
+          tripData.paths = pathsResponse.data;
+
+          setTrip(tripData);
+
+          setCurrentDay(tripData.start_date);
+        } catch (err) {
+          setError('Error fetching trip details');
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      console.log('Finished Fetching');
+      fetchTripDetails();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentDay || !trip) return;
+    const fetchKMLFiles = async () => {
+      const filteredPaths = trip.paths.filter(
+        (path) => path.start_date <= currentDay && path.end_date >= currentDay
+      );
+
+      //remove old paths
+      //except the image layer
+
+      mapInstanceRef.current?.getLayers().forEach((layer) => {
+        if (layer instanceof VectorLayer) {
+          if (layer.getSource() !== imageVectorSource.current) {
+            mapInstanceRef.current?.removeLayer(layer);
+          }
+        }
+      });
+
+      for (const path of filteredPaths) {
+        try {
+          const kmlSource = new VectorSource({
+            url: `${process.env.NEXT_PUBLIC_STATIC_KML_URL}/${path.kml_file}`,
+            format: new KML({
+              extractStyles: false,
+            }),
+          });
+
+          // Apply styles
+          const style = new Style({
+            stroke: new Stroke({
+              width: 5,
+              color: [path.color_r, path.color_g, path.color_b, 1], // RGBA array
+              width: path.thickness,
+              lineDash:
+                path.style === 'dashed'
+                  ? [4, 8]
+                  : path.style === 'dotted'
+                  ? [1, 4]
+                  : undefined,
+            }),
+          });
+
+          if (!kmlSource) {
+            console.error('kmlSource is null');
+            return;
+          }
+
+          // Add the KML source to the map
+          // Assuming you have a map instance
+
+          mapInstanceRef.current?.addLayer(
+            new VectorLayer({
+              source: kmlSource,
+              style: style,
+            })
+          );
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    };
+
+    fetchKMLFiles();
+  }, [currentDay]);
 
   // Image Locations For The Map
   const [selectedImage, setSelectedImage] = useState<Image | null>();
@@ -105,7 +206,7 @@ export default function Page() {
     //add images for that day to the vector source
 
     trip?.images
-      .filter((i) => i.date === currentDay)
+      .filter((i) => i.created_at.split('T')[0] === currentDay)
       .forEach((image) => {
         const feature = new Feature({
           geometry: new Point(fromLonLat([image.long, image.lat])),
@@ -131,33 +232,12 @@ export default function Page() {
 
   // Get Trip Data
   // Then -> Get Image Data and Get Path Data
-  useEffect(() => {
-    const getTrip = async () => {
-      const tripData = await fetchTrip();
-      setTrip(tripData);
-      setCurrentDay(tripData.start_date);
-
-      const trip = tripData;
-      //find center of trip through the images
-      const total_lat = trip.images.reduce((acc, image) => acc + image.lat, 0);
-      const total_long = trip.images.reduce(
-        (acc, image) => acc + image.long,
-        0
-      );
-
-      const center_lat = total_lat / trip.images.length;
-      const center_long = total_long / trip.images.length;
-
-      // set the center of the map to the center of the trip
-    };
-
-    getTrip();
-  }, []);
 
   // This is necessary to render the map
   // the reason you need mapInstanceRef is because the map
   // will render twice because
   useEffect(() => {
+    console.log('Map Rendering');
     if (mapRef.current && !mapInstanceRef.current) {
       mapInstanceRef.current = new Map({
         target: mapRef.current,
@@ -167,6 +247,7 @@ export default function Page() {
           }),
           new VectorLayer({
             source: imageVectorSource.current,
+            zIndex: 1000,
           }),
         ],
         view: new View({
@@ -175,12 +256,13 @@ export default function Page() {
         }),
       });
     }
-  }, []);
+  }, [mapRef.current]);
 
   useEffect(() => {
+    console.log('currentDay', currentDay);
     if (trip && currentDay) {
       const imagesForDay = trip.images.filter(
-        (image) => image.date === currentDay
+        (image) => image.created_at === currentDay
       );
       setSelectedImage(null);
     }
@@ -192,31 +274,40 @@ export default function Page() {
       const newDate = new Date(currentDate);
       newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -1 : 1));
       const newDateString = newDate.toISOString().split('T')[0];
+      console.log('newDateString', newDateString);
       if (newDateString >= trip.start_date && newDateString <= trip.end_date) {
         setCurrentDay(newDateString);
       }
       setSelectedImage(null);
 
       //find center of trip through the images for that day
-      const total_lat = trip.images
-        .filter((image) => image.date === newDateString)
-        .reduce((acc, image) => acc + image.lat, 0);
 
-      const total_long = trip.images
-        .filter((image) => image.date === newDateString)
-        .reduce((acc, image) => acc + image.long, 0);
+      if (
+        trip.images.filter((image) => image.created_at === newDateString)
+          .length > 0
+      ) {
+        const total_lat = trip.images
+          .filter((image) => image.created_at === newDateString)
+          .reduce((acc, image) => acc + image.lat, 0);
 
-      const center_lat =
-        total_lat /
-        trip.images.filter((image) => image.date === newDateString).length;
-      const center_long =
-        total_long /
-        trip.images.filter((image) => image.date === newDateString).length;
+        const total_long = trip.images
+          .filter((image) => image.created_at === newDateString)
+          .reduce((acc, image) => acc + image.long, 0);
 
-      // set the center of the map to the center of the trip
-      mapInstanceRef.current
-        ?.getView()
-        .setCenter(fromLonLat([center_long, center_lat]));
+        const center_lat =
+          total_lat /
+          trip.images.filter((image) => image.created_at === newDateString)
+            .length;
+        const center_long =
+          total_long /
+          trip.images.filter((image) => image.created_at === newDateString)
+            .length;
+
+        // set the center of the map to the center of the trip
+        mapInstanceRef.current
+          ?.getView()
+          .setCenter(fromLonLat([center_long, center_lat]));
+      }
 
       //Clear the feature from the map
       if (selectedFeature.current) {
@@ -251,8 +342,8 @@ export default function Page() {
       feature.setStyle(
         new Style({
           image: new CircleStyle({
-            radius: 7,
-            fill: new Fill({ color: 'red' }),
+            radius: 5,
+            fill: new Fill({ color: 'black' }),
             stroke: new Stroke({
               color: 'black',
               width: 2,
@@ -270,9 +361,74 @@ export default function Page() {
     }
   };
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      alert('Images uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images');
+    }
+  };
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+
+  const handleCloseModal = () => {
+    setPathModalOpen(false);
+  };
+
+  const handleOpenModal = () => {
+    setPathModalOpen(true);
+  };
+
+  const submitModal = (formData: any) => {
+    const formDataObj = new FormData();
+    formDataObj.append('kml_file', formData.file);
+    formDataObj.append('description', formData.description);
+    formDataObj.append('name', formData.name);
+    formDataObj.append('color_r', formData.color_r);
+    formDataObj.append('color_g', formData.color_g);
+    formDataObj.append('color_b', formData.color_b);
+    formDataObj.append('style', formData.style);
+    formDataObj.append('thickness', formData.width);
+    formDataObj.append('start_date', formData.start_date);
+    formDataObj.append('end_date', formData.end_date);
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/paths`, {
+      method: 'POST',
+
+      body: formDataObj,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Success:', data);
+        handleCloseModal();
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+  };
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <Modal
+        isOpen={pathModalOpen}
+        onClose={() => setPathModalOpen(!pathModalOpen)}
+        onSubmit={submitModal}
+      />
+      <div className="flex justify-around items-center mb-4">
         <button
           onClick={() => handleDayChange('prev')}
           disabled={currentDay === trip?.start_date}
@@ -290,12 +446,12 @@ export default function Page() {
       <div ref={mapRef} style={{ width: '100%', height: '50vh' }}></div>
       <div className="gallery mt-4">
         {trip?.images
-          .filter((i, v) => currentDay === i.date)
+          .filter((i, v) => currentDay === i.created_at.split('T')[0])
           .map((image) => (
             <img
               key={image.id}
-              src={image.image_path}
-              alt={`Image for ${image.date}`}
+              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+              alt={`Image for ${image.created_at}`}
               onClick={() => handleImageClick(image)}
               style={{
                 cursor: 'pointer',
@@ -310,6 +466,29 @@ export default function Page() {
             />
           ))}
       </div>
+      <h2>Upload Images</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="name">Name:</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div>
+          <label htmlFor="description">Description:</label>
+          <textarea id="description" name="description" required></textarea>
+        </div>
+        <div>
+          <label htmlFor="images">Images:</label>
+          <input
+            type="file"
+            id="image"
+            name="image"
+            multiple
+            accept="image/*"
+            required
+          />
+        </div>
+        <button type="submit">Upload</button>
+      </form>
     </div>
   );
 }
