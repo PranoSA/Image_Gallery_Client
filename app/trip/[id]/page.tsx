@@ -403,6 +403,11 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
   const [editingImage, setEditingImage] = useState<boolean>(false);
   const [editedImage, setEditedImage] = useState<Image | null>(null);
 
+  /**
+   *
+  This is for fields like name, description, created_at
+
+   */
   const handleEditedImageChange = (e: any) => {
     const field = e.target.name;
 

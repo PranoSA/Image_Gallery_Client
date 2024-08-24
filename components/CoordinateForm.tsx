@@ -222,85 +222,111 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     //test format
   };
 
-  //Let this be associated With Degrees/Minutes/Seconds
+  const handleChangesToDegreesMinutesSeconds = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    //check if long_deg, long_min, long_sec, lat_deg, lat_min, lat_sec
+    const field = e.target.name;
+
+    if (field === 'long_deg') {
+      setDegreesMinutesSecondsLong({
+        ...degreesMinutesSecondsLong,
+        degrees: parseInt(e.target.value),
+      });
+    }
+
+    if (field === 'long_min') {
+      setDegreesMinutesSecondsLong({
+        ...degreesMinutesSecondsLong,
+        minutes: parseInt(e.target.value),
+      });
+    }
+
+    if (field === 'long_sec') {
+      setDegreesMinutesSecondsLong({
+        ...degreesMinutesSecondsLong,
+        seconds: parseFloat(e.target.value),
+      });
+    }
+
+    if (field === 'lat_deg') {
+      setDegreesMinutesSecondsLat({
+        ...degreesMinutesSecondsLat,
+        degrees: parseInt(e.target.value),
+      });
+    }
+
+    if (field === 'lat_min') {
+      setDegreesMinutesSecondsLat({
+        ...degreesMinutesSecondsLat,
+        minutes: parseInt(e.target.value),
+      });
+    }
+
+    if (field === 'lat_sec') {
+      setDegreesMinutesSecondsLat({
+        ...degreesMinutesSecondsLat,
+        seconds: parseFloat(e.target.value),
+      });
+    }
+
+    //change to decimal
+    changeToDecimal();
+  };
+
+  const handleChangeToDecimal = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //check if long or lat
+    const field = e.target.name;
+
+    if (!editedImage) return;
+
+    const value = e.target.value;
+
+    if (value === '') return;
+
+    if (field === 'long') {
+      setEditedImage({
+        ...editedImage,
+        long: value,
+      });
+    }
+
+    if (field === 'lat') {
+      setEditedImage({
+        ...editedImage,
+        lat: value,
+      });
+    }
+
+    //change the degrees/minutes/seconds
+    changeDecimalToDegrees();
+  };
+
+  /**
+   * This Handles Changes to Decimal Degrees
+   */
   const handleCoordinatesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     //check if long or lat
 
     //check if last change was in minutes
     if (coordinateOption !== 'minutes') return;
 
-    const local_image_test = { ...editedImage };
-
     if (!editedImage) return;
 
     const field = e.target.name;
 
-    if (degreesInMinutes) {
-      // test if format like "34°18'06.7"N"
-      //parse and set
-
-      //test first
-      const regex = /(\d+)°(\d+)'(\d+\.\d+)"([N|S|E|W])/g;
-
-      if (regex.test(e.target.value)) {
-        //break out of if, not the function
-
-        const degrees = parseInt(RegExp.$1);
-        const minutes = parseInt(RegExp.$2);
-        const seconds = parseFloat(RegExp.$3);
-        const direction = RegExp.$4;
-
-        if (field === 'long') {
-          setDegreesMinutesSecondsLong({
-            degrees,
-            minutes,
-            seconds,
-          });
-        }
-
-        if (field === 'lat') {
-          setDegreesMinutesSecondsLat({
-            degrees,
-            minutes,
-            seconds,
-          });
-        }
-      }
-    }
-
     if (field === 'long') {
-      if (degreesInMinutes) {
-        //convert to decimal degrees
-        //
-        const [degrees, minutes, seconds] = e.target.value.split(' ');
-        const decimalDegrees = parseFloat(degrees) + parseFloat(minutes) / 60;
-        setEditedImage({
-          ...editedImage,
-          long: decimalDegrees.toString(),
-        });
-      } else {
-        setEditedImage({
-          ...editedImage,
-          long: e.target.value,
-        });
-      }
+      setEditedImage({
+        ...editedImage,
+        long: e.target.value,
+      });
     }
 
     if (field === 'lat') {
-      if (degreesInMinutes) {
-        //convert to decimal degrees
-        const [degrees, minutes] = e.target.value.split(' ');
-        const decimalDegrees = parseFloat(degrees) + parseFloat(minutes) / 60;
-        setEditedImage({
-          ...editedImage,
-          lat: decimalDegrees.toString(),
-        });
-      } else {
-        setEditedImage({
-          ...editedImage,
-          lat: e.target.value,
-        });
-      }
+      setEditedImage({
+        ...editedImage,
+        lat: e.target.value,
+      });
     }
   };
 
@@ -317,7 +343,16 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     if (coordinateOption === 'google') {
       changeToDecimal();
     }
+    console.log('changed');
+    console.log(editedImage);
   }, [editedImage]);
+
+  /**
+   *
+   * @param e
+   * This handles changes to the degree form
+   * @returns
+   */
 
   const handleEditedImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     //check if long or lat
@@ -340,17 +375,15 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     }
 
     if (field === 'lat') {
-      if (degreesInMinutes) {
-        setLocalLat(e.target.value);
+      setLocalLat(e.target.value);
 
-        setEditedImage({
-          ...editedImage,
-          lat: e.target.value,
-        });
+      setEditedImage({
+        ...editedImage,
+        lat: e.target.value,
+      });
 
-        //change the degrees/minutes/seconds
-        changeDecimalToDegrees();
-      }
+      //change the degrees/minutes/seconds
+      changeDecimalToDegrees();
     }
   };
 
@@ -500,7 +533,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
             type="text"
             name="lat"
             value={localLat || ''}
-            onChange={handleEditedImageChange}
+            onChange={handleCoordinatesChange}
             disabled={coordinateOption === 'minutes'}
             className={`w-full px-3 py-2 border rounded-lg ${
               coordinateOption === 'minutes' ? 'bg-gray-200' : ''
