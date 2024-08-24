@@ -22,6 +22,178 @@ export default function Home() {
   });
   const [showForm, setShowForm] = useState(false);
 
+  const [editTrip, setEditTrip] = useState<boolean>(false);
+  const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
+  const [editTripError, setEditTripError] = useState<string | null>(null);
+
+  const handleEditTrip = (trip: Trip) => {
+    setEditTrip(true);
+    setEditedTrip(trip);
+  };
+
+  const handleChangeToTrip = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    if (!editedTrip) return;
+
+    const new_trip = {
+      ...editedTrip,
+      [e.target.name]: e.target.value,
+    };
+
+    setEditedTrip({
+      ...new_trip,
+    });
+  };
+
+  const submitForm = async (e: React.FormEvent) => {
+    //check fields and format
+    e.preventDefault();
+
+    //check sanity and fields
+    if (editedTrip?.name === '' || editedTrip?.description === '') {
+      setEditTripError('Please fill out all fields');
+      return;
+    }
+
+    //if any fields are undefined or empty
+    if (!editedTrip?.start_date || !editedTrip?.end_date) {
+      setEditTripError('Please fill out all fields');
+      return;
+    }
+
+    if (editedTrip?.start_date === '' || editedTrip?.end_date === '') {
+      setEditTripError('Please fill out all fields');
+      return;
+    }
+
+    //check proper date format
+    const start_date = new Date(editedTrip?.start_date);
+
+    if (isNaN(start_date.getTime())) {
+      setEditTripError('Please enter a valid start date');
+      return;
+    }
+
+    const end_date = new Date(editedTrip?.end_date);
+
+    if (isNaN(end_date.getTime())) {
+      setEditTripError('Please enter a valid end date');
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/trips/${editedTrip?.id}`,
+        editedTrip
+      );
+      setEditTrip(false);
+      setEditedTrip(null);
+      setEditTripError(null);
+    } catch (error) {
+      setEditTripError('Error updating trip');
+    }
+  };
+
+  const editTripModal = (trip: Trip) => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        {/* FORM FOR filling out trip fields, */}
+
+        <form>
+          {/* Name */}
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="name">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={editedTrip?.name}
+              onChange={handleChangeToTrip}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+          {/* Description */}
+          <div className="mb-4">
+            <label
+              className="block text-sm font-bold mb-2"
+              htmlFor="description"
+            >
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={editedTrip?.description}
+              onChange={handleChangeToTrip}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+
+          {/* Start Date */}
+          <div className="mb-4">
+            <label
+              className="block text-sm font-bold mb-2"
+              htmlFor="start_date"
+            >
+              Start Date
+            </label>
+            <input
+              type="date"
+              id="start_date"
+              name="start_date"
+              value={editedTrip?.start_date}
+              onChange={handleChangeToTrip}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+
+          {/* End Date */}
+          <div className="mb-4">
+            <label className="block text-sm font-bold mb-2" htmlFor="end_date">
+              End Date
+            </label>
+            <input
+              type="date"
+              id="end_date"
+              name="end_date"
+              value={editedTrip?.end_date}
+              onChange={handleChangeToTrip}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+          {editTripError && <p className="text-red-500">{editTripError}</p>}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            onClick={submitForm}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Submit
+          </button>
+          {/* Cancel Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setEditTrip(false);
+              setEditedTrip(null);
+            }}
+            className="bg-gray-500 text-white px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+        </form>
+      </div>
+    );
+  };
+
   useEffect(() => {
     const fetchTrips = async () => {
       try {
@@ -62,6 +234,11 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      {
+        //EDIT TRIP MODAL
+        editTrip && editTripModal(editedTrip || trips[0])
+      }
+
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
         <h1 className="text-2xl font-bold">My Trips</h1>
         <button
@@ -81,7 +258,10 @@ export default function Home() {
             </p>
 
             <div className="flex justify-between mt-4">
-              <button className="bg-yellow-500 text-white px-4 py-2 rounded">
+              <button
+                className="bg-yellow-500 text-white px-4 py-2 rounded"
+                onClick={(e) => handleEditTrip(trip)}
+              >
                 Edit
               </button>
               <Link href={`/trip/${trip.id}`}>Visit</Link>
