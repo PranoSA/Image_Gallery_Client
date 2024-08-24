@@ -23,15 +23,27 @@ var CoordinateForm = function (_a) {
      *
      * Used To Track Changes to the Form When Editing Degrees/Minutes/Seconds
      */
+    var initial_lat_degrees = Math.floor(Math.abs(parseFloat((editedImage === null || editedImage === void 0 ? void 0 : editedImage.lat) || '0')));
+    var initial_lat_minutes = Math.floor((Math.abs(parseFloat((editedImage === null || editedImage === void 0 ? void 0 : editedImage.lat) || '0')) - initial_lat_degrees) * 60);
+    var initial_lat_seconds = Math.floor(((Math.abs(parseFloat((editedImage === null || editedImage === void 0 ? void 0 : editedImage.lat) || '0')) - initial_lat_degrees) *
+        60 -
+        initial_lat_minutes) *
+        60);
+    var initial_long_degrees = Math.floor(Math.abs(parseFloat((editedImage === null || editedImage === void 0 ? void 0 : editedImage.long) || '0')));
+    var initial_long_minutes = Math.floor((Math.abs(parseFloat((editedImage === null || editedImage === void 0 ? void 0 : editedImage.long) || '0')) - initial_long_degrees) * 60);
+    var initial_long_seconds = Math.floor(((Math.abs(parseFloat((editedImage === null || editedImage === void 0 ? void 0 : editedImage.long) || '0')) - initial_long_degrees) *
+        60 -
+        initial_long_minutes) *
+        60);
     var _f = react_1.useState({
-        degrees: 0,
-        minutes: 0,
-        seconds: 0
+        degrees: initial_lat_degrees,
+        minutes: initial_lat_minutes,
+        seconds: initial_lat_seconds
     }), degreesMinutesSecondsLat = _f[0], setDegreesMinutesSecondsLat = _f[1];
     var _g = react_1.useState({
-        degrees: 0,
-        minutes: 0,
-        seconds: 0
+        degrees: initial_long_degrees,
+        minutes: initial_long_minutes,
+        seconds: initial_long_seconds
     }), degreesMinutesSecondsLong = _g[0], setDegreesMinutesSecondsLong = _g[1];
     /**
      *
@@ -46,29 +58,36 @@ var CoordinateForm = function (_a) {
             return;
         if (WorE === 'W') {
             setEditedImage(__assign(__assign({}, editedImage), { long: "-" + decimalDegreesLong }));
-            setLocalLong("-" + decimalDegreesLong);
+            setLocalCoordinates(__assign(__assign({}, localCoordinates), { long: "-" + decimalDegreesLong }));
         }
         if (WorE === 'E') {
             setEditedImage(__assign(__assign({}, editedImage), { long: "" + decimalDegreesLong }));
-            setLocalLong("" + decimalDegreesLong);
+            setLocalCoordinates(__assign(__assign({}, localCoordinates), { long: "" + decimalDegreesLong }));
         }
         var decimalDegreesLat = degreesMinutesSecondsLat.degrees +
             degreesMinutesSecondsLat.minutes / 60 +
             degreesMinutesSecondsLat.seconds / 3600;
         if (Nors === 'N') {
             setEditedImage(__assign(__assign({}, editedImage), { lat: "" + decimalDegreesLat }));
-            setLocalLat("" + decimalDegreesLat);
+            setLocalCoordinates(__assign(__assign({}, localCoordinates), { lat: "" + decimalDegreesLat }));
         }
         if (Nors === 'S') {
             setEditedImage(__assign(__assign({}, editedImage), { lat: "-" + decimalDegreesLat }));
-            setLocalLat("-" + decimalDegreesLat);
+            setLocalCoordinates(__assign(__assign({}, localCoordinates), { lat: "-" + decimalDegreesLat }));
         }
     };
     var changeDecimalToDegrees = function () {
         if (!editedImage)
             return;
-        var long = parseFloat(editedImage.long);
-        var lat = parseFloat(editedImage.lat);
+        //return if coordinateOption is not decimals
+        // not decimals you idiot
+        //this might not be propogated so probably bad idea
+        var long = localCoordinates.long
+            ? parseFloat(localCoordinates.long)
+            : parseFloat(editedImage.long);
+        var lat = localCoordinates.lat
+            ? parseFloat(localCoordinates.lat)
+            : parseFloat(editedImage.lat);
         //first, test if N or S
         var Nors = lat >= 0 ? 'N' : 'S';
         setNors(Nors);
@@ -102,6 +121,7 @@ var CoordinateForm = function (_a) {
   
   */
     var _h = react_1.useState(''), googleInput = _h[0], setGoogleInput = _h[1];
+    var _j = react_1.useState(''), googleSubmitInput = _j[0], setGoogleSubmitInput = _j[1];
     var previousSetting = react_1.useRef('decimal');
     react_1.useEffect(function () {
         setCoordinateOption(previousSetting.current);
@@ -150,6 +170,9 @@ var CoordinateForm = function (_a) {
     var handleChangesToDegreesMinutesSeconds = function (e) {
         //check if long_deg, long_min, long_sec, lat_deg, lat_min, lat_sec
         var field = e.target.name;
+        //return if coordinateOption is not minutes
+        if (coordinateOption !== 'minutes')
+            return;
         if (field === 'long_deg') {
             setDegreesMinutesSecondsLong(__assign(__assign({}, degreesMinutesSecondsLong), { degrees: parseInt(e.target.value) }));
         }
@@ -168,84 +191,37 @@ var CoordinateForm = function (_a) {
         if (field === 'lat_sec') {
             setDegreesMinutesSecondsLat(__assign(__assign({}, degreesMinutesSecondsLat), { seconds: parseFloat(e.target.value) }));
         }
-        //change to decimal
-        changeToDecimal();
     };
-    var handleChangeToDecimal = function (e) {
-        //check if long or lat
-        var field = e.target.name;
+    var _k = react_1.useState({
+        lat: (editedImage === null || editedImage === void 0 ? void 0 : editedImage.lat) || '0',
+        long: (editedImage === null || editedImage === void 0 ? void 0 : editedImage.long) || '0'
+    }), localCoordinates = _k[0], setLocalCoordinates = _k[1];
+    react_1.useEffect(function () {
+        if (coordinateOption != 'decimal')
+            return;
         if (!editedImage)
             return;
-        var value = e.target.value;
-        if (value === '')
-            return;
-        if (field === 'long') {
-            setEditedImage(__assign(__assign({}, editedImage), { long: value }));
-        }
-        if (field === 'lat') {
-            setEditedImage(__assign(__assign({}, editedImage), { lat: value }));
-        }
-        //change the degrees/minutes/seconds
+        setEditedImage(__assign(__assign({}, editedImage), { lat: localCoordinates.lat || editedImage.lat, long: localCoordinates.long || editedImage.long }));
+        // changeDecimalToDegrees();
         changeDecimalToDegrees();
-    };
-    /**
-     * This Handles Changes to Decimal Degrees
-     */
-    var handleCoordinatesChange = function (e) {
-        //check if long or lat
-        //check if last change was in minutes
-        if (coordinateOption !== 'minutes')
+    }, [localCoordinates]);
+    //if degrees change
+    react_1.useEffect(function () {
+        if (coordinateOption != 'minutes')
             return;
+        changeToDecimal();
+    }, [degreesMinutesSecondsLat, degreesMinutesSecondsLong]);
+    react_1.useEffect(function () {
+        if (coordinateOption != 'google')
+            return;
+        setFromGoogleCoordinates();
+    }, [googleSubmitInput]);
+    //on mount, set the degrees to the current
+    react_1.useEffect(function () {
         if (!editedImage)
             return;
-        var field = e.target.name;
-        if (field === 'long') {
-            setEditedImage(__assign(__assign({}, editedImage), { long: e.target.value }));
-        }
-        if (field === 'lat') {
-            setEditedImage(__assign(__assign({}, editedImage), { lat: e.target.value }));
-        }
-    };
-    var _j = react_1.useState((editedImage === null || editedImage === void 0 ? void 0 : editedImage.lat) || ''), localLat = _j[0], setLocalLat = _j[1];
-    var _k = react_1.useState((editedImage === null || editedImage === void 0 ? void 0 : editedImage.long) || ''), localLong = _k[0], setLocalLong = _k[1];
-    react_1.useEffect(function () {
-        if (editedImage) {
-            changeDecimalToDegrees();
-        }
+        changeDecimalToDegrees();
     }, []);
-    react_1.useEffect(function () {
-        if (coordinateOption === 'google') {
-            changeToDecimal();
-        }
-        console.log('changed');
-        console.log(editedImage);
-    }, [editedImage]);
-    /**
-     *
-     * @param e
-     * This handles changes to the degree form
-     * @returns
-     */
-    var handleEditedImageChange = function (e) {
-        //check if long or lat
-        if (!editedImage)
-            return;
-        if (coordinateOption !== 'decimal')
-            return;
-        var field = e.target.name;
-        if (field === 'long') {
-            setLocalLong(e.target.value);
-            setEditedImage(__assign(__assign({}, editedImage), { long: e.target.value }));
-            //change the degrees/minutes/seconds
-            changeDecimalToDegrees();
-        }
-        if (field === 'lat') {
-            setLocalLat(e.target.value);
-            setEditedImage(__assign(__assign({}, editedImage), { lat: e.target.value }));
-            //change the degrees/minutes/seconds
-            changeDecimalToDegrees();
-        }
-    };
     return (react_1["default"].createElement("div", null,
         react_1["default"].createElement("div", { className: "mb-4" },
             react_1["default"].createElement("label", { className: "block text-gray-700" }, "Degrees or Minutes"),
@@ -254,11 +230,12 @@ var CoordinateForm = function (_a) {
                     if (e.target.value === 'minutes') {
                         changeDecimalToDegrees();
                         setCoordinateOption('minutes');
+                        previousSetting.current = 'minutes';
                     }
                     else {
                         setCoordinateOption('decimal');
                         changeToDecimal();
-                        setCoordinateOption('decimal');
+                        previousSetting.current = 'decimal';
                     }
                 }, className: "w-full px-3 py-2 border rounded-lg" },
                 react_1["default"].createElement("option", { value: "decimal" }, "Decimal"),
@@ -266,25 +243,36 @@ var CoordinateForm = function (_a) {
             react_1["default"].createElement("input", { type: "text", name: "google_coordinates", placeholder: "'34\u00B018'06.7'N 119\u00B018'06.7'W", onChange: function (e) { return setGoogleInput(e.target.value); }, className: "w-full px-3 py-2 border rounded-lg" }),
             react_1["default"].createElement("button", { onClick: function (e) {
                     e.preventDefault();
-                    setFromGoogleCoordinates();
+                    //set setting to google
+                    setCoordinateOption('google');
+                    setGoogleSubmitInput(googleInput);
+                    //setFromGoogleCoordinates();
                 }, className: "bg-blue-500 text-white px-4 py-2 rounded-lg" }, "Set From Google Coordinates"),
             react_1["default"].createElement("div", { className: "mb-4" },
                 react_1["default"].createElement("div", { className: "flex space-x-2" },
-                    react_1["default"].createElement("input", { type: "text", name: "long_deg", placeholder: "Degrees", onChange: handleCoordinatesChange, value: degreesMinutesSecondsLong.degrees, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
-                    react_1["default"].createElement("input", { type: "text", name: "long_min", placeholder: "Minutes", onChange: handleCoordinatesChange, value: degreesMinutesSecondsLong.minutes, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
-                    react_1["default"].createElement("input", { type: "text", name: "long_sec", placeholder: "Seconds", onChange: handleCoordinatesChange, value: degreesMinutesSecondsLong.seconds, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
+                    react_1["default"].createElement("input", { type: "text", name: "long_deg", placeholder: "Degrees", onChange: handleChangesToDegreesMinutesSeconds, value: degreesMinutesSecondsLong.degrees, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
+                    react_1["default"].createElement("input", { type: "text", name: "long_min", placeholder: "Minutes", onChange: handleChangesToDegreesMinutesSeconds, value: degreesMinutesSecondsLong.minutes, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
+                    react_1["default"].createElement("input", { type: "text", name: "long_sec", placeholder: "Seconds", onChange: handleChangesToDegreesMinutesSeconds, value: degreesMinutesSecondsLong.seconds, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
                     react_1["default"].createElement("select", { value: WorE, onChange: function (e) { return setWorE(e.target.value); }, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') },
                         react_1["default"].createElement("option", { value: "W" }, "W"),
                         react_1["default"].createElement("option", { value: "E" }, "E"))),
                 react_1["default"].createElement("div", { className: "flex space-x-2" },
-                    react_1["default"].createElement("input", { type: "text", name: "lat_deg", placeholder: "Degrees", value: degreesMinutesSecondsLat.degrees, onChange: handleEditedImageChange, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
-                    react_1["default"].createElement("input", { type: "text", name: "lat_min", placeholder: "Minutes", value: degreesMinutesSecondsLat.minutes, onChange: handleEditedImageChange, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
-                    react_1["default"].createElement("input", { type: "text", name: "lat_sec", placeholder: "Seconds", value: degreesMinutesSecondsLat.seconds, onChange: handleEditedImageChange, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
+                    react_1["default"].createElement("input", { type: "text", name: "lat_deg", placeholder: "Degrees", value: degreesMinutesSecondsLat.degrees, onChange: handleChangesToDegreesMinutesSeconds, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
+                    react_1["default"].createElement("input", { type: "text", name: "lat_min", placeholder: "Minutes", value: degreesMinutesSecondsLat.minutes, onChange: handleChangesToDegreesMinutesSeconds, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
+                    react_1["default"].createElement("input", { type: "text", name: "lat_sec", placeholder: "Seconds", value: degreesMinutesSecondsLat.seconds, onChange: handleChangesToDegreesMinutesSeconds, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') }),
                     react_1["default"].createElement("select", { value: Nors, onChange: function (e) { return setNors(e.target.value); }, disabled: coordinateOption === 'decimal', className: "w-1/3 px-3 py-2 border rounded-lg " + (coordinateOption === 'decimal' ? 'bg-gray-200' : '') },
                         react_1["default"].createElement("option", { value: "N" }, "N"),
                         react_1["default"].createElement("option", { value: "S" }, "S")))),
             react_1["default"].createElement("div", { className: "mb-4" },
-                react_1["default"].createElement("input", { type: "text", name: "lat", value: localLat || '', onChange: handleCoordinatesChange, disabled: coordinateOption === 'minutes', className: "w-full px-3 py-2 border rounded-lg " + (coordinateOption === 'minutes' ? 'bg-gray-200' : '') }),
-                react_1["default"].createElement("input", { type: "text", name: "long", onChange: handleCoordinatesChange, value: localLong || '', disabled: coordinateOption === 'minutes', className: "w-full px-3 py-2 border rounded-lg " + (coordinateOption === 'minutes' ? 'bg-gray-200' : '') })))));
+                react_1["default"].createElement("input", { type: "text", name: "lat", value: localCoordinates.lat || '', onChange: function (e) {
+                        if (coordinateOption === 'minutes')
+                            return;
+                        setLocalCoordinates(__assign(__assign({}, localCoordinates), { lat: e.target.value }));
+                    }, disabled: coordinateOption === 'minutes', className: "w-full px-3 py-2 border rounded-lg " + (coordinateOption === 'minutes' ? 'bg-gray-200' : '') }),
+                react_1["default"].createElement("input", { type: "text", name: "long", onChange: function (e) {
+                        if (coordinateOption === 'minutes')
+                            return;
+                        setLocalCoordinates(__assign(__assign({}, localCoordinates), { long: e.target.value }));
+                    }, value: localCoordinates.long || '', disabled: coordinateOption === 'minutes', className: "w-full px-3 py-2 border rounded-lg " + (coordinateOption === 'minutes' ? 'bg-gray-200' : '') })))));
 };
 exports["default"] = CoordinateForm;

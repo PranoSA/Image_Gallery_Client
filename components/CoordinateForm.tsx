@@ -32,22 +32,57 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
 
   const [degreesInMinutes, setDegreesInMinutes] = useState<boolean>(false);
 
+  const setFromGoogleCoordinates = (value_string: string) => {};
+
+  const googleCoordinatesFromValue = (value_string: string) => {};
+
   /**
    *
    * Used To Track Changes to the Form When Editing Degrees/Minutes/Seconds
    */
+
+  const initial_lat_degrees = Math.floor(
+    Math.abs(parseFloat(editedImage?.lat || '0'))
+  );
+
+  const initial_lat_minutes = Math.floor(
+    (Math.abs(parseFloat(editedImage?.lat || '0')) - initial_lat_degrees) * 60
+  );
+
+  const initial_lat_seconds = Math.floor(
+    ((Math.abs(parseFloat(editedImage?.lat || '0')) - initial_lat_degrees) *
+      60 -
+      initial_lat_minutes) *
+      60
+  );
+
+  const initial_long_degrees = Math.floor(
+    Math.abs(parseFloat(editedImage?.long || '0'))
+  );
+
+  const initial_long_minutes = Math.floor(
+    (Math.abs(parseFloat(editedImage?.long || '0')) - initial_long_degrees) * 60
+  );
+
+  const initial_long_seconds = Math.floor(
+    ((Math.abs(parseFloat(editedImage?.long || '0')) - initial_long_degrees) *
+      60 -
+      initial_long_minutes) *
+      60
+  );
+
   const [degreesMinutesSecondsLat, setDegreesMinutesSecondsLat] =
     useState<DegreesMinutesSeconds>({
-      degrees: 0,
-      minutes: 0,
-      seconds: 0,
+      degrees: initial_lat_degrees,
+      minutes: initial_lat_minutes,
+      seconds: initial_lat_seconds,
     });
 
   const [degreesMinutesSecondsLong, setDegreesMinutesSecondsLong] =
     useState<DegreesMinutesSeconds>({
-      degrees: 0,
-      minutes: 0,
-      seconds: 0,
+      degrees: initial_long_degrees,
+      minutes: initial_long_minutes,
+      seconds: initial_long_seconds,
     });
 
   /**
@@ -69,7 +104,11 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         ...editedImage,
         long: `-${decimalDegreesLong}`,
       });
-      setLocalLong(`-${decimalDegreesLong}`);
+
+      setLocalCoordinates({
+        ...localCoordinates,
+        long: `-${decimalDegreesLong}`,
+      });
     }
 
     if (WorE === 'E') {
@@ -77,7 +116,10 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         ...editedImage,
         long: `${decimalDegreesLong}`,
       });
-      setLocalLong(`${decimalDegreesLong}`);
+      setLocalCoordinates({
+        ...localCoordinates,
+        long: `${decimalDegreesLong}`,
+      });
     }
 
     const decimalDegreesLat =
@@ -90,7 +132,10 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         ...editedImage,
         lat: `${decimalDegreesLat}`,
       });
-      setLocalLat(`${decimalDegreesLat}`);
+      setLocalCoordinates({
+        ...localCoordinates,
+        lat: `${decimalDegreesLat}`,
+      });
     }
 
     if (Nors === 'S') {
@@ -98,16 +143,27 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         ...editedImage,
         lat: `-${decimalDegreesLat}`,
       });
-      setLocalLat(`-${decimalDegreesLat}`);
+      setLocalCoordinates({
+        ...localCoordinates,
+        lat: `-${decimalDegreesLat}`,
+      });
     }
   };
 
   const changeDecimalToDegrees = () => {
     if (!editedImage) return;
 
-    let long = parseFloat(editedImage.long);
+    //return if coordinateOption is not decimals
+    // not decimals you idiot
 
-    let lat = parseFloat(editedImage.lat);
+    //this might not be propogated so probably bad idea
+
+    let long = localCoordinates.long
+      ? parseFloat(localCoordinates.long)
+      : parseFloat(editedImage.long);
+    let lat = localCoordinates.lat
+      ? parseFloat(localCoordinates.lat)
+      : parseFloat(editedImage.lat);
 
     //first, test if N or S
     const Nors = lat >= 0 ? 'N' : 'S';
@@ -156,12 +212,9 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
 */
 
   const [googleInput, setGoogleInput] = useState<string>('');
+  const [googleSubmitInput, setGoogleSubmitInput] = useState<string>('');
 
   const previousSetting = useRef<'decimal' | 'minutes' | 'google'>('decimal');
-
-  useEffect(() => {
-    setCoordinateOption(previousSetting.current);
-  }, [editedImage]);
 
   const setFromGoogleCoordinates = () => {
     previousSetting.current = coordinateOption;
@@ -228,6 +281,9 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     //check if long_deg, long_min, long_sec, lat_deg, lat_min, lat_sec
     const field = e.target.name;
 
+    //return if coordinateOption is not minutes
+    if (coordinateOption !== 'minutes') return;
+
     if (field === 'long_deg') {
       setDegreesMinutesSecondsLong({
         ...degreesMinutesSecondsLong,
@@ -269,123 +325,42 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         seconds: parseFloat(e.target.value),
       });
     }
-
-    //change to decimal
-    changeToDecimal();
   };
 
-  const handleChangeToDecimal = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //check if long or lat
-    const field = e.target.name;
+  type LocalDecimalCoordinates = {
+    lat: string;
+    long: string;
+  };
 
+  const [localCoordinates, setLocalCoordinates] =
+    useState<LocalDecimalCoordinates>({
+      lat: editedImage?.lat || '0',
+      long: editedImage?.long || '0',
+    });
+
+  useEffect(() => {
+    if (coordinateOption != 'decimal') return;
     if (!editedImage) return;
-
-    const value = e.target.value;
-
-    if (value === '') return;
-
-    if (field === 'long') {
-      setEditedImage({
-        ...editedImage,
-        long: value,
-      });
-    }
-
-    if (field === 'lat') {
-      setEditedImage({
-        ...editedImage,
-        lat: value,
-      });
-    }
-
-    //change the degrees/minutes/seconds
+    setEditedImage({
+      ...editedImage,
+      lat: localCoordinates.lat || editedImage.lat,
+      long: localCoordinates.long || editedImage.long,
+    });
+    // changeDecimalToDegrees();
     changeDecimalToDegrees();
-  };
+  }, [localCoordinates]);
 
-  /**
-   * This Handles Changes to Decimal Degrees
-   */
-  const handleCoordinatesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //check if long or lat
-
-    //check if last change was in minutes
-    if (coordinateOption !== 'minutes') return;
-
-    if (!editedImage) return;
-
-    const field = e.target.name;
-
-    if (field === 'long') {
-      setEditedImage({
-        ...editedImage,
-        long: e.target.value,
-      });
-    }
-
-    if (field === 'lat') {
-      setEditedImage({
-        ...editedImage,
-        lat: e.target.value,
-      });
-    }
-  };
-
-  const [localLat, setLocalLat] = useState<string>(editedImage?.lat || '');
-  const [localLong, setLocalLong] = useState<string>(editedImage?.long || '');
+  //if degrees change
+  useEffect(() => {
+    if (coordinateOption != 'minutes') return;
+    changeToDecimal();
+  }, [degreesMinutesSecondsLat, degreesMinutesSecondsLong]);
 
   useEffect(() => {
-    if (editedImage) {
-      changeDecimalToDegrees();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (coordinateOption === 'google') {
-      changeToDecimal();
-    }
-    console.log('changed');
-    console.log(editedImage);
-  }, [editedImage]);
-
-  /**
-   *
-   * @param e
-   * This handles changes to the degree form
-   * @returns
-   */
-
-  const handleEditedImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //check if long or lat
-    if (!editedImage) return;
-
-    if (coordinateOption !== 'decimal') return;
-
-    const field = e.target.name;
-
-    if (field === 'long') {
-      setLocalLong(e.target.value);
-
-      setEditedImage({
-        ...editedImage,
-        long: e.target.value,
-      });
-
-      //change the degrees/minutes/seconds
-      changeDecimalToDegrees();
-    }
-
-    if (field === 'lat') {
-      setLocalLat(e.target.value);
-
-      setEditedImage({
-        ...editedImage,
-        lat: e.target.value,
-      });
-
-      //change the degrees/minutes/seconds
-      changeDecimalToDegrees();
-    }
-  };
+    if (coordinateOption != 'google') return;
+    setFromGoogleCoordinates();
+    setCoordinateOption(previousSetting.current);
+  }, [googleSubmitInput]);
 
   return (
     <div>
@@ -398,12 +373,11 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
           onChange={(e) => {
             setDegreesInMinutes(e.target.value === 'minutes');
             if (e.target.value === 'minutes') {
-              changeDecimalToDegrees();
               setCoordinateOption('minutes');
+              previousSetting.current = 'minutes';
             } else {
               setCoordinateOption('decimal');
-              changeToDecimal();
-              setCoordinateOption('decimal');
+              previousSetting.current = 'decimal';
             }
           }}
           className="w-full px-3 py-2 border rounded-lg"
@@ -423,7 +397,11 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         <button
           onClick={(e) => {
             e.preventDefault();
-            setFromGoogleCoordinates();
+            //set setting to google
+            setCoordinateOption('google');
+            setGoogleSubmitInput(googleInput);
+            setCoordinateOption(previousSetting.current);
+            //setFromGoogleCoordinates();
           }}
           className="bg-blue-500 text-white px-4 py-2 rounded-lg"
         >
@@ -437,7 +415,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
               type="text"
               name="long_deg"
               placeholder="Degrees"
-              onChange={handleCoordinatesChange}
+              onChange={handleChangesToDegreesMinutesSeconds}
               value={degreesMinutesSecondsLong.degrees}
               disabled={coordinateOption === 'decimal'}
               className={`w-1/3 px-3 py-2 border rounded-lg ${
@@ -448,7 +426,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
               type="text"
               name="long_min"
               placeholder="Minutes"
-              onChange={handleCoordinatesChange}
+              onChange={handleChangesToDegreesMinutesSeconds}
               value={degreesMinutesSecondsLong.minutes}
               disabled={coordinateOption === 'decimal'}
               className={`w-1/3 px-3 py-2 border rounded-lg ${
@@ -459,7 +437,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
               type="text"
               name="long_sec"
               placeholder="Seconds"
-              onChange={handleCoordinatesChange}
+              onChange={handleChangesToDegreesMinutesSeconds}
               value={degreesMinutesSecondsLong.seconds}
               disabled={coordinateOption === 'decimal'}
               className={`w-1/3 px-3 py-2 border rounded-lg ${
@@ -484,7 +462,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
               name="lat_deg"
               placeholder="Degrees"
               value={degreesMinutesSecondsLat.degrees}
-              onChange={handleEditedImageChange}
+              onChange={handleChangesToDegreesMinutesSeconds}
               disabled={coordinateOption === 'decimal'}
               className={`w-1/3 px-3 py-2 border rounded-lg ${
                 coordinateOption === 'decimal' ? 'bg-gray-200' : ''
@@ -495,7 +473,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
               name="lat_min"
               placeholder="Minutes"
               value={degreesMinutesSecondsLat.minutes}
-              onChange={handleEditedImageChange}
+              onChange={handleChangesToDegreesMinutesSeconds}
               disabled={coordinateOption === 'decimal'}
               className={`w-1/3 px-3 py-2 border rounded-lg ${
                 coordinateOption === 'decimal' ? 'bg-gray-200' : ''
@@ -506,7 +484,7 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
               name="lat_sec"
               placeholder="Seconds"
               value={degreesMinutesSecondsLat.seconds}
-              onChange={handleEditedImageChange}
+              onChange={handleChangesToDegreesMinutesSeconds}
               disabled={coordinateOption === 'decimal'}
               className={`w-1/3 px-3 py-2 border rounded-lg ${
                 coordinateOption === 'decimal' ? 'bg-gray-200' : ''
@@ -532,8 +510,14 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
           <input
             type="text"
             name="lat"
-            value={localLat || ''}
-            onChange={handleCoordinatesChange}
+            value={localCoordinates.lat || ''}
+            onChange={(e) => {
+              if (coordinateOption === 'minutes') return;
+              setLocalCoordinates({
+                ...localCoordinates,
+                lat: e.target.value,
+              });
+            }}
             disabled={coordinateOption === 'minutes'}
             className={`w-full px-3 py-2 border rounded-lg ${
               coordinateOption === 'minutes' ? 'bg-gray-200' : ''
@@ -542,8 +526,14 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
           <input
             type="text"
             name="long"
-            onChange={handleCoordinatesChange}
-            value={localLong || ''}
+            onChange={(e) => {
+              if (coordinateOption === 'minutes') return;
+              setLocalCoordinates({
+                ...localCoordinates,
+                long: e.target.value,
+              });
+            }}
+            value={localCoordinates.long || ''}
             disabled={coordinateOption === 'minutes'}
             className={`w-full px-3 py-2 border rounded-lg ${
               coordinateOption === 'minutes' ? 'bg-gray-200' : ''
