@@ -17,46 +17,15 @@ import { HiEye } from 'react-icons/hi';
 import { HiX } from 'react-icons/hi';
 
 import axios from 'axios';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import Modal from '@/components/PathModal';
 
 import { KML } from 'ol/format';
 import { HiOutlinePencil } from 'react-icons/hi';
 
-interface Image {
-  id: string;
-  file_path: string;
-  created_at: string;
-  long: string;
-  lat: string;
-  ol_id?: string;
-  name: string;
-  description: string;
-}
+import type { Image, Path, Trip } from '@/definitions/Trip_View';
 
-interface Trip {
-  id: number;
-  name: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  images: Image[];
-  paths: Path[];
-}
-
-interface Path {
-  id: number;
-  kml_file: string;
-  name: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  color_g: number;
-  color_b: number;
-  color_r: number;
-  style: 'solid' | 'dashed' | 'dotted';
-  thickness: number;
-}
+import CoordinateForm from '@/components/CoordinateForm';
 
 //process.env.NEXT_PUBLIC_API_URL
 
@@ -73,8 +42,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
 
   //useSearchParam is a hook that allows you to get the search params from the URL
 
-  const params = useSearchParams();
-
   const [path, setPath] = useState<Path | null>(null);
 
   const [pathModalOpen, setPathModalOpen] = useState(false);
@@ -83,8 +50,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
   const [currentDay, setCurrentDay] = useState<string | null>(null);
 
   const [comparingPhotos, setComparingPhotos] = useState<boolean>(false);
-
-  const [degreesInMinutes, setDegreesInMinutes] = useState<boolean>(false);
 
   useEffect(() => {
     console.log('id is', id);
@@ -438,203 +403,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
   const [editingImage, setEditingImage] = useState<boolean>(false);
   const [editedImage, setEditedImage] = useState<Image | null>(null);
 
-  const [WorE, setWorE] = useState<'W' | 'E'>('W');
-  const [Nors, setNors] = useState<'N' | 'S'>('N');
-
-  type DegreesMinutesSeconds = {
-    degrees: number;
-    minutes: number;
-    seconds: number;
-  };
-
-  const [degreesMinutesSecondsLat, setDegreesMinutesSecondsLat] =
-    useState<DegreesMinutesSeconds>({
-      degrees: 0,
-      minutes: 0,
-      seconds: 0,
-    });
-
-  const [degreesMinutesSecondsLong, setDegreesMinutesSecondsLong] =
-    useState<DegreesMinutesSeconds>({
-      degrees: 0,
-      minutes: 0,
-      seconds: 0,
-    });
-
-  const changeToDecimal = () => {
-    const decimalDegreesLong =
-      degreesMinutesSecondsLong.degrees +
-      degreesMinutesSecondsLong.minutes / 60 +
-      degreesMinutesSecondsLong.seconds / 3600;
-
-    if (!editedImage) return;
-
-    if (WorE === 'W') {
-      setEditedImage({
-        ...editedImage,
-        long: `-${decimalDegreesLong}`,
-      });
-    }
-
-    if (WorE === 'E') {
-      setEditedImage({
-        ...editedImage,
-        long: `${decimalDegreesLong}`,
-      });
-    }
-
-    const decimalDegreesLat =
-      degreesMinutesSecondsLat.degrees +
-      degreesMinutesSecondsLat.minutes / 60 +
-      degreesMinutesSecondsLat.seconds / 3600;
-
-    if (Nors === 'N') {
-      setEditedImage({
-        ...editedImage,
-        lat: `${decimalDegreesLat}`,
-      });
-    }
-
-    if (Nors === 'S') {
-      setEditedImage({
-        ...editedImage,
-        lat: `-${decimalDegreesLat}`,
-      });
-    }
-  };
-
-  //what is the input html event called again?
-
-  const [googleInput, setGoogleInput] = useState<string>('');
-
-  const setFromGoogleCoordinates = () => {
-    //format 34°18'06.7"N 119°18'06.7"W
-    const regex =
-      /(\d+)°(\d+)'(\d+\.\d+)"([N|S|E|W]) (\d+)°(\d+)'(\d+\.\d+)"([N|S|E|W])/g;
-
-    if (!editedImage) return;
-
-    //find long in degrees
-    const input = googleInput;
-
-    if (regex.test(input)) {
-      // split the input into two parts
-      const [lat, long] = input.split(' ');
-
-      //test if N or S
-      const Nors = lat.includes('N') ? 'N' : 'S';
-
-      const degrees_lat = parseInt(lat.split('°')[0]);
-
-      const minutes_lat = parseInt(lat.split('°')[1].split("'")[0]);
-
-      const seconds_lat = parseFloat(lat.split("'")[1].split('"')[0]);
-
-      //test if E or W
-      const WorE = long.includes('E') ? 'E' : 'W';
-
-      const degrees_long = parseInt(long.split('°')[0]);
-
-      const minutes_long = parseInt(long.split('°')[1].split("'")[0]);
-
-      const seconds_long = parseFloat(long.split("'")[1].split('"')[0]);
-
-      setDegreesMinutesSecondsLat({
-        degrees: degrees_lat,
-        minutes: minutes_lat,
-        seconds: seconds_lat,
-      });
-
-      setDegreesMinutesSecondsLong({
-        degrees: degrees_long,
-        minutes: minutes_long,
-        seconds: seconds_long,
-      });
-
-      setNors(Nors);
-      setWorE(WorE);
-
-      //set degrees
-
-      //change to degrees
-      changeToDecimal();
-
-      //make sure its in
-    }
-
-    //test format
-  };
-
-  const changeDecimalToDegrees = () => {
-    if (!editedImage) return;
-
-    let long = parseFloat(editedImage.long);
-
-    let lat = parseFloat(editedImage.lat);
-
-    //first, test if N or S
-    const Nors = lat >= 0 ? 'N' : 'S';
-    setNors(Nors);
-
-    //if South, make positive
-    long = long < 0 ? -long : long;
-
-    //first, test if E or W
-    const WorE = long >= 0 ? 'E' : 'W';
-    setWorE(WorE);
-
-    //if West, make positive
-    lat = lat < 0 ? -lat : lat;
-
-    const long_deg = Math.floor(Math.abs(long));
-
-    const long_min = Math.floor((Math.abs(long) - long_deg) * 60);
-
-    const long_sec = ((Math.abs(long) - long_deg) * 60 - long_min) * 60;
-
-    const lat_deg = Math.floor(Math.abs(lat));
-
-    const lat_min = Math.floor((Math.abs(lat) - lat_deg) * 60);
-
-    const lat_sec = ((Math.abs(lat) - lat_deg) * 60 - lat_min) * 60;
-
-    setDegreesMinutesSecondsLong({
-      degrees: long_deg,
-      minutes: long_min,
-      seconds: long_sec,
-    });
-
-    setDegreesMinutesSecondsLat({
-      degrees: lat_deg,
-      minutes: lat_min,
-      seconds: lat_sec,
-    });
-  };
-
-  const handleEditImage = (image: Image) => {
-    setEditingImage(true);
-    setEditedImage(image);
-    //set degrees minutes seconds
-
-    changeDecimalToDegrees();
-  };
-
-  const cancelEditImage = () => {
-    setEditingImage(false);
-    setEditedImage(null);
-    //clear degrees minutes seconds
-    setDegreesMinutesSecondsLong({
-      degrees: 0,
-      minutes: 0,
-      seconds: 0,
-    });
-    setDegreesMinutesSecondsLat({
-      degrees: 0,
-      minutes: 0,
-      seconds: 0,
-    });
-  };
-
   const handleEditedImageChange = (e: any) => {
     const field = e.target.name;
 
@@ -664,17 +432,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
       console.error('Error editing image:', err);
     }
   };
-
-  useEffect(() => {
-    console.log(
-      "WHY ON GORDS EARTH ARE YOU CHANGING? WHAT FOR? I DON'T UNDERSTAND"
-    );
-    console.log(editingImage);
-    console.log(editedImage);
-  }, [editingImage]);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
 
   const handleCloseModal = () => {
     setPathModalOpen(false);
@@ -746,80 +503,16 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     });
   };
 
-  const handleCoordinatesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //check if long or lat
+  const handleEditImage = (image: Image) => {
+    setEditingImage(true);
+    setEditedImage(image);
+    //set degrees minutes seconds
+  };
 
-    if (!editedImage) return;
-
-    const field = e.target.name;
-
-    if (degreesInMinutes) {
-      // test if format like "34°18'06.7"N"
-      //parse and set
-
-      //test first
-      const regex = /(\d+)°(\d+)'(\d+\.\d+)"([N|S|E|W])/g;
-
-      if (regex.test(e.target.value)) {
-        //break out of if, not the function
-
-        const degrees = parseInt(RegExp.$1);
-        const minutes = parseInt(RegExp.$2);
-        const seconds = parseFloat(RegExp.$3);
-        const direction = RegExp.$4;
-
-        if (field === 'long') {
-          setDegreesMinutesSecondsLong({
-            degrees,
-            minutes,
-            seconds,
-          });
-        }
-
-        if (field === 'lat') {
-          setDegreesMinutesSecondsLat({
-            degrees,
-            minutes,
-            seconds,
-          });
-        }
-      }
-    }
-
-    if (field === 'long') {
-      if (degreesInMinutes) {
-        //convert to decimal degrees
-        //
-        const [degrees, minutes, seconds] = e.target.value.split(' ');
-        const decimalDegrees = parseFloat(degrees) + parseFloat(minutes) / 60;
-        setEditedImage({
-          ...editedImage,
-          long: decimalDegrees.toString(),
-        });
-      } else {
-        setEditedImage({
-          ...editedImage,
-          long: e.target.value,
-        });
-      }
-    }
-
-    if (field === 'lat') {
-      if (degreesInMinutes) {
-        //convert to decimal degrees
-        const [degrees, minutes] = e.target.value.split(' ');
-        const decimalDegrees = parseFloat(degrees) + parseFloat(minutes) / 60;
-        setEditedImage({
-          ...editedImage,
-          lat: decimalDegrees.toString(),
-        });
-      } else {
-        setEditedImage({
-          ...editedImage,
-          lat: e.target.value,
-        });
-      }
-    }
+  const cancelEditImage = () => {
+    setEditingImage(false);
+    setEditedImage(null);
+    //clear degrees minutes seconds
   };
 
   const handleComparePhotosSelection = (image: Image) => {
@@ -862,11 +555,14 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
       }
     };
 
+    if (loading) return <p>Loading...</p>;
+    if (error) return <p>{error}</p>;
+
     return (
       <div className="flex flex-wrap space-around">
         {selectedImages.map((image) => (
           <div key={image.id} className="relative">
-            <Image
+            <NextImage
               src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
               alt={`Image for ${image.created_at}`}
               width={500}
@@ -1083,137 +779,11 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
                   />
                 </div>
               </div>
-              {/* Select decimals or minutes */}
-              <div className="mb-4">
-                <label className="block text-gray-700">
-                  Degrees or Minutes
-                </label>
-                <select
-                  name="degreesInMinutes"
-                  value={degreesInMinutes ? 'minutes' : 'decimal'}
-                  onChange={(e) => {
-                    setDegreesInMinutes(e.target.value === 'minutes');
-                    if (e.target.value === 'minutes') {
-                      changeDecimalToDegrees();
-                    } else {
-                      changeToDecimal();
-                    }
-                  }}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="decimal">Decimal</option>
-                  <option value="minutes">Minutes/Seconds</option>
-                </select>
-
-                {/* Text Box and Submit Button For Entering Google Coordinates*/}
-                <input
-                  type="text"
-                  name="google_coordinates"
-                  placeholder="'34°18'06.7'N 119°18'06.7'W"
-                  onChange={(e) => setGoogleInput(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setFromGoogleCoordinates();
-                  }}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                >
-                  Set From Google Coordinates
-                </button>
-
-                {/* If In Minutes */}
-                <div className="mb-4">
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      name="long_deg"
-                      placeholder="Degrees"
-                      onChange={handleCoordinatesChange}
-                      value={degreesMinutesSecondsLong.degrees}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    />
-                    <input
-                      type="text"
-                      name="long_min"
-                      placeholder="Minutes"
-                      onChange={handleCoordinatesChange}
-                      value={degreesMinutesSecondsLong.minutes}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    />
-                    <input
-                      type="text"
-                      name="long_sec"
-                      placeholder="Seconds"
-                      onChange={handleCoordinatesChange}
-                      value={degreesMinutesSecondsLong.seconds}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    />
-                    <select
-                      value={WorE}
-                      onChange={(e) => setWorE(e.target.value as 'W' | 'E')}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    >
-                      <option value="W">W</option>
-                      <option value="E">E</option>
-                    </select>
-                  </div>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      name="lat_deg"
-                      placeholder="Degrees"
-                      value={degreesMinutesSecondsLat.degrees}
-                      onChange={handleEditedImageChange}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    />
-                    <input
-                      type="text"
-                      name="lat_min"
-                      placeholder="Minutes"
-                      value={degreesMinutesSecondsLat.minutes}
-                      onChange={handleEditedImageChange}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    />
-                    <input
-                      type="text"
-                      name="lat_sec"
-                      placeholder="Seconds"
-                      value={degreesMinutesSecondsLat.seconds}
-                      onChange={handleEditedImageChange}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    />
-                    <select
-                      value={Nors}
-                      onChange={(e) => setNors(e.target.value as 'N' | 'S')}
-                      className="w-1/3 px-3 py-2 border rounded-lg"
-                    >
-                      <option value="N">N</option>
-                      <option value="S">S</option>
-                    </select>
-                  </div>
-                </div>
-                {/* If Not In Minutes */}
-                <div className="mb-4">
-                  {/* Latitude */}
-                  <input
-                    type="text"
-                    name="lat"
-                    value={editedImage?.lat || ''}
-                    onChange={handleEditedImageChange}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                  <input
-                    type="text"
-                    name="long"
-                    onChange={handleCoordinatesChange}
-                    value={editedImage?.long || ''}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-
+              {/* Use The Coordinate Form Component */}
+              <CoordinateForm
+                editedImage={editedImage}
+                setEditedImage={setEditedImage}
+              />
               <button
                 type="submit"
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg"
