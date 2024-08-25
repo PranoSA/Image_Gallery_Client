@@ -4,7 +4,7 @@ type ModalProps = {
   onSubmit: (data: any) => void;
 };
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ColorResult, SketchPicker } from 'react-color';
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSubmit }) => {
@@ -55,9 +55,42 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSubmit }) => {
     });
   };
 
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set the line style
+    ctx.strokeStyle = `rgb(${formData.color.r}, ${formData.color.g}, ${formData.color.b})`;
+    ctx.lineWidth = parseInt(formData.width);
+
+    // Set the line dash style
+    if (formData.style === 'dashed') {
+      ctx.setLineDash([10, 10]);
+    } else if (formData.style === 'dotted') {
+      ctx.setLineDash([4, 10]);
+    } else {
+      ctx.setLineDash([]);
+    }
+
+    // Draw the line
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    ctx.lineTo(canvas.width, canvas.height / 2);
+    ctx.stroke();
+  }, [formData]);
+
   if (!isOpen)
     return (
-      <div>
+      <div className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
         {/* 
         somethign to handle Opening Modal
       */}
@@ -66,8 +99,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSubmit }) => {
     );
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative max-h-screen overflow-y-auto">
+    <div className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+      <div className="">
         <button
           className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
           onClick={onClose}
@@ -139,14 +172,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, onSubmit }) => {
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Preview:</label>
-            <div
-              className="mt-1 block w-full h-10"
-              style={{
-                backgroundColor: `rgb(${formData.color.r}, ${formData.color.g}, ${formData.color.b})`,
-                border: `2px ${formData.style} black`,
-                height: `${formData.width}px`,
-              }}
-            ></div>
+            <canvas
+              ref={canvasRef}
+              width="300"
+              height="50"
+              className="mt-1 block w-full"
+            ></canvas>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700">Start Date:</label>

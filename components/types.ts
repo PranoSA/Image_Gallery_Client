@@ -31,4 +31,5 @@ interface Path {
   color_r: number;
   style: 'solid' | 'dashed' | 'dotted';
   thickness: number;
+  tripid: number;
 }
