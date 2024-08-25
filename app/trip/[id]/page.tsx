@@ -23,6 +23,8 @@ import {
   FaChevronUp,
 } from 'react-icons/fa';
 
+import PathLegend from '@/components/PathLegend';
+
 import axios from 'axios';
 import NextImage from 'next/image';
 import Modal from '@/components/PathModal';
@@ -797,6 +799,14 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     }
   };
 
+  const filteredPaths = paths.filter((path) => {
+    const startDate = new Date(path.start_date);
+    const endDate = new Date(path.end_date);
+    if (!currentDay) return [];
+    const currentDate = new Date(currentDay);
+    return currentDate >= startDate && currentDate <= endDate;
+  });
+
   return (
     <div>
       {pathModalSelected != null && pathModalPosition && (
@@ -900,7 +910,25 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
           className="cursor-pointer"
         />
       </div>
-      <div ref={mapRef} style={{ width: '100%', height: '50vh' }}></div>
+      <div className="flex justify-center items-center">
+        <div
+          ref={mapRef}
+          style={{ width: '100%', height: '50vh' }}
+          className="w-full relative "
+        >
+          <PathLegend
+            paths={
+              currentDay && trip
+                ? trip.paths.filter(
+                    (path) =>
+                      path.start_date <= currentDay &&
+                      path.end_date >= currentDay
+                  )
+                : []
+            }
+          />
+        </div>
+      </div>
       <div className="gallery mt-4">
         {imagesForDay.map((image, i) => (
           <div key={image.id}>
