@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.51.24",
+    "@tanstack/react-store": "^0.5.5",
+    "@turf/turf": "^7.1.0",
     "@types/react-color": "^3.0.12",
     "axios": "^1.7.4",
+    "lz-string": "^1.5.0",
     "next": "14.2.5",
     "ol": "^10.0.0",
     "react": "^18",

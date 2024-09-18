@@ -15,8 +15,8 @@ interface Trip {
   description: string;
   start_date: string;
   end_date: string;
-  images: Image[];
-  paths: Path[];
+  //images: Image[];
+  //paths: Path[];
 }
 
 interface Path {

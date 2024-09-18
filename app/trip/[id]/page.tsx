@@ -12,16 +12,10 @@ import { Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { HiEye } from 'react-icons/hi';
-import { HiX } from 'react-icons/hi';
-import { HiChevronDoubleDown } from 'react-icons/hi';
-import {
-  FaChevronDown,
-  FaChevronLeft,
-  FaChevronRight,
-  FaChevronUp,
-} from 'react-icons/fa';
+
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+
+import { Banner_Component } from '@/components/Trip_View/Banner_Component';
 
 import PathLegend from '@/components/PathLegend';
 
@@ -34,114 +28,85 @@ import { HiOutlinePencil } from 'react-icons/hi';
 
 import type { Image, Path, Trip } from '@/definitions/Trip_View';
 
-import CoordinateForm from '@/components/CoordinateForm';
-import PathModal from '@/components/PathModal';
+import {
+  useQueryTripPaths,
+  useQueryTrip,
+  useQueryTripImages,
+} from '@/components/Trip_View/Trip_View_Image_Store';
+
 import PathMapModal from '@/components/PathMapModal';
+
+import {
+  useTripViewStore,
+  tripViewStore,
+} from '@/components/Trip_View/Trip_View_Image_Store';
+import { Image_View_ByDate } from '@/components/Trip_View/Date_View/Image_View_ByDate';
 
 //process.env.NEXT_PUBLIC_API_URL
 
 export default function Page({ params: { id } }: { params: { id: string } }) {
+  useEffect(() => {
+    tripViewStore.setState((prevState) => ({
+      ...prevState,
+      selected_trip_id: id,
+    }));
+  }, [id]);
+
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    error: tripError,
+  } = useQueryTrip(id);
+
+  // with trip paths
+  const {
+    data: paths,
+    isLoading: pathsLoading,
+    error: pathsError,
+  } = useQueryTripPaths(id);
+
+  const {
+    data: images,
+    isLoading: imagesLoading,
+    error: imagesError,
+  } = useQueryTripImages(id);
+
+  const { selected_date, get_images_for_day, selected_image_location } =
+    useTripViewStore();
+
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 
   //populated on loading
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  //const [trip, setTrip] = useState<Trip | null>(null);
 
   const [pathModalOpen, setPathModalOpen] = useState(false);
 
-  // Where the Image Selection Is Stored
-  const [currentDay, setCurrentDay] = useState<string | null>(null);
+  const currentDay = () => {
+    const startDate = new Date(trip.start_date);
+    const selectedDate = new Date(startDate);
+    selectedDate.setDate(startDate.getDate() + selected_date);
+
+    return selectedDate.toISOString().split('T')[0];
+  };
 
   const [comparingPhotos, setComparingPhotos] = useState<boolean>(false);
 
   const [menu, showMenu] = useState<boolean>(false);
 
-  const [dayDescription, setDayDescription] = useState<string | null>(null);
-
-  const [daySummaries, setDaySummaries] = useState<string | null>(null);
-
-  const [editingDaySummary, setEditingDaySummary] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!trip || !currentDay) return;
-
-    const fetchDayDescription = async () => {
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/day_summaries/${currentDay}`
-        );
-        setDayDescription(response.data[0].summary);
-      } catch (err) {
-        setDayDescription(null);
-        //console.error('Error fetching day description:', err);
-      }
-    };
-
-    fetchDayDescription();
-  }, [trip, currentDay]);
-
-  const submitDayDescription = async () => {
-    //find the id of the current day
-    if (!currentDay || !trip) return;
-
-    //The Day ID is the [day, tripid] in the day_summaries table
-
-    try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/day_summaries/${currentDay}`,
-        {
-          tripid: id,
-          summary: dayDescription,
-        }
-      );
-      setEditingDaySummary(false);
-    } catch (err) {
-      console.error('Error submitting day description:', err);
-    }
-  };
-
   // map to find the path id from the feature
   const pathFromFeature = useRef<Map>(new Map());
-  useEffect(() => {
-    console.log('id is', id);
-    if (id) {
-      const fetchTripDetails = async () => {
-        try {
-          const tripResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}`
-          );
-          const photosResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images`
-          );
-          const pathsResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/paths`
-          );
-
-          const tripData = tripResponse.data[0];
-          tripData.images = photosResponse.data;
-          tripData.paths = pathsResponse.data;
-
-          setTrip(tripData);
-
-          setCurrentDay(tripData.start_date);
-        } catch (err) {
-          setError('Error fetching trip details');
-          console.error(err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      console.log('Finished Fetching');
-      fetchTripDetails();
-    }
-  }, []);
 
   useEffect(() => {
-    if (!currentDay || !trip) return;
+    if (!selected_date || !trip || !paths) return;
+    const currentDayDate = new Date(trip.start_date);
+    currentDayDate.setDate(currentDayDate.getDate() + selected_date);
+
+    const currentDay = currentDayDate.toISOString().split('T')[0];
+    if (!currentDay) return;
+
     const fetchKMLFiles = async () => {
-      const filteredPaths = trip.paths.filter(
+      const filteredPaths = paths.filter(
         (path) => path.start_date <= currentDay && path.end_date >= currentDay
       );
 
@@ -224,7 +189,7 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     };
 
     fetchKMLFiles();
-  }, [currentDay]);
+  }, [selected_date, trip, paths]);
 
   //add interactivity to the map
 
@@ -247,17 +212,16 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
       //show the modal
       //set the path to the selected path
       //set the modal to open
-      console.log('Feature:', feature);
+
       //@ts-ignore
       const featureId = feature.ol_uid || feature.getId();
-      console.log('Feature Id', featureId);
+
       //get the path id from the feature
       const pathId = pathFromFeature.current.get(featureId);
 
-      console.log('Path ID:', pathId);
-
       //find it in the trip.paths
-      const path = trip?.paths.find((p) => p.id === pathId);
+      if (!paths) return;
+      const path = paths.find((p) => p.id === pathId);
 
       if (!path) {
         console.error('Path not found');
@@ -280,8 +244,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
 
   // Vector Source to Store Paths Loadied From The Server
 
-  const [paths, setPaths] = useState<Path[]>([]);
-
   //This will populate vector sources through KML files
 
   const selectedFeature = useRef<Feature | null>(null);
@@ -300,9 +262,10 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     //the heatmap for the day
 
     //add images for that day to the vector source
+    if (!images || !currentDay) return;
 
-    trip?.images
-      .filter((i) => i.created_at.split('T')[0] === currentDay)
+    images
+      .filter((i) => i.created_at.split('T')[0] === currentDay())
       .forEach((image) => {
         const feature = new Feature({
           geometry: new Point(
@@ -350,113 +313,93 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
         ],
         view: new View({
           center: fromLonLat([2.3522, 48.8566]),
-          zoom: 4,
+          zoom: 2,
         }),
       });
     }
   }, [mapRef.current]);
 
+  //set center of view when the selected date changes
   useEffect(() => {
-    console.log('currentDay', currentDay);
-    if (trip && currentDay) {
-      const imagesForDay = trip.images.filter(
-        (image) => image.created_at === currentDay
+    if (!trip || !currentDay) return;
+
+    const startDate = new Date(trip.start_date);
+    const selectedDate = new Date(startDate);
+    selectedDate.setDate(startDate.getDate() + selected_date);
+
+    //get images for the day
+    const imagesForDay = get_images_for_day(
+      selected_date,
+      trip.start_date,
+      images || []
+    );
+
+    if (imagesForDay.length > 0) {
+      //set center of view to the center of the images
+      const candidateImages = imagesForDay
+        .filter((image) => image.lat && image.long)
+        .filter(
+          (image) => parseFloat(image.lat) !== 0 && parseFloat(image.long) !== 0
+        );
+
+      const total_lat = candidateImages.reduce(
+        (acc, image) => acc + parseFloat(image.lat),
+        0
       );
-      setSelectedImage(null);
-    }
-  }, [trip, currentDay]);
 
-  const handleDayChange = (direction: 'prev' | 'next') => {
-    if (trip && currentDay) {
-      const currentDate = new Date(currentDay);
-      const newDate = new Date(currentDate);
-      newDate.setDate(currentDate.getDate() + (direction === 'prev' ? -1 : 1));
-      const newDateString = newDate.toISOString().split('T')[0];
-      console.log('newDateString', newDateString);
-      if (newDateString >= trip.start_date && newDateString <= trip.end_date) {
-        setCurrentDay(newDateString);
-      }
-      setSelectedImage(null);
+      const total_long = candidateImages.reduce(
+        (acc, image) => acc + parseFloat(image.long),
+        0
+      );
 
-      //find center of trip through the images for that day
-
-      if (
-        trip.images.filter(
-          (image) => image.created_at.split('T')[0] === newDateString
-        ).length > 0
-      ) {
-        const candidateImages = trip.images
-          .filter((image) => image.created_at.split('T')[0] === newDateString)
-          .filter((image) => image.lat && image.long)
-          .filter(
-            (image) =>
-              parseFloat(image.lat) !== 0 && parseFloat(image.long) !== 0
-          );
-
-        const total_lat = candidateImages.reduce(
-          (acc, image) => acc + parseFloat(image.lat),
-          0
+      //set the center of the map to the center of the trip
+      mapInstanceRef.current
+        ?.getView()
+        .setCenter(
+          fromLonLat([
+            total_long / candidateImages.length,
+            total_lat / candidateImages.length,
+          ])
         );
 
-        const total_long = candidateImages.reduce(
-          (acc, image) => acc + parseFloat(image.long),
-          0
-        );
+      //set zoom level based on the size of the box
+      // max_lat, min_lat, max_long, min_long
 
-        const center_lat = total_lat / candidateImages.length;
+      const max_lat = candidateImages.reduce(
+        (acc, image) => Math.max(acc, parseFloat(image.lat)),
+        -Infinity
+      );
 
-        const center_long = total_long / candidateImages.length;
+      const min_lat = candidateImages.reduce(
+        (acc, image) => Math.min(acc, parseFloat(image.lat)),
+        Infinity
+      );
 
-        // set the center of the map to the center of the trip
-        mapInstanceRef.current
-          ?.getView()
-          .setCenter(fromLonLat([center_long, center_lat]));
+      const max_long = candidateImages.reduce(
+        (acc, image) => Math.max(acc, parseFloat(image.long)),
+        -Infinity
+      );
 
-        //set zoom level based on the size of the box
-        // max_lat, min_lat, max_long, min_long
+      const min_long = candidateImages.reduce(
+        (acc, image) => Math.min(acc, parseFloat(image.long)),
+        Infinity
+      );
 
-        const max_lat = candidateImages.reduce(
-          (acc, image) => Math.max(acc, parseFloat(image.lat)),
-          -Infinity
-        );
+      const lat_diff = max_lat - min_lat;
+      const long_diff = max_long - min_long;
 
-        const min_lat = candidateImages.reduce(
-          (acc, image) => Math.min(acc, parseFloat(image.lat)),
-          Infinity
-        );
+      const max_diff = Math.max(lat_diff, long_diff);
 
-        const max_long = candidateImages.reduce(
-          (acc, image) => Math.max(acc, parseFloat(image.long)),
-          -Infinity
-        );
+      const zoom = Math.floor(9 - Math.log2(max_diff));
 
-        const min_long = candidateImages.reduce(
-          (acc, image) => Math.min(acc, parseFloat(image.long)),
-          Infinity
-        );
-
-        const lat_diff = max_lat - min_lat;
-        const long_diff = max_long - min_long;
-
-        const max_diff = Math.max(lat_diff, long_diff);
-
-        const zoom = Math.floor(9 - Math.log2(max_diff));
-
-        mapInstanceRef.current?.getView().setZoom(zoom);
-      }
-
-      //Clear the feature from the map
-      if (selectedFeature.current) {
-        imageVectorSource.current.removeFeature(selectedFeature.current);
-        selectedFeature.current = null;
-      }
+      mapInstanceRef.current?.getView().setZoom(zoom);
     }
 
     // change heat map layer
     if (imageHeatMapLayer.current) {
       mapInstanceRef.current?.removeLayer(imageHeatMapLayer.current);
     }
-  };
+  }, [selected_date, trip]);
 
   const [selectedImages, setSelectedImages] = useState<Image[]>([]);
 
@@ -464,22 +407,24 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     console.log('selectedImages', selectedImages);
   }, [selectedImages]);
 
-  const handleImageClick = (image: Image) => {
-    // Will Behave Differently if Comparing Photos
-    // Then you Append to the Selected Images
+  useEffect(() => {
+    if (!selected_image_location) return;
 
-    if (selectedFeature && selectedFeature.current?.get('id') === image.id) {
+    if (selectedFeature.current?.get('id') === selected_image_location.id) {
       imageVectorSource.current.removeFeature(selectedFeature.current);
-      setSelectedImage(null);
+      //setSelectedImageLocation(null);
       selectedFeature.current = null;
     } else {
       const feature = new Feature({
         geometry: new Point(
-          fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
+          fromLonLat([
+            parseFloat(selected_image_location.long),
+            parseFloat(selected_image_location.lat),
+          ])
         ),
-        ol_uid: image.id,
-        id: image.id,
-        Id: image.id,
+        ol_uid: selected_image_location.id,
+        id: selected_image_location.id,
+        Id: selected_image_location.id,
       });
       feature.setStyle(
         new Style({
@@ -493,15 +438,14 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
           }),
         })
       );
-      //remove old feature
+      // Remove old feature
       if (selectedFeature.current) {
         imageVectorSource.current.removeFeature(selectedFeature.current);
       }
       selectedFeature.current = feature;
-      setSelectedImage(image);
       imageVectorSource.current.addFeature(feature);
     }
-  };
+  }, [selected_image_location]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -525,43 +469,12 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
   };
 
   const [doneSelectedImages, setDoneSelectedImages] = useState<boolean>(false);
-  const [editingImage, setEditingImage] = useState<boolean>(false);
-  const [editedImage, setEditedImage] = useState<Image | null>(null);
 
   /**
    *
   This is for fields like name, description, created_at
 
    */
-  const handleEditedImageChange = (e: any) => {
-    const field = e.target.name;
-
-    const value = e.target.value;
-
-    if (!editedImage) return;
-
-    setEditedImage({
-      ...editedImage,
-      [field]: value,
-    });
-  };
-
-  const [previewImage, setPreviewImage] = useState<number | null>(null);
-
-  const submitEditedImage = async () => {
-    if (!editedImage) return;
-
-    try {
-      await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/${editedImage.id}`,
-        editedImage
-      );
-      setEditingImage(false);
-      setEditedImage(null);
-    } catch (err) {
-      console.error('Error editing image:', err);
-    }
-  };
 
   const handleCloseModal = () => {
     setPathModalOpen(false);
@@ -599,52 +512,6 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
       });
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //Change the Date of the Edited Image
-    if (!editedImage) return;
-
-    //This will splitting the created_at and changing the date and joining the time back
-    const [date, time] = e.target.value.split('T');
-
-    const new_created_at = `${date}T${editedImage.created_at.split('T')[1]}`;
-
-    setEditedImage({
-      ...editedImage,
-      created_at: new_created_at,
-    });
-  };
-
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //Change the Time of the Edited Image
-    if (!editedImage) return;
-
-    //This will splitting the created_at and changing the time and joining the date back
-    const [date, time] = editedImage.created_at.split('T');
-
-    const new_time = e.target.value;
-
-    const new_created_at = `${
-      editedImage.created_at.split('T')[0]
-    }T${new_time}`;
-
-    setEditedImage({
-      ...editedImage,
-      created_at: new_created_at,
-    });
-  };
-
-  const handleEditImage = (image: Image) => {
-    setEditingImage(true);
-    setEditedImage(image);
-    //set degrees minutes seconds
-  };
-
-  const cancelEditImage = () => {
-    setEditingImage(false);
-    setEditedImage(null);
-    //clear degrees minutes seconds
-  };
-
   const handleComparePhotosSelection = (image: Image) => {
     // Add Image to Selected Images
     // unless, it is already in the selected images
@@ -673,20 +540,10 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
         //also delete from trip.images
 
         if (!trip) return;
-
-        const new_trip: Trip = {
-          ...trip,
-          images: trip.images.filter((i) => i.id !== image.id),
-        };
-
-        setTrip(new_trip);
       } catch (err) {
         console.error('Error deleting image:', err);
       }
     };
-
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>{error}</p>;
 
     return (
       <div className="flex flex-wrap space-around">
@@ -719,9 +576,11 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
   }
 
   const imagesForDay =
-    trip?.images
-      .filter((i) => i.created_at.split('T')[0] === currentDay)
-      .sort((a, b) => a.created_at.localeCompare(b.created_at)) || [];
+    (images &&
+      images
+        .filter((i) => i.created_at.split('T')[0] === currentDay())
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))) ||
+    [];
 
   if (comparingPhotos) {
     // Have the Image Gallery for that day instead of the map
@@ -731,7 +590,7 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     return (
       <div className="">
         <div className="gallery mt-4">
-          {imagesForDay.map((image) => (
+          {imagesForDay.map((image: Image) => (
             <div key={image.id}>
               <HiOutlinePencil />
               <NextImage
@@ -767,45 +626,9 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
     );
   }
 
-  const calculateDaysElapsed = (
-    startDate: string | null,
-    currentDate: string | null
-  ) => {
-    if (!startDate || !currentDate) return 0;
-    const start = new Date(startDate);
-    const current = new Date(currentDate);
-    const diffTime = Math.abs(current.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1;
-  };
-
   const toggleMenu = () => {
     showMenu(!menu);
   };
-
-  const handlePrevImage = () => {
-    if (previewImage) {
-      if (previewImage === 0) return;
-      setPreviewImage(previewImage - 1);
-    }
-  };
-
-  const handleNextImage = () => {
-    if (!trip) return;
-
-    if (previewImage) {
-      if (previewImage === trip.images.length - 1) return;
-      setPreviewImage(previewImage + 1);
-    }
-  };
-
-  const filteredPaths = paths.filter((path) => {
-    const startDate = new Date(path.start_date);
-    const endDate = new Date(path.end_date);
-    if (!currentDay) return [];
-    const currentDate = new Date(currentDay);
-    return currentDate >= startDate && currentDate <= endDate;
-  });
 
   return (
     <div>
@@ -853,63 +676,7 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
           </div>
         )}
       </div>
-      <div className="flex justify-around items-center mb-4">
-        <FaChevronLeft
-          onClick={() => handleDayChange('prev')}
-          className="cursor-pointer"
-        />
-
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className="w-full flex flex-col items-center">
-            <span className="w-full text-center">
-              Day #{' '}
-              {Math.floor(
-                calculateDaysElapsed(trip?.start_date || currentDay, currentDay)
-              )}{' '}
-              /{' '}
-              {calculateDaysElapsed(
-                trip?.start_date || currentDay,
-                trip?.end_date || currentDay
-              )}{' '}
-              :
-            </span>
-            <span className="w-full text-center">{currentDay}</span>
-          </div>
-          {/* Display the Day Summary, and then allow editing of it */}
-          <div className="flex flex-col items-center mt-4">
-            <div className="w-full flex justify-center items-center">
-              <HiOutlinePencil
-                onClick={() => setEditingDaySummary(true)}
-                className="cursor-pointer"
-              />
-            </div>
-            {editingDaySummary ? (
-              <div className="w-full flex flex-col items-center">
-                <textarea
-                  value={dayDescription || ''}
-                  onChange={(e) => setDayDescription(e.target.value)}
-                  className="w-full h-40 p-4 max-w-2xl"
-                ></textarea>
-                <button onClick={submitDayDescription} className="mt-2">
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditingDaySummary(false)}
-                  disabled={!editingDaySummary}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="w-full text-center">{dayDescription}</div>
-            )}
-          </div>
-        </div>
-        <FaChevronRight
-          onClick={() => handleDayChange('next')}
-          className="cursor-pointer"
-        />
-      </div>
+      {Banner_Component({})}
       <div className="flex justify-center items-center">
         <div
           ref={mapRef}
@@ -918,170 +685,20 @@ export default function Page({ params: { id } }: { params: { id: string } }) {
         >
           <PathLegend
             paths={
-              currentDay && trip
-                ? trip.paths.filter(
-                    (path) =>
-                      path.start_date <= currentDay &&
-                      path.end_date >= currentDay
-                  )
+              selected_date && trip
+                ? (paths &&
+                    paths.filter(
+                      (path) =>
+                        path.start_date <= currentDay() &&
+                        path.end_date >= currentDay()
+                    )) ||
+                  []
                 : []
             }
           />
         </div>
       </div>
-      <div className="gallery mt-4">
-        {imagesForDay.map((image, i) => (
-          <div key={image.id}>
-            <NextImage
-              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-              alt={`Image for ${image.created_at}`}
-              width={100}
-              height={100}
-              onClick={() => handleImageClick(image)}
-              style={{
-                cursor: 'pointer',
-                margin: '10px',
-                width: '100px',
-                height: '100px',
-                border: comparingPhotos
-                  ? selectedImages.includes(image)
-                    ? '5 px solid'
-                    : 'none'
-                  : selectedImage && selectedImage.id === image.id
-                  ? '5px solid blue'
-                  : 'none',
-              }}
-            />
-            <HiOutlinePencil
-              onClick={() => handleEditImage(image)}
-              className="cursor-pointer"
-            />
-            <HiEye
-              onClick={() => setPreviewImage(i)}
-              className="cursor-pointer"
-            />
-          </div>
-        ))}
-      </div>
-      {previewImage && trip && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50">
-          <div className="relative w-full h-full flex items-center justify-center">
-            <span
-              className="absolute top-4 right-4 text-white text-3xl cursor-pointer"
-              onClick={() => setPreviewImage(null)}
-            >
-              &times;
-            </span>
-            <button
-              className="absolute left-4 text-white text-3xl cursor-pointer"
-              onClick={handlePrevImage}
-              disabled={previewImage === 0}
-            >
-              <FaChevronLeft />
-            </button>
-            <NextImage
-              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${imagesForDay[previewImage].file_path}`}
-              alt={`Image for ${trip.images[previewImage].created_at}`}
-              width={500}
-              height={500}
-            />
-            <button
-              className="absolute right-4 text-white text-3xl cursor-pointer"
-              onClick={handleNextImage}
-              disabled={previewImage === imagesForDay.length - 1}
-            >
-              <FaChevronRight />
-            </button>
-          </div>
-        </div>
-      )}
-      {editingImage && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitEditedImage();
-              }}
-            >
-              <div className="mb-4">
-                <label className="block text-gray-700">Description:</label>
-                <input
-                  type="text"
-                  name="description"
-                  value={editedImage?.description || ''}
-                  onChange={handleEditedImageChange}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-
-              {/* Add created_at,  */}
-              <div className="mb-4">
-                <label className="block text-gray-700">Name:</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={editedImage?.name || ''}
-                  onChange={handleEditedImageChange}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-700">Description:</label>
-                <input
-                  type="text"
-                  name="description"
-                  value={editedImage?.description || ''}
-                  onChange={handleEditedImageChange}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-gray-700">Created At:</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="date"
-                    value={editedImage?.created_at.split('T')[0]}
-                    onChange={handleDateChange}
-                    className="w-1/2 px-3 py-2 border rounded-lg"
-                  />
-                  <input
-                    type="time"
-                    value={
-                      editedImage?.created_at
-                        .split('T')[1]
-                        .split('+')[0]
-                        .split('-')[0]
-                    }
-                    onChange={handleTimeChange}
-                    className="w-1/2 px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-              {/* Use The Coordinate Form Component */}
-              <CoordinateForm
-                editedImage={editedImage}
-                setEditedImage={setEditedImage}
-              />
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                onClick={submitEditedImage}
-              >
-                Save
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                onClick={() => cancelEditImage()}
-              >
-                Cancel
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {Image_View_ByDate({})}
 
       <h2>Upload Images</h2>
       <form onSubmit={handleSubmit}>

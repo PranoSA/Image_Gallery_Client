@@ -1,14 +1,16 @@
 'use client';
+import LZString from 'lz-string';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { WalkingTrip, WalkingPath } from '@/definitions/Walking_View';
 import VectorSource from 'ol/source/Vector';
 import VectorLayer from 'ol/layer/Vector';
 import { Circle, Fill, Stroke, Style } from 'ol/style';
+import { buffer as OLBuffer } from 'ol/extent';
 
 import { Feature, Map as OLMap, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
-import { fromLonLat, Projection } from 'ol/proj';
+import { fromLonLat, Projection, toLonLat } from 'ol/proj';
 import { OSM } from 'ol/source';
 import { Geometry, LineString, Point } from 'ol/geom';
 import Modify, { ModifyEvent } from 'ol/interaction/Modify';
@@ -18,6 +20,9 @@ import { getDistance } from 'ol/sphere';
 import { distance } from 'ol/coordinate';
 import { getLength } from 'ol/sphere';
 import { shiftKeyOnly } from 'ol/events/condition';
+
+import * as turf from '@turf/turf';
+import { buffer } from 'stream/consumers';
 
 const WalkinPathPage: React.FC = () => {
   const [trip, setTrip] = useState<WalkingTrip>({
@@ -40,9 +45,112 @@ const WalkinPathPage: React.FC = () => {
 
   const mapRef = useRef<HTMLDivElement>(null);
   const vectorSourceRef = useRef<VectorSource>(new VectorSource());
+  const arcSourceRef = useRef<VectorSource>(new VectorSource());
   const mapInstanceRef = useRef<OLMap | null>(null);
 
   const [modalIndex, setModalIndex] = useState<number | null>(null);
+
+  //on mount useEffect, un compress the path to the coordinate
+  useEffect(() => {
+    // get the URL parameter path
+    const url = new URL(window.location.href);
+
+    console.log('Building Trip From URL');
+
+    // get the path parameter
+    const path = url.searchParams.get('path');
+
+    console.log('Path:', path);
+
+    if (!path) return;
+
+    if (path === '') return;
+
+    try {
+      // URL decode the string
+      const url_decoded = decodeURIComponent(path);
+
+      // Decode the base64 string to a binary string
+      const binaryString = atob(url_decoded);
+
+      // Convert binary string to Uint8Array
+      const uint8Array = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        uint8Array[i] = binaryString.charCodeAt(i);
+      }
+
+      console.log('Uint8Array:', uint8Array);
+      // Decode the Uint8Array to a compressed string
+      const compressedString = new TextDecoder().decode(uint8Array);
+
+      console.log('I saw this compressed string: ');
+      console.log(compressedString);
+
+      // Decompress the string
+      const path_string_uncompressed = LZString.decompress(compressedString);
+
+      // Parse the JSON
+      const path_json = JSON.parse(path_string_uncompressed);
+
+      if (!path_json) {
+        return;
+      }
+
+      console.log('Path JSON:', path_json);
+
+      // Set the trip
+      setTrip({
+        ...trip,
+        name: 'Loaded From URL',
+        paths: path_json,
+      });
+
+      //trip ref
+      tripRef.current = {
+        ...tripRef.current,
+        name: 'Loaded From URL',
+        paths: path_json,
+      };
+    } catch (error) {
+      console.error('Error decoding path:', error);
+    }
+  }, []);
+
+  //see when trip has changed
+  useEffect(() => {
+    console.log('Trip has changed', trip);
+  }, [trip]);
+
+  // compress the path, and save it to the url
+  useEffect(() => {
+    //don't do this on the first render
+
+    //compress the path
+    console.log('Saving Trip To URL');
+
+    // Compress the string
+    const path_string_uncompressed = JSON.stringify(tripRef.current.paths);
+    const path_string_compressed = LZString.compress(path_string_uncompressed);
+
+    console.log('I want to see this compressed :');
+    console.log(path_string_compressed);
+    // Encode the compressed string to a Uint8Array
+    const uint8Array = new TextEncoder().encode(path_string_compressed);
+
+    //turn uint8Array into number array
+    const numberArray = Array.from(uint8Array);
+
+    // Convert Uint8Array to base64
+    const base64Encoded = btoa(String.fromCharCode.apply(null, numberArray));
+
+    // URL encode the base64 string
+    const url_encoded = encodeURIComponent(base64Encoded);
+
+    // Save it to the URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('path', url_encoded);
+    window.history.pushState({}, '', url.toString());
+  }, [trip]);
 
   //append a coordinate to the path
   const appendCoordinate = (lat: number, long: number) => {
@@ -151,8 +259,6 @@ const WalkinPathPage: React.FC = () => {
       old_paths[unfound_index] = changed_coordinate;
     }
 
-    updateLineString();
-
     setTrip({
       ...trip,
       paths: old_paths,
@@ -164,32 +270,9 @@ const WalkinPathPage: React.FC = () => {
     };
 
     return;
-
-    console.log('New Paths:', newPaths);
-
-    console.log('NEw Number of Paths', newPaths.length);
-
-    // Update the trip state with the new paths
-    setTrip((prevTrip) => ({
-      ...prevTrip,
-      paths: newPaths,
-    }));
-
-    tripRef.current = {
-      ...tripRef.current,
-      paths: newPaths,
-    };
   };
 
   const modifyStart = () => {
-    //print path points
-    console.log(' PATH', trip);
-    console.log('Path ' + trip.paths.length);
-    console.log('PAth Ref', tripRef.current);
-    for (let i = 0; i < trip.paths.length; i++) {
-      console.log('Path:', trip.paths[i]);
-    }
-
     //find all the feature of type point and print them
     const features = vectorSourceRef.current.getFeatures();
 
@@ -200,31 +283,7 @@ const WalkinPathPage: React.FC = () => {
 
       // @ts-ignore
       const coordinates = feature.getGeometry().getCoordinates();
-
-      console.log('Coordinates:', coordinates);
     });
-  };
-
-  const updateLineString = () => {
-    /*const features = vectorSourceRef.current.getFeatures();
-
-    if (features === null) return;
-
-    if (features.length < 2) {
-      vectorSourceRef.current.clear();
-      return;
-    }
-
-    const coordinates = features.map((feature) =>
-      // @ts-ignore
-      feature.getGeometry().getCoordinates()
-    );
-    const lineString = new LineString(coordinates);
-    const lineFeature = new Feature(lineString);
-    vectorSourceRef.current.clear();
-    vectorSourceRef.current.addFeatures(features);
-    vectorSourceRef.current.addFeature(lineFeature);
-    */
   };
 
   useEffect(() => {
@@ -243,6 +302,16 @@ const WalkinPathPage: React.FC = () => {
         }),
       });
 
+      const arcLayer = new VectorLayer({
+        source: arcSourceRef.current,
+        style: new Style({
+          stroke: new Stroke({
+            color: 'yellow',
+            width: 6,
+          }),
+        }),
+      });
+
       const map = new OLMap({
         target: mapRef.current,
         layers: [
@@ -250,6 +319,7 @@ const WalkinPathPage: React.FC = () => {
             source: new OSM(),
           }),
           vectorLayer,
+          arcLayer,
         ],
 
         view: new View({
@@ -319,7 +389,6 @@ const WalkinPathPage: React.FC = () => {
           );
 
           if (index === -1) {
-            console.log('Point Not Found');
             setModalIndex(null);
             return;
           }
@@ -335,8 +404,6 @@ const WalkinPathPage: React.FC = () => {
         vectorSourceRef.current.addFeature(feature);
 
         appendCoordinate(coordinates[1], coordinates[0]);
-
-        updateLineString();
       });
 
       map.on('dblclick', (event) => {
@@ -376,7 +443,6 @@ const WalkinPathPage: React.FC = () => {
         );
 
         if (index === -1) {
-          console.log('Point Not Found');
           setModalIndex(null);
           return;
         }
@@ -391,24 +457,19 @@ const WalkinPathPage: React.FC = () => {
       });
 
       modify.on('modifystart', (event) => {
-        console.log('Modify Start Event:', event);
         const number_map_features =
           vectorSourceRef.current.getFeatures().length;
-        console.log('Number of Features:', number_map_features);
+
         modifyStart();
       });
 
       modify.on('modifyend', (event) => {
-        console.log('Modify End Event:', event);
-
         //print information about the feature
         const feature_event = event.features.getArray();
 
         for (let i = 0; i < feature_event.length; i++) {
           const feature = feature_event[i];
           const type = feature.getGeometry()?.getType();
-
-          console.log('Type:', type);
 
           //if type line string, then add the
 
@@ -417,13 +478,11 @@ const WalkinPathPage: React.FC = () => {
 
           // @ts-ignore
           const coordinates = feature.getGeometry().getCoordinates();
-
-          console.log('Coordinates:', coordinates);
         }
 
         const number_map_features =
           vectorSourceRef.current.getFeatures().length;
-        console.log('Number of Features:', number_map_features);
+
         newCoordinatesFromEdit();
       });
 
@@ -435,7 +494,6 @@ const WalkinPathPage: React.FC = () => {
       });
 
       draw.on('drawend', (event) => {
-        console.log('Draw End Event:', event);
         newCoordinatesFromEdit();
       });
 
@@ -445,35 +503,16 @@ const WalkinPathPage: React.FC = () => {
     }
   }, [mapRef.current]);
 
-  // Watch number of paths and ptrint them
-  useEffect(() => {
-    console.log('Number of Paths:', trip.paths.length);
-  }, [trip]);
-
   useEffect(() => {
     // Clear existing features
     vectorSourceRef.current.clear();
+    arcSourceRef.current.clear();
     console.log('Features Cleared');
 
     // Add new features for each path
     const features = trip.paths.map((path) => {
       const point = new Point(fromLonLat([path.long, path.lat], 'EPSG:4326'));
       return new Feature(point);
-    });
-
-    console.log('Features Going to Be Added Because of Trip Change');
-
-    features.forEach((feature) => {
-      //print out coordinates
-      // @ts-ignore
-      const coordinates = feature.getGeometry().getCoordinates();
-
-      console.log('Coordinates:', coordinates);
-
-      // @ts-ignore
-      const type = feature.getGeometry().getType();
-
-      console.log('Type:', type);
     });
 
     vectorSourceRef.current.addFeatures(features);
@@ -495,9 +534,70 @@ const WalkinPathPage: React.FC = () => {
           [current.long, current.lat],
         ]);
 
+        //along side, draw the shortest path between the two points
+        //using turf and openlayers
+
+        //convert to 4326 for turf
+        const prev_4326 = toLonLat([previous.long, previous.lat]);
+        const current_4326 = toLonLat([current.long, current.lat]);
+
+        const circle_arc = turf.greatCircle(
+          turf.point(prev_4326),
+          turf.point(current_4326)
+          //[previous.long, previous.lat],
+          //[current.long, current.lat]
+        );
+
+        //convert to 3857
+        const circle_arc_3857 = circle_arc.geometry.coordinates.map((coord) =>
+          // its laready in 3857
+          //@ts-ignore
+          fromLonLat(coord)
+        );
+        //print length of arc
+
+        //convert to coordinate
+
+        const lineString_3857 = new LineString(circle_arc_3857);
+
+        const length_of_arc = turf.length(circle_arc, {
+          units: 'meters',
+        });
+
+        const eucledian_distance_line = Math.sqrt(
+          Math.pow(current.lat - previous.lat, 2) +
+            Math.pow(current.long - previous.long, 2)
+        );
+
         const lineFeature = new Feature(lineString);
 
         vectorSourceRef.current.addFeature(lineFeature);
+
+        console.log('Length of Arc:', length_of_arc);
+        console.log('Eucledian Distance:', eucledian_distance_line);
+
+        //if the difference isn't more than 20%, then don't draw the line
+        if ((eucledian_distance_line - length_of_arc) / length_of_arc < 0.2) {
+          return;
+        }
+
+        //style the arc line
+        const new_arc_feature = new Feature(lineString_3857);
+
+        //style the arc line lightyellow
+        new_arc_feature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: 'yellow',
+              width: 6,
+            }),
+          })
+        );
+
+        arcSourceRef.current.addFeature(new_arc_feature);
+
+        //add the line string to the vector source
+        //vectorSourceRef.current.addFeature(new_arc_feature);
       });
     }
 
@@ -548,8 +648,6 @@ const WalkinPathPage: React.FC = () => {
     // right now it is in meters, keep it that way
 
     var distance = 0;
-
-    console.log('Trip Stops', trip.paths.length);
 
     for (let i = 1; i < trip.paths.length; i++) {
       const previous = trip.paths[i - 1];
@@ -699,12 +797,13 @@ const WalkinPathPage: React.FC = () => {
         Other Distnace is{' '}
         {convertDistanceToPrettyString(calculateOpenLayerDistanceOfFeature())}
       </h1>
-      <h1>
+      <h1 className="text-2xl">
         {' '}
         Distance (Miles) :{' '}
         {(calculateOpenLayerDistanceOfFeature() / 1609).toFixed(3)}
       </h1>
       <button
+        className="bg-blue-500 text-white p-2"
         onClick={() => {
           setTrip({
             ...trip,
@@ -718,6 +817,28 @@ const WalkinPathPage: React.FC = () => {
         }}
       >
         Reset
+      </button>
+      {/* Zoom To Path */}
+      <button
+        className="bg-blue-500 text-white p-2"
+        onClick={() => {
+          if (mapInstanceRef.current) {
+            const coordinates = trip.paths.map((path) => [path.long, path.lat]);
+
+            const lineString = new LineString(coordinates);
+
+            const extent = lineString.getExtent();
+
+            // 30% buffer
+            const expandedExtent = OLBuffer(extent, 0.7);
+
+            mapInstanceRef.current.getView().fit(expandedExtent, {
+              padding: [100, 100, 100, 100],
+            });
+          }
+        }}
+      >
+        Zoom To Path
       </button>
     </div>
   );
