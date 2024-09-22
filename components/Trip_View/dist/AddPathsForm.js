@@ -20,7 +20,6 @@ require("@/form-modal.css");
 var AddPathsForm = function () {
     var id = react_1.useContext(TripContext_1["default"]).id;
     var handleCloseModal = function () {
-        isOpen = false;
         Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
             return __assign(__assign({}, state), { adding_paths: false });
         });

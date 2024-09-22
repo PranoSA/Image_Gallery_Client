@@ -64,6 +64,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     get_images_for_day,
     zoom_on_day_change,
     image_heat_map,
+    paths_open,
   } = useTripViewStore();
 
   const currentDay = useMemo<string>(() => {
@@ -203,6 +204,10 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         }
       });
 
+      if (!paths_open) {
+        return;
+      }
+
       for (const path of filteredPaths) {
         try {
           const kmlSource = new VectorSource({
@@ -268,7 +273,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     };
 
     fetchKMLFiles();
-  }, [selected_date, tripsState.data, pathState.data]);
+  }, [selected_date, tripsState.data, pathState.data, paths_open]);
 
   // What is this for??
   mapInstanceRef.current?.on('click', (event) => {

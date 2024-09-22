@@ -75,7 +75,7 @@ function MapComponent(_a) {
     var imageState = Trip_View_Image_Store_1.useQueryTripImages(id);
     //get information about the day, the image_location
     // for the purpose of filtering paths and stuff and mapopen
-    var _e = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _e.selected_date, selected_image_location = _e.selected_image_location, map_open = _e.map_open, get_images_for_day = _e.get_images_for_day, zoom_on_day_change = _e.zoom_on_day_change, image_heat_map = _e.image_heat_map;
+    var _e = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _e.selected_date, selected_image_location = _e.selected_image_location, map_open = _e.map_open, get_images_for_day = _e.get_images_for_day, zoom_on_day_change = _e.zoom_on_day_change, image_heat_map = _e.image_heat_map, paths_open = _e.paths_open;
     var currentDay = react_1.useMemo(function () {
         var _a;
         //selected_date is a number after the start date
@@ -193,6 +193,9 @@ function MapComponent(_a) {
                         }
                     }
                 });
+                if (!paths_open) {
+                    return [2 /*return*/];
+                }
                 _loop_1 = function (path) {
                     try {
                         var kmlSource = new source_1.Vector({
@@ -256,7 +259,7 @@ function MapComponent(_a) {
             });
         }); };
         fetchKMLFiles();
-    }, [selected_date, tripsState.data, pathState.data]);
+    }, [selected_date, tripsState.data, pathState.data, paths_open]);
     // What is this for??
     (_c = mapInstanceRef.current) === null || _c === void 0 ? void 0 : _c.on('click', function (event) {
         var _a;

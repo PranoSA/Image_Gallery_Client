@@ -47,11 +47,25 @@ export const Banner_Component: React.FC = () => {
 
   const currentDay = useMemo(() => {
     // get the selected_day and subtract from the start_date of the trip
-    const date = new Date(trip?.start_date || '1970-01-01');
+    //ignore time zone - everytjhin is in UTC
+    // and has no time zone information
+
+    const start_date = trip?.start_date || '1970-01-01';
+
+    const [year, month, day] = start_date.split('-').map(Number);
+
+    const date = new Date(Date.UTC(year, month - 1, day));
 
     date.setDate(date.getDate() + selected_date);
 
-    return date.toDateString();
+    //convert back to UTC date
+
+    console.log('date', date);
+    console.log('selected_date', selected_date);
+    console.log('start_date', start_date);
+
+    //return UTC string Day of Week, Month Day, Year
+    return date.toUTCString().split(' ').slice(0, 4).join(' ');
   }, [selected_date, trip]);
 
   //set the day summary when the trip is loaded
@@ -143,7 +157,7 @@ export const Banner_Component: React.FC = () => {
 
     const elapsed = end_date.getTime() - start_date.getTime();
 
-    return Math.ceil(elapsed / (1000 * 3600 * 24)) + 1;
+    return Math.ceil(elapsed / (1000 * 3600 * 24));
   };
 
   return (

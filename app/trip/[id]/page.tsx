@@ -201,39 +201,6 @@ function Page() {
   This is for fields like name, description, created_at
 
    */
-
-  const handleCloseModal = () => {
-    setPathModalOpen(false);
-  };
-
-  const submitModal = (formData: any) => {
-    const formDataObj = new FormData();
-    formDataObj.append('kml_file', formData.file);
-    formDataObj.append('description', formData.description);
-    formDataObj.append('name', formData.name);
-    formDataObj.append('color_r', formData.color_r);
-    formDataObj.append('color_g', formData.color_g);
-    formDataObj.append('color_b', formData.color_b);
-    formDataObj.append('style', formData.style);
-    formDataObj.append('thickness', formData.width);
-    formDataObj.append('start_date', formData.start_date);
-    formDataObj.append('end_date', formData.end_date);
-
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/paths`, {
-      method: 'POST',
-
-      body: formDataObj,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Success:', data);
-        handleCloseModal();
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  };
-
   const handleComparePhotosSelection = (image: Image) => {
     // Add Image to Selected Images
     // unless, it is already in the selected images

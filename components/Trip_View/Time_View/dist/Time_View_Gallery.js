@@ -80,7 +80,10 @@ require("@/globals.css");
 var react_1 = require("react");
 var Trip_View_Image_Store_1 = require("../Trip_View_Image_Store");
 var TripContext_1 = require("@/components/TripContext");
+var ImagePreview_1 = require("../ImagePreview");
+var hi_1 = require("react-icons/hi");
 var image_1 = require("next/image");
+var EditImageForm_1 = require("../EditImageForm");
 var fetchTrip = function (trip_id) { return __awaiter(void 0, void 0, void 0, function () {
     var res, data;
     return __generator(this, function (_a) {
@@ -99,7 +102,7 @@ var TimeViewGallery = function () {
     var id = react_1.useContext(TripContext_1["default"]).id;
     var _a = Trip_View_Image_Store_1.useQueryTrip(id), trip = _a.data, tripLoading = _a.isLoading, tripError = _a.isLoadingError;
     var _b = Trip_View_Image_Store_1.useQueryTripImages(id), images = _b.data, imagesLoading = _b.isLoading, imagesError = _b.isLoadingError;
-    var selected_date = Trip_View_Image_Store_1.useTripViewStore().selected_date;
+    var _c = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _c.selected_date, selected_image_location = _c.selected_image_location;
     // Create refs for each date
     var dateRefs = react_1.useRef({});
     var groupedOrderedImagesByDay = react_1.useMemo(function () {
@@ -152,12 +155,12 @@ var TimeViewGallery = function () {
             return;
         if (!trip)
             return;
+        //create utc date from date string
         var newDate = new Date(date);
         var startDate = new Date(trip.start_date);
         var selectedDate = (newDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-        console.log('Selected Date', selectedDate);
         Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
-            return __assign(__assign({}, state), { selected_date: Math.floor(selectedDate) + 1 });
+            return __assign(__assign({}, state), { selected_date: Math.floor(selectedDate) });
         });
     };
     var handleScroll = function (event) {
@@ -196,6 +199,7 @@ var TimeViewGallery = function () {
     // Now Render the described UI
     // Now Render the described UI
     return (React.createElement("div", null,
+        React.createElement(ImagePreview_1["default"], null),
         React.createElement("ul", { className: "flex space-x-4 overflow-x-auto bg-gray-200 p-2 rounded-t-lg border-b border-gray-300" }, groupedOrderedImagesByDay.map(function (group) { return (React.createElement("li", { key: group.date.toDateString(), className: "cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors " + (selectedDate.toDateString() === group.date.toDateString()
                 ? 'bg-gray-400 text-white'
                 : 'bg-white hover:bg-gray-100'), onClick: function () { return scrollToGroup(group.date.toDateString()); } }, group.date.toDateString())); })),
@@ -217,8 +221,9 @@ var getDateAtLocalTime = function (time_string) {
     return new Date(time_in_local);
 };
 var GroupImagesByTime = function (_a) {
-    // group images into SubRangeOfImages
     var images = _a.images, date = _a.date;
+    // group images into SubRangeOfImages
+    var selected_image_location = Trip_View_Image_Store_1.useTripViewStore().selected_image_location;
     var groupedSubRangeImages = function (images, date) {
         var current_hour = 0;
         console.log('DATE', date);
@@ -294,6 +299,7 @@ var GroupImagesByTime = function (_a) {
     //use store to set the selected image preview and editing image
     var store = Trip_View_Image_Store_1.tripViewStore;
     var setSelectedImagePreview = function (image) {
+        console.log('Setting selected image preview');
         store.setState(function (state) {
             return __assign(__assign({}, state), { selected_image_preview: image });
         });
@@ -308,6 +314,11 @@ var GroupImagesByTime = function (_a) {
     var setSelectedImageLocation = function (image) {
         store.setState(function (state) {
             return __assign(__assign({}, state), { selected_image_location: image });
+        });
+    };
+    var setPreviewImage = function (index) {
+        Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
+            return __assign(__assign({}, state), { viewed_image_index: index });
         });
     };
     //return gallery based on subranges
@@ -333,16 +344,24 @@ var GroupImagesByTime = function (_a) {
                     subrange.end_hour - 12
                         ? subrange.end_hour - 12 + "PM"
                         : subrange.end_hour + "AM"),
-                React.createElement("div", { className: "flex flex-wrap flex-row justify-around mt-4 items-center gap-y-4" }, subrange.images.map(function (image) {
+                React.createElement("div", { className: "flex flex-wrap flex-row justify-around mt-4 items-center gap-y-4" }, subrange.images.map(function (image, i) {
                     return (React.createElement("div", { key: image.id, className: "relative flex flex-col items-center w-1/6" },
                         React.createElement("div", { key: image.id, className: "relative w-full flex m-4 flex-col items-center p-4 bg-white rounded-lg shadow-lg border border-gray-300" },
                             React.createElement("div", { onClick: function () { return setSelectedImageLocation(image); }, className: "w-32 h-[128px] flex items-center justify-center bg-gray-100 p-5 border border-gray-700" },
-                                React.createElement(image_1["default"], { src: process.env.NEXT_PUBLIC_STATIC_IMAGE_URL + "/" + image.file_path, alt: "Image for " + image.created_at, width: 128, height: 128, className: "object-contain rounded-lg shadow-md" })),
+                                React.createElement(image_1["default"], { src: process.env.NEXT_PUBLIC_STATIC_IMAGE_URL + "/" + image.file_path, alt: "Image for " + image.created_at, width: 128, height: 128, className: "object-contain rounded-lg shadow-md", style: {
+                                        cursor: 'pointer',
+                                        margin: '10px',
+                                        border: selected_image_location &&
+                                            selected_image_location.id === image.id
+                                            ? '5px solid blue'
+                                            : 'none'
+                                    } })),
                             React.createElement("div", { className: "absolute top-1 right-1 flex " },
-                                React.createElement("button", { className: "bg-white rounded-full shadow-md", onClick: function () { return setSelectedImagePreview(image); } }, "\uD83D\uDC41\uFE0F"),
-                                React.createElement("button", { className: "bg-white rounded-full shadow-md", onClick: function () { return setEditingImage(image); } }, "\u270F\uFE0F")),
+                                React.createElement(hi_1.HiOutlinePencil, { onClick: function () { return setEditingImage(image); }, className: "cursor-pointer", size: 24, style: { marginRight: '10px' } }),
+                                React.createElement(hi_1.HiEye, { onClick: function () { return setPreviewImage(i); }, className: "cursor-pointer", size: 24 })),
                             React.createElement("div", { className: "mt-2 text-center text-sm font-medium text-gray-700" }, image.name))));
-                }))));
+                })),
+                React.createElement(EditImageForm_1["default"], null)));
         })));
 };
 exports["default"] = TimeViewGallery;

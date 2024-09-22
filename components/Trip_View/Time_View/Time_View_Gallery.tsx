@@ -39,8 +39,14 @@ import {
 import TripContext from '@/components/TripContext';
 import { useQuery } from '@tanstack/react-query';
 
+import ImagePreview from '../ImagePreview';
+
+import { HiOutlinePencil, HiEye } from 'react-icons/hi';
+
 import { Image } from '@/definitions/Trip_View';
 import NextImage from 'next/image';
+
+import EditImageForm from '../EditImageForm';
 
 const fetchTrip = async (trip_id: string) => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}`);
@@ -66,7 +72,7 @@ const TimeViewGallery: React.FC = () => {
     isLoadingError: imagesError,
   } = useQueryTripImages(id);
 
-  const { selected_date } = useTripViewStore();
+  const { selected_date, selected_image_location } = useTripViewStore();
 
   type ImagesByDay = {
     date: Date;
@@ -135,16 +141,18 @@ const TimeViewGallery: React.FC = () => {
   const setSelectedDate = (date: string | null) => {
     if (!date) return;
     if (!trip) return;
+
+    //create utc date from date string
+
     const newDate = new Date(date);
     const startDate = new Date(trip.start_date);
     const selectedDate =
       (newDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
 
-    console.log('Selected Date', selectedDate);
     tripViewStore.setState((state) => {
       return {
         ...state,
-        selected_date: Math.floor(selectedDate) + 1,
+        selected_date: Math.floor(selectedDate),
       };
     });
   };
@@ -194,6 +202,7 @@ const TimeViewGallery: React.FC = () => {
   // Now Render the described UI
   return (
     <div>
+      <ImagePreview />
       <ul className="flex space-x-4 overflow-x-auto bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
         {groupedOrderedImagesByDay.map((group) => (
           <li
@@ -261,6 +270,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   date,
 }) => {
   // group images into SubRangeOfImages
+  const { selected_image_location } = useTripViewStore();
 
   const groupedSubRangeImages = (
     images: Image[],
@@ -374,6 +384,8 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   const store = tripViewStore;
 
   const setSelectedImagePreview = (image: Image) => {
+    console.log('Setting selected image preview');
+
     store.setState((state) => {
       return {
         ...state,
@@ -398,6 +410,15 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       return {
         ...state,
         selected_image_location: image,
+      };
+    });
+  };
+
+  const setPreviewImage = (index: number) => {
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        viewed_image_index: index,
       };
     });
   };
@@ -428,7 +449,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 : `${subrange.end_hour}AM`}
             </div>
             <div className="flex flex-wrap flex-row justify-around mt-4 items-center gap-y-4">
-              {subrange.images.map((image) => {
+              {subrange.images.map((image, i) => {
                 return (
                   <div
                     key={image.id}
@@ -448,21 +469,29 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           width={128}
                           height={128}
                           className="object-contain rounded-lg shadow-md"
+                          style={{
+                            cursor: 'pointer',
+                            margin: '10px',
+                            border:
+                              selected_image_location &&
+                              selected_image_location.id === image.id
+                                ? '5px solid blue'
+                                : 'none',
+                          }}
                         />
                       </div>
                       <div className="absolute top-1 right-1 flex ">
-                        <button
-                          className="bg-white rounded-full shadow-md"
-                          onClick={() => setSelectedImagePreview(image)}
-                        >
-                          👁️
-                        </button>
-                        <button
-                          className="bg-white rounded-full shadow-md"
+                        <HiOutlinePencil
                           onClick={() => setEditingImage(image)}
-                        >
-                          ✏️
-                        </button>
+                          className="cursor-pointer"
+                          size={24}
+                          style={{ marginRight: '10px' }}
+                        />
+                        <HiEye
+                          onClick={() => setPreviewImage(i)}
+                          className="cursor-pointer"
+                          size={24}
+                        />
                       </div>
                       <div className="mt-2 text-center text-sm font-medium text-gray-700">
                         {image.name}
@@ -472,6 +501,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 );
               })}
             </div>
+            <EditImageForm />
           </div>
         );
       })}

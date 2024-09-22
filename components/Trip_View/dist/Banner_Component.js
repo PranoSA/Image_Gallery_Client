@@ -39,9 +39,18 @@ exports.Banner_Component = function () {
     var _d = react_1.useState(''), daySummaryFormInput = _d[0], setDaySummaryFormInput = _d[1];
     var currentDay = react_1.useMemo(function () {
         // get the selected_day and subtract from the start_date of the trip
-        var date = new Date((trip === null || trip === void 0 ? void 0 : trip.start_date) || '1970-01-01');
+        //ignore time zone - everytjhin is in UTC
+        // and has no time zone information
+        var start_date = (trip === null || trip === void 0 ? void 0 : trip.start_date) || '1970-01-01';
+        var _a = start_date.split('-').map(Number), year = _a[0], month = _a[1], day = _a[2];
+        var date = new Date(Date.UTC(year, month - 1, day));
         date.setDate(date.getDate() + selected_date);
-        return date.toDateString();
+        //convert back to UTC date
+        console.log('date', date);
+        console.log('selected_date', selected_date);
+        console.log('start_date', start_date);
+        //return UTC string Day of Week, Month Day, Year
+        return date.toUTCString().split(' ').slice(0, 4).join(' ');
     }, [selected_date, trip]);
     //set the day summary when the trip is loaded
     if (daySummary && !daySummaryLoading) {
@@ -109,7 +118,7 @@ exports.Banner_Component = function () {
         var start_date = new Date(trip === null || trip === void 0 ? void 0 : trip.start_date);
         var end_date = new Date(trip === null || trip === void 0 ? void 0 : trip.end_date);
         var elapsed = end_date.getTime() - start_date.getTime();
-        return Math.ceil(elapsed / (1000 * 3600 * 24)) + 1;
+        return Math.ceil(elapsed / (1000 * 3600 * 24));
     };
     return (React.createElement("div", { className: "flex justify-around items-center mb-4" },
         React.createElement(fa_1.FaChevronLeft, { onClick: function () {

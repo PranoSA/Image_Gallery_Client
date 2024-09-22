@@ -25,7 +25,7 @@ const PathLegend: React.FC<PathLegendProps> = () => {
   } = useQueryTrip(id);
 
   //get store state
-  const { selected_date } = useTripViewStore();
+  const { selected_date, paths_open } = useTripViewStore();
 
   //useMemo to get filtered paths based on the selected date
   const filteredPaths = useMemo(() => {
@@ -43,6 +43,8 @@ const PathLegend: React.FC<PathLegendProps> = () => {
     });
   }, [paths, selected_date, trip]);
 
+  ``;
+
   if (tripLoading) {
     return <div>Loading...</div>;
   }
@@ -57,6 +59,10 @@ const PathLegend: React.FC<PathLegendProps> = () => {
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (paths_open === false) {
+    return null;
   }
 
   if (filteredPaths.length === 0) {
