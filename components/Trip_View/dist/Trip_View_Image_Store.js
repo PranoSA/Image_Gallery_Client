@@ -1,3 +1,4 @@
+'use client';
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -93,7 +94,15 @@ var fetchTrip = function (trip_id) { return __awaiter(void 0, void 0, void 0, fu
     var response, data;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip_id)];
+            case 0:
+                if (!trip_id) {
+                    console.log('failed to fetch trip');
+                    return [2 /*return*/, []];
+                    //throw new Error('trip_id is not defined');
+                    // throw new Error('trip_id is not defined');
+                }
+                console.log('Used query trip');
+                return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip_id)];
             case 1:
                 response = _a.sent();
                 return [4 /*yield*/, response.json()];
@@ -107,7 +116,7 @@ var fetchDaySummary = function (trip_id, date) { return __awaiter(void 0, void 0
     var response;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip_id + "/day_summary/" + date)];
+            case 0: return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip_id + "/day_summa23123ries/" + date)];
             case 1:
                 response = _a.sent();
                 return [2 /*return*/, response.json()];
@@ -118,7 +127,7 @@ exports.updateDaySummaryMutation = function (trip_id, date, summary) { return __
     var response;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip_id + "/day_summary/" + date, {
+            case 0: return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip_id + "/day_summa123123123ries/" + date, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -144,19 +153,25 @@ exports.useUpdateDaySummary = function () {
 exports.useQueryDaySummary = function (trip_id, date) {
     return react_query_1.useQuery({
         queryKey: ['trip', trip_id, 'day_summary', date],
-        queryFn: function () { return fetchDaySummary(trip_id, date); }
+        queryFn: function () { return fetchDaySummary(trip_id, date); },
+        retry: false
     });
 };
 exports.useQueryTrip = function (trip_id) {
     return react_query_1.useQuery({
-        queryKey: ['trip', trip_id],
-        queryFn: function () { return fetchTrip(trip_id); }
+        queryKey: ['trip', trip_id || '0'],
+        queryFn: function () { return fetchTrip(trip_id || '0'); }
     });
 };
 exports.useQueryTripImages = function (trip_id) {
     return react_query_1.useQuery({
         queryKey: ['trip', trip_id, 'images'],
-        queryFn: function () { return fetchTripImages(trip_id); }
+        queryFn: function () {
+            if (!trip_id) {
+                throw new Error('trip_id is not defined');
+            }
+            return fetchTripImages(trip_id);
+        }
     });
 };
 exports.useQueryTripPaths = function (trip_id) {
@@ -166,7 +181,7 @@ exports.useQueryTripPaths = function (trip_id) {
     });
 };
 exports.tripViewStore = new store_1.Store({
-    selected_trip_id: '',
+    //selected_trip_id: '',
     editingDaySummary: false,
     selected_date: 0,
     selected_images: [],
@@ -176,6 +191,15 @@ exports.tripViewStore = new store_1.Store({
     scroll_position: 0,
     editingImage: null,
     viewed_image_index: null,
+    day_by_day_banners: true,
+    zoom_on_day_change: true,
+    image_heat_map: true,
+    paths_open: true,
+    comparing_photos: false,
+    adding_images: false,
+    adding_path: false,
+    done_comparing: false,
+    map_open: true,
     get_images_for_time: function (images) {
         //return images order by time
         return images.sort(function (a, b) {

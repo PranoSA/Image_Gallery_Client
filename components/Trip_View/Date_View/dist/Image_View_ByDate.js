@@ -48,16 +48,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.Image_View_ByDate = void 0;
 var hi_1 = require("react-icons/hi");
 var image_1 = require("next/image");
 var CoordinateForm_1 = require("@/components/CoordinateForm");
 var Trip_View_Image_Store_1 = require("@/components/Trip_View/Trip_View_Image_Store");
 var fa_1 = require("react-icons/fa");
 var react_1 = require("react");
-exports.Image_View_ByDate = function () {
-    var _a = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _a.selected_date, selected_images = _a.selected_images, selected_trip_id = _a.selected_trip_id, get_images_for_day = _a.get_images_for_day, viewed_image_index = _a.viewed_image_index, selected_image_location = _a.selected_image_location, selected_image_preview = _a.selected_image_preview, editingImage = _a.editingImage;
+var TripContext_1 = require("@/components/TripContext");
+var Image_View_ByDate = function () {
+    var _a = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _a.selected_date, get_images_for_day = _a.get_images_for_day, viewed_image_index = _a.viewed_image_index, selected_image_location = _a.selected_image_location, editingImage = _a.editingImage;
     // mutate
+    var selected_trip_id = react_1.useContext(TripContext_1["default"]).id;
     //get trip id from the store
     //get the trip info
     var _b = Trip_View_Image_Store_1.useQueryTrip(selected_trip_id), trip = _b.data, tripLoading = _b.isLoading, tripLoadingError = _b.error;
@@ -65,17 +66,27 @@ exports.Image_View_ByDate = function () {
     var _c = Trip_View_Image_Store_1.useQueryTripImages(selected_trip_id), images = _c.data, isLoading = _c.isLoading, error = _c.error;
     var _d = react_1.useState(null), editedImage = _d[0], setEditedImage = _d[1];
     //set up mutation for updating the image
+    if (error) {
+        return React.createElement("div", null,
+            "Error: ",
+            error.message);
+    }
     if (tripLoading) {
         return React.createElement("div", null, "Loading...");
+    }
+    //if selected_id is null, return loading
+    if (!selected_trip_id) {
+        return React.createElement("div", null, "Loading...");
+    }
+    if (tripLoadingError) {
+        return React.createElement("div", null, "Error Loading Trip");
     }
     var imagesForDay = get_images_for_day(selected_date, (trip === null || trip === void 0 ? void 0 : trip.start_date) || '1970-01-01', images || []);
     if (isLoading) {
         return React.createElement("div", null, "Loading...");
     }
     if (error) {
-        return React.createElement("div", null,
-            "Error: ",
-            error.message);
+        return React.createElement("div", null, "Error Loading Images ");
     }
     if (!images) {
         return React.createElement("div", null, "No images");
@@ -207,3 +218,4 @@ exports.Image_View_ByDate = function () {
                     React.createElement("button", { type: "submit", className: "bg-blue-500 text-white px-4 py-2 rounded-lg", onClick: submitEditedImage }, "Save"),
                     React.createElement("button", { type: "submit", className: "bg-blue-500 text-white px-4 py-2 rounded-lg", onClick: function () { return cancelEditImage(); } }, "Cancel")))))));
 };
+exports["default"] = Image_View_ByDate;

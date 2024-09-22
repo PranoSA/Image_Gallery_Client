@@ -15,21 +15,22 @@ import {
   UpdateImage,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 
-export const Image_View_ByDate: React.FC = () => {
+import TripContext from '@/components/TripContext';
+
+const Image_View_ByDate: React.FC = () => {
   const {
     selected_date,
-    selected_images,
-    selected_trip_id,
+
     get_images_for_day,
     viewed_image_index,
     selected_image_location,
-    selected_image_preview,
     editingImage,
   } = useTripViewStore();
 
   // mutate
+  const selected_trip_id = useContext(TripContext).id;
 
   //get trip id from the store
 
@@ -50,9 +51,20 @@ export const Image_View_ByDate: React.FC = () => {
   const [editedImage, setEditedImage] = useState<Image | null>(null);
 
   //set up mutation for updating the image
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
 
   if (tripLoading) {
     return <div>Loading...</div>;
+  }
+
+  //if selected_id is null, return loading
+  if (!selected_trip_id) {
+    return <div>Loading...</div>;
+  }
+  if (tripLoadingError) {
+    return <div>Error Loading Trip</div>;
   }
 
   const imagesForDay = get_images_for_day(
@@ -65,7 +77,7 @@ export const Image_View_ByDate: React.FC = () => {
     return <div>Loading...</div>;
   }
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return <div>Error Loading Images </div>;
   }
   if (!images) {
     return <div>No images</div>;
@@ -355,3 +367,5 @@ export const Image_View_ByDate: React.FC = () => {
     </div>
   );
 };
+
+export default Image_View_ByDate;

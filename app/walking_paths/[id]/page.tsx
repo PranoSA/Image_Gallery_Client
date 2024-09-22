@@ -507,7 +507,6 @@ const WalkinPathPage: React.FC = () => {
     // Clear existing features
     vectorSourceRef.current.clear();
     arcSourceRef.current.clear();
-    console.log('Features Cleared');
 
     // Add new features for each path
     const features = trip.paths.map((path) => {

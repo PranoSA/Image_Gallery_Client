@@ -13,12 +13,16 @@ import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { HiChevronLeft, HiOutlinePencil } from 'react-icons/hi';
 import { HiChevronRight } from 'react-icons/hi';
 
-import { useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
+import TripContext from '@/components/TripContext';
 
 export const Banner_Component: React.FC = () => {
   //get the information about the trip and the current_date
-  const { selected_trip_id, selected_date, editingDaySummary } =
+  const { selected_date, editingDaySummary, date_or_time_view } =
     useTripViewStore();
+
+  const selected_trip_id = useContext(TripContext).id;
+
   const viewStore = useTripViewStore();
   //get the trip information, loading state, and error state from useQueryTrip
   const { data: trip, isLoading, error } = useQueryTrip(selected_trip_id);
@@ -40,6 +44,15 @@ export const Banner_Component: React.FC = () => {
   );
 
   const [daySummaryFormInput, setDaySummaryFormInput] = useState('');
+
+  const currentDay = useMemo(() => {
+    // get the selected_day and subtract from the start_date of the trip
+    const date = new Date(trip?.start_date || '1970-01-01');
+
+    date.setDate(date.getDate() + selected_date);
+
+    return date.toDateString();
+  }, [selected_date, trip]);
 
   //set the day summary when the trip is loaded
   if (daySummary && !daySummaryLoading) {
@@ -119,26 +132,39 @@ export const Banner_Component: React.FC = () => {
     //update the daySummaryFormInput
     setDaySummaryFormInput(daySummaryFormInput);
   }
+
+  const total_days = () => {
+    if (!trip) {
+      return 0;
+    }
+
+    const start_date = new Date(trip?.start_date);
+    const end_date = new Date(trip?.end_date);
+
+    const elapsed = end_date.getTime() - start_date.getTime();
+
+    return Math.ceil(elapsed / (1000 * 3600 * 24)) + 1;
+  };
+
   return (
     <div className="flex justify-around items-center mb-4">
       <FaChevronLeft
-        onClick={() => handleDayChange('prev')}
-        className="cursor-pointer"
+        onClick={() => {
+          if (selected_date !== 0) {
+            handleDayChange('prev');
+          }
+        }}
+        className={`cursor-pointer ${
+          selected_date === 0 ? 'cursor-not-allowed opacity-50' : ''
+        }`}
       />
 
       <div className="flex flex-col items-center justify-center h-full">
         <div className="w-full flex flex-col items-center">
           <span className="w-full text-center">
-            Day # {selected_date + 1} /{' '}
-            {calculateDaysElapsed(
-              trip?.start_date || selected_date,
-              trip?.end_date || selected_date
-            )}{' '}
-            :
+            Day # {selected_date + 1} / {total_days()}
           </span>
-          <span className="w-full text-center">
-            {selectedDateToDayOfYear()}
-          </span>
+          <span className="w-full text-center">{currentDay}</span>
         </div>
         {/* Display the Day Summary, and then allow editing of it */}
         <div className="flex flex-col items-center mt-4">
@@ -171,8 +197,16 @@ export const Banner_Component: React.FC = () => {
         </div>
       </div>
       <FaChevronRight
-        onClick={() => handleDayChange('next')}
-        className="cursor-pointer"
+        onClick={() => {
+          if (selected_date < total_days() - 1) {
+            handleDayChange('next');
+          }
+        }}
+        className={`cursor-pointer ${
+          selected_date >= total_days() - 1
+            ? 'cursor-not-allowed opacity-50'
+            : ''
+        }`}
       />
     </div>
   );

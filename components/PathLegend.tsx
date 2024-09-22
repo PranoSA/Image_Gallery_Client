@@ -1,15 +1,73 @@
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useMemo } from 'react';
 
 interface PathLegendProps {
   paths: Path[];
 }
 
-const PathLegend: React.FC<PathLegendProps> = ({ paths }) => {
+//central store for all the paths
+import {
+  useQueryTripPaths,
+  useTripViewStore,
+  useQueryTrip,
+} from './Trip_View/Trip_View_Image_Store';
+
+import TripContext from './TripContext';
+
+const PathLegend: React.FC<PathLegendProps> = () => {
+  const { id } = useContext(TripContext);
+
+  const { data: paths, isLoading, isError } = useQueryTripPaths(id);
+
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    isError: tripError,
+  } = useQueryTrip(id);
+
+  //get store state
+  const { selected_date } = useTripViewStore();
+
+  //useMemo to get filtered paths based on the selected date
+  const filteredPaths = useMemo(() => {
+    if (!trip) return [];
+
+    if (!paths) return [];
+    const current_date = new Date(trip.start_date);
+    //add selected_date to the current date, in number of days
+    current_date.setDate(current_date.getDate() + selected_date);
+
+    return paths.filter((path) => {
+      const start = new Date(path.start_date).getTime();
+      const end = new Date(path.end_date).getTime();
+      return start <= current_date.getTime() && end >= current_date.getTime();
+    });
+  }, [paths, selected_date, trip]);
+
+  if (tripLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (tripError) {
+    return <div>Error loading trip</div>;
+  }
+
+  if (isError) {
+    return <div>Error loading paths</div>;
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (filteredPaths.length === 0) {
+    return null;
+  }
+
   return (
     <div className="absolute top-4 right-4 p-4 bg-white rounded shadow-lg z-50">
       <h2 className="text-xl font-bold mb-4">Path Legend</h2>
       <ul>
-        {paths.map((path) => (
+        {filteredPaths.map((path) => (
           <li key={path.id} className="mb-2 flex items-center">
             <PathPreview path={path} />
             <span className="ml-2">{path.name}</span>

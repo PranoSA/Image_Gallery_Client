@@ -1,8 +1,11 @@
+'use client';
 import { useStore } from '@tanstack/react-store';
 import { Store } from '@tanstack/store';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { MdImagesearchRoller } from 'react-icons/md';
 import { updateDaySummary } from '../../../server/src/routes/summaries';
+
+import { Image, Path, Trip } from '@/definitions/Trip_View';
 
 const fetchTripImages = async (trip_id: string) => {
   const response = await fetch(
@@ -41,6 +44,14 @@ const fetchTripPaths = async (trip_id: string) => {
 };
 
 const fetchTrip = async (trip_id: string) => {
+  if (!trip_id) {
+    console.log('failed to fetch trip');
+    return [];
+    //throw new Error('trip_id is not defined');
+    // throw new Error('trip_id is not defined');
+  }
+  console.log('Used query trip');
+
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}`
   );
@@ -50,7 +61,7 @@ const fetchTrip = async (trip_id: string) => {
 
 const fetchDaySummary = async (trip_id: string, date: string) => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summary/${date}`
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summa23123ries/${date}`
   );
   return response.json();
 };
@@ -61,7 +72,7 @@ export const updateDaySummaryMutation = async (
   summary: string
 ) => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summary/${date}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summa123123123ries/${date}`,
     {
       method: 'POST',
       headers: {
@@ -86,20 +97,27 @@ export const useQueryDaySummary = (trip_id: string, date: string) => {
   return useQuery({
     queryKey: ['trip', trip_id, 'day_summary', date],
     queryFn: () => fetchDaySummary(trip_id, date),
+    retry: false,
   });
 };
 
 export const useQueryTrip = (trip_id: string) => {
-  return useQuery({
-    queryKey: ['trip', trip_id],
-    queryFn: () => fetchTrip(trip_id),
+  return useQuery<Trip>({
+    queryKey: ['trip', trip_id || '0'],
+    queryFn: () => fetchTrip(trip_id || '0'),
   });
 };
 
 export const useQueryTripImages = (trip_id: string) => {
   return useQuery<Image[]>({
     queryKey: ['trip', trip_id, 'images'],
-    queryFn: () => fetchTripImages(trip_id),
+    queryFn: () => {
+      if (!trip_id) {
+        throw new Error('trip_id is not defined');
+      }
+
+      return fetchTripImages(trip_id);
+    },
   });
 };
 
@@ -116,7 +134,7 @@ type StoreState = {
   // trip_paths: Path[];
   //start_date: string;
   //end_date: string;
-  selected_trip_id: string;
+  //selected_trip_id: string;
 
   selected_images: Image[]; // This is for modification and deletion
 
@@ -129,11 +147,34 @@ type StoreState = {
   // now lets differentiate between Time View and Singular Date View
   date_or_time_view: 'date' | 'time';
 
+  paths_open: boolean;
+
+  zoom_on_day_change: boolean;
+
+  image_heat_map: boolean;
+
+  day_by_day_banners: boolean;
+
+  comparing_photos: boolean;
+
+  //after done comparing image - we need to go to the deletion screen
+  done_comparing: boolean;
+
   // for the date view
   selected_date: number;
 
+  //whether map is open or not
+  map_open: boolean;
+
   //for the time view -> Store scroll position
   scroll_position: number;
+
+  //to show the form modal
+  adding_images: boolean;
+
+  //adding paths
+  adding_path: boolean;
+
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
 
@@ -158,7 +199,7 @@ type StoreState = {
 };
 
 export const tripViewStore = new Store<StoreState>({
-  selected_trip_id: '',
+  //selected_trip_id: '',
   editingDaySummary: false,
   selected_date: 0, //'1970-01-01',
   selected_images: [],
@@ -168,6 +209,21 @@ export const tripViewStore = new Store<StoreState>({
   scroll_position: 0,
   editingImage: null,
   viewed_image_index: null,
+  day_by_day_banners: true,
+  zoom_on_day_change: true,
+  image_heat_map: true,
+  paths_open: true,
+  comparing_photos: false,
+
+  adding_images: false,
+
+  adding_path: false,
+  done_comparing: false,
+
+  
+
+
+  map_open: true,
   get_images_for_time: (images: Image[]) => {
     //return images order by time
     return images.sort((a, b) => {

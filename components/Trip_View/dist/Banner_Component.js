@@ -17,9 +17,11 @@ var Trip_View_Image_Store_1 = require("@/components/Trip_View/Trip_View_Image_St
 var fa_1 = require("react-icons/fa");
 var hi_1 = require("react-icons/hi");
 var react_1 = require("react");
+var TripContext_1 = require("@/components/TripContext");
 exports.Banner_Component = function () {
     //get the information about the trip and the current_date
-    var _a = Trip_View_Image_Store_1.useTripViewStore(), selected_trip_id = _a.selected_trip_id, selected_date = _a.selected_date, editingDaySummary = _a.editingDaySummary;
+    var _a = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _a.selected_date, editingDaySummary = _a.editingDaySummary, date_or_time_view = _a.date_or_time_view;
+    var selected_trip_id = react_1.useContext(TripContext_1["default"]).id;
     var viewStore = Trip_View_Image_Store_1.useTripViewStore();
     //get the trip information, loading state, and error state from useQueryTrip
     var _b = Trip_View_Image_Store_1.useQueryTrip(selected_trip_id), trip = _b.data, isLoading = _b.isLoading, error = _b.error;
@@ -35,6 +37,12 @@ exports.Banner_Component = function () {
     };
     var _c = Trip_View_Image_Store_1.useQueryDaySummary(selected_trip_id, selectedDateToDayOfYear()), daySummary = _c.data, daySummaryLoading = _c.isLoading;
     var _d = react_1.useState(''), daySummaryFormInput = _d[0], setDaySummaryFormInput = _d[1];
+    var currentDay = react_1.useMemo(function () {
+        // get the selected_day and subtract from the start_date of the trip
+        var date = new Date((trip === null || trip === void 0 ? void 0 : trip.start_date) || '1970-01-01');
+        date.setDate(date.getDate() + selected_date);
+        return date.toDateString();
+    }, [selected_date, trip]);
     //set the day summary when the trip is loaded
     if (daySummary && !daySummaryLoading) {
         setDaySummaryFormInput(daySummary);
@@ -94,19 +102,29 @@ exports.Banner_Component = function () {
         //update the daySummaryFormInput
         setDaySummaryFormInput(daySummaryFormInput);
     }
+    var total_days = function () {
+        if (!trip) {
+            return 0;
+        }
+        var start_date = new Date(trip === null || trip === void 0 ? void 0 : trip.start_date);
+        var end_date = new Date(trip === null || trip === void 0 ? void 0 : trip.end_date);
+        var elapsed = end_date.getTime() - start_date.getTime();
+        return Math.ceil(elapsed / (1000 * 3600 * 24)) + 1;
+    };
     return (React.createElement("div", { className: "flex justify-around items-center mb-4" },
-        React.createElement(fa_1.FaChevronLeft, { onClick: function () { return handleDayChange('prev'); }, className: "cursor-pointer" }),
+        React.createElement(fa_1.FaChevronLeft, { onClick: function () {
+                if (selected_date !== 0) {
+                    handleDayChange('prev');
+                }
+            }, className: "cursor-pointer " + (selected_date === 0 ? 'cursor-not-allowed opacity-50' : '') }),
         React.createElement("div", { className: "flex flex-col items-center justify-center h-full" },
             React.createElement("div", { className: "w-full flex flex-col items-center" },
                 React.createElement("span", { className: "w-full text-center" },
                     "Day # ",
                     selected_date + 1,
-                    " /",
-                    ' ',
-                    calculateDaysElapsed((trip === null || trip === void 0 ? void 0 : trip.start_date) || selected_date, (trip === null || trip === void 0 ? void 0 : trip.end_date) || selected_date),
-                    ' ',
-                    ":"),
-                React.createElement("span", { className: "w-full text-center" }, selectedDateToDayOfYear())),
+                    " / ",
+                    total_days()),
+                React.createElement("span", { className: "w-full text-center" }, currentDay)),
             React.createElement("div", { className: "flex flex-col items-center mt-4" },
                 React.createElement("div", { className: "w-full flex justify-center items-center" },
                     React.createElement(hi_1.HiOutlinePencil, { onClick: function () { return setEditingDaySummary(true); }, className: "cursor-pointer" })),
@@ -114,5 +132,11 @@ exports.Banner_Component = function () {
                     React.createElement("textarea", { value: daySummaryFormInput || '', onChange: function (e) { return setDaySummaryFormInput(e.target.value); }, className: "w-full h-40 p-4 max-w-2xl" }),
                     React.createElement("button", { onClick: submitDayDescription, className: "mt-2" }, "Save"),
                     React.createElement("button", { onClick: function () { return setEditingDaySummary(false); }, disabled: !editingDaySummary }, "Cancel"))) : (React.createElement("div", { className: "w-full text-center" }, daySummary)))),
-        React.createElement(fa_1.FaChevronRight, { onClick: function () { return handleDayChange('next'); }, className: "cursor-pointer" })));
+        React.createElement(fa_1.FaChevronRight, { onClick: function () {
+                if (selected_date < total_days() - 1) {
+                    handleDayChange('next');
+                }
+            }, className: "cursor-pointer " + (selected_date >= total_days() - 1
+                ? 'cursor-not-allowed opacity-50'
+                : '') })));
 };

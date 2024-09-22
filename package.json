@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,14 +13,17 @@
     "@tanstack/react-store": "^0.5.5",
     "@turf/turf": "^7.1.0",
     "@types/react-color": "^3.0.12",
+    "@types/react-resizable": "^3.0.8",
     "axios": "^1.7.4",
     "lz-string": "^1.5.0",
     "next": "14.2.5",
     "ol": "^10.0.0",
+    "re-resizable": "^6.10.0",
     "react": "^18",
     "react-color": "^2.19.3",
     "react-dom": "^18",
     "react-icons": "^5.3.0",
+    "react-resizable": "^3.0.5",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
