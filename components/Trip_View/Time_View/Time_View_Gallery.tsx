@@ -131,11 +131,36 @@ const TimeViewGallery: React.FC = () => {
   }, [images, trip]);
 
   const selectedDate = useMemo(() => {
-    if (!trip) return new Date();
-    // add selected_date days to the start_date
-    const startDate = new Date(trip.start_date);
-    startDate.setDate(startDate.getDate() + selected_date);
-    return startDate;
+    if (!trip) return new Date().toISOString();
+
+    // Parse the start date as UTC
+    const startDate = new Date(
+      Date.UTC(
+        new Date(trip.start_date).getUTCFullYear(),
+        new Date(trip.start_date).getUTCMonth(),
+        new Date(trip.start_date).getUTCDate()
+      )
+    );
+
+    // Add selected_date days to the start date
+    startDate.setUTCDate(startDate.getUTCDate() + selected_date);
+
+    // Return the date as a UTC timestamp string
+
+    //Thu, 19 Oct 2023 00:00:00 GMT
+    //Split after the 2023, 2022, 2024,  etc. and remove comma
+
+    //Thu Oct 19 2023
+    //this is the formatt I want it in
+
+    //get the Day of the week, Month, Day, Year
+
+    const day = startDate.toUTCString().split(' ')[0].replace(',', '');
+    const month = startDate.toUTCString().split(' ')[1];
+    const date = startDate.toUTCString().split(' ')[2];
+    const year = startDate.toUTCString().split(' ')[3];
+
+    return `${day} ${date} ${month} ${year}`;
   }, [trip, selected_date]);
 
   const setSelectedDate = (date: string | null) => {
@@ -208,7 +233,7 @@ const TimeViewGallery: React.FC = () => {
           <li
             key={group.date.toDateString()}
             className={`cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors ${
-              selectedDate.toDateString() === group.date.toDateString()
+              selectedDate === group.date.toDateString()
                 ? 'bg-gray-400 text-white'
                 : 'bg-white hover:bg-gray-100'
             }`}

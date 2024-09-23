@@ -144,11 +144,22 @@ var TimeViewGallery = function () {
     }, [images, trip]);
     var selectedDate = react_1.useMemo(function () {
         if (!trip)
-            return new Date();
-        // add selected_date days to the start_date
-        var startDate = new Date(trip.start_date);
-        startDate.setDate(startDate.getDate() + selected_date);
-        return startDate;
+            return new Date().toISOString();
+        // Parse the start date as UTC
+        var startDate = new Date(Date.UTC(new Date(trip.start_date).getUTCFullYear(), new Date(trip.start_date).getUTCMonth(), new Date(trip.start_date).getUTCDate()));
+        // Add selected_date days to the start date
+        startDate.setUTCDate(startDate.getUTCDate() + selected_date);
+        // Return the date as a UTC timestamp string
+        //Thu, 19 Oct 2023 00:00:00 GMT
+        //Split after the 2023, 2022, 2024,  etc. and remove comma
+        //Thu Oct 19 2023
+        //this is the formatt I want it in
+        //get the Day of the week, Month, Day, Year
+        var day = startDate.toUTCString().split(' ')[0].replace(',', '');
+        var month = startDate.toUTCString().split(' ')[1];
+        var date = startDate.toUTCString().split(' ')[2];
+        var year = startDate.toUTCString().split(' ')[3];
+        return day + " " + date + " " + month + " " + year;
     }, [trip, selected_date]);
     var setSelectedDate = function (date) {
         if (!date)
@@ -200,7 +211,7 @@ var TimeViewGallery = function () {
     // Now Render the described UI
     return (React.createElement("div", null,
         React.createElement(ImagePreview_1["default"], null),
-        React.createElement("ul", { className: "flex space-x-4 overflow-x-auto bg-gray-200 p-2 rounded-t-lg border-b border-gray-300" }, groupedOrderedImagesByDay.map(function (group) { return (React.createElement("li", { key: group.date.toDateString(), className: "cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors " + (selectedDate.toDateString() === group.date.toDateString()
+        React.createElement("ul", { className: "flex space-x-4 overflow-x-auto bg-gray-200 p-2 rounded-t-lg border-b border-gray-300" }, groupedOrderedImagesByDay.map(function (group) { return (React.createElement("li", { key: group.date.toDateString(), className: "cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors " + (selectedDate === group.date.toDateString()
                 ? 'bg-gray-400 text-white'
                 : 'bg-white hover:bg-gray-100'), onClick: function () { return scrollToGroup(group.date.toDateString()); } }, group.date.toDateString())); })),
         React.createElement("div", { className: "scrollable-container overflow-y-auto h-96 p-4 bg-white rounded-b-lg shadow-lg border border-gray-300", onScroll: handleScroll }, groupedOrderedImagesByDay.map(function (group) {
