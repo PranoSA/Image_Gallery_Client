@@ -280,6 +280,14 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
     const list_of_subranges: SubRangeOfImages[] = [];
 
+    //find hour of id=199
+    const image_199 = images.filter((image) => parseInt(image.id) === 199);
+    if (image_199.length > 0) {
+      console.log(
+        'subrange id =199 hour is',
+        timeFromString(image_199[0].created_at).getHours()
+      );
+    }
     while (current_hour < 24) {
       // incriment through hours until adding the next hour would exceed 6 images
       const current_subrange: SubRangeOfImages = {
@@ -297,7 +305,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       current_hour += 1;
 
       let images_for_next_hour = images.filter((image) => {
-        timeFromString(image.created_at).getHours() === current_hour;
+        return timeFromString(image.created_at).getHours() === current_hour;
       });
 
       let number_of_images = images_for_hour.length;
@@ -308,10 +316,29 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
         current_subrange.images =
           current_subrange.images.concat(images_for_next_hour);
 
+        //print if images_for_next_hour contains id=199
+        if (
+          images_for_next_hour.filter((image) => parseInt(image.id) === 199)
+            .length > 0
+        ) {
+          console.log('subrange images for next hour', images_for_next_hour);
+        }
+
         number_of_images += images_for_next_hour.length;
         images_for_next_hour = images.filter((image) => {
           const passes_filter =
             timeFromString(image.created_at).getHours() === current_hour;
+
+          //print if images_for_next_hour contains id=199
+          if (
+            images_for_next_hour.filter((image) => parseInt(image.id) === 199)
+              .length > 0
+          ) {
+            console.log(
+              'subrange images for next hou 2r',
+              images_for_next_hour
+            );
+          }
 
           return passes_filter;
         });
@@ -351,6 +378,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       list_of_subranges.push(current_subrange);
       ///return list_of_subranges;
     }
+    console.log('list of subranges input', images);
     console.log('list of subranges', list_of_subranges);
     return list_of_subranges;
   };

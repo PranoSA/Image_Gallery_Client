@@ -140,7 +140,12 @@ var GroupImagesByTime = function (_a) {
         //let start_hour = 0;
         var start_hour = current_hour;
         var list_of_subranges = [];
-        while (current_hour < 24) {
+        //find hour of id=199
+        var image_199 = images.filter(function (image) { return parseInt(image.id) === 199; });
+        if (image_199.length > 0) {
+            console.log('subrange id =199 hour is', Time_Functions_1.timeFromString(image_199[0].created_at).getHours());
+        }
+        var _loop_1 = function () {
             // incriment through hours until adding the next hour would exceed 6 images
             var current_subrange = {
                 start_hour: current_hour,
@@ -154,7 +159,7 @@ var GroupImagesByTime = function (_a) {
             current_subrange.images = current_subrange.images.concat(images_for_hour);
             current_hour += 1;
             var images_for_next_hour = images.filter(function (image) {
-                Time_Functions_1.timeFromString(image.created_at).getHours() === current_hour;
+                return Time_Functions_1.timeFromString(image.created_at).getHours() === current_hour;
             });
             var number_of_images = images_for_hour.length;
             while (number_of_images + images_for_next_hour.length <= 6) {
@@ -162,9 +167,19 @@ var GroupImagesByTime = function (_a) {
                 //append list of images to current_subrange
                 current_subrange.images =
                     current_subrange.images.concat(images_for_next_hour);
+                //print if images_for_next_hour contains id=199
+                if (images_for_next_hour.filter(function (image) { return parseInt(image.id) === 199; })
+                    .length > 0) {
+                    console.log('subrange images for next hour', images_for_next_hour);
+                }
                 number_of_images += images_for_next_hour.length;
                 images_for_next_hour = images.filter(function (image) {
                     var passes_filter = Time_Functions_1.timeFromString(image.created_at).getHours() === current_hour;
+                    //print if images_for_next_hour contains id=199
+                    if (images_for_next_hour.filter(function (image) { return parseInt(image.id) === 199; })
+                        .length > 0) {
+                        console.log('subrange images for next hou 2r', images_for_next_hour);
+                    }
                     return passes_filter;
                 });
                 //maximum duration of 3 hours
@@ -178,7 +193,7 @@ var GroupImagesByTime = function (_a) {
             }
             //if the number of images is 0, then don't add it and go to next iteration
             if (current_subrange.images.length === 0) {
-                continue;
+                return "continue";
             }
             //set end hour as the max of current_hour and the hour of the last image i nth esubrange
             var max_hour = current_subrange.images.length > 0
@@ -189,8 +204,11 @@ var GroupImagesByTime = function (_a) {
                 : current_hour;
             current_subrange.end_hour = max_hour;
             list_of_subranges.push(current_subrange);
-            ///return list_of_subranges;
+        };
+        while (current_hour < 24) {
+            _loop_1();
         }
+        console.log('list of subranges input', images);
         console.log('list of subranges', list_of_subranges);
         return list_of_subranges;
     };
