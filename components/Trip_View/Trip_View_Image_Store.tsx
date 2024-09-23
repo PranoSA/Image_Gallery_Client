@@ -1,11 +1,15 @@
 'use client';
 import { useStore } from '@tanstack/react-store';
 import { Store } from '@tanstack/store';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { MdImagesearchRoller } from 'react-icons/md';
 import { updateDaySummary } from '../../../server/src/routes/summaries';
 
+import { dateFromString, timeFromString } from './Time_Functions';
+
 import { Image, Path, Trip } from '@/definitions/Trip_View';
+
+import axios from 'axios';
 
 const fetchTripImages = async (trip_id: string) => {
   const response = await fetch(
@@ -14,12 +18,29 @@ const fetchTripImages = async (trip_id: string) => {
   return response.json();
 };
 
+function timestampReviver(key: any, value: any) {
+  // Check if the value is a timestamp (e.g., a string that can be parsed as a date)
+  if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+    // Convert the timestamp to a string
+    return value;
+  }
+  return value;
+}
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 //mutation to update image metadata
 const updateImageMutation = async (image: Image, trip: Trip) => {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip.id}/images/${image.id}`,
     {
-      method: 'POST',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -32,7 +53,117 @@ const updateImageMutation = async (image: Image, trip: Trip) => {
 // useQuery hook for updating image metadata with mutation
 export const UpdateImage = () => {
   return useMutation({
-    mutationFn: ({ image, trip }: any) => updateImageMutation(image, trip),
+    mutationFn: ({ image, trip }: { image: Image; trip: Trip }) =>
+      updateImageMutation(image, trip),
+    onSuccess: () => {
+      //queryClient.invalidateQueries({ queryKey: ['images'] }); // invalidate the query cache
+      //invalidate - then set the images to the new data
+      //queryKey: ['trip', trip_id, 'images'],
+      //queryClient.invalidateQueries({ queryKey: ['images'] });
+    },
+    onMutate: async (newData) => {
+      //the query key is queryKey: ['trip', trip_id, 'images'],
+      // queryKey: ['trip', trip_id, 'images'],
+      await queryClient.cancelQueries({
+        queryKey: ['trip', newData.trip.id.toString(), 'images'],
+      });
+
+      //get all images from the 'images' query
+      //const previousData = queryClient.getQueryData<Image[]>(['images']);
+
+      //the query key is queryKey: ['trip', trip_id, 'images'],
+      const previousData = queryClient.getQueryData<Image[]>([
+        'trip',
+        newData.trip.id.toString(),
+        'images',
+      ]);
+
+      if (!previousData) {
+        console.error('No previous data');
+
+        console.log("Image's trip id: ", newData.trip.id);
+        return;
+      }
+
+      //find the image to update
+      const imageToUpdate = previousData.find(
+        (image) => image.id === newData.image.id
+      );
+
+      //set the image to the new data
+
+      const new_data = previousData.map((image) => {
+        if (image.id === newData.image.id) {
+          return newData.image;
+        }
+        return image;
+      });
+
+      queryClient.setQueryData(
+        ['trip', newData.trip.id.toString(), 'images'],
+        new_data
+      );
+
+      console.log('New Image Data: ', newData.image);
+
+      //old image
+      console.log('Old Image Data: ', imageToUpdate);
+
+      //what is the return variable for exactly?
+      return { imageToUpdate, previousData };
+    },
+    onError: (error, variables, context) => {
+      //if there is an error, revert the changes
+
+      if (context?.previousData) {
+        queryClient.setQueryData(['images'], context.previousData);
+      }
+    },
+  });
+};
+
+//delete and  add image mutation
+const addImages = async (formData: FormData, id: string) => {
+  //this was done through multipart-form
+  try {
+    await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('Error uploading images:', error);
+  }
+};
+
+export const useAddImage = () => {
+  return useMutation({
+    mutationFn: ({ formData, id }: { formData: FormData; id: string }) =>
+      addImages(formData, id),
+    onSuccess: () => {
+      //queryClient.invalidateQueries({ queryKey: ['images'] });
+
+      //just refetch the images
+      queryClient.invalidateQueries({ queryKey: ['images'] });
+
+      //close the modal
+      tripViewStore.setState((state) => {
+        return {
+          ...state,
+          adding_images: false,
+        };
+      });
+
+      //refetch the images
+    },
+    onMutate: () => {
+      // add the image to the list of images
+      const previousData = queryClient.getQueryData<Image[]>(['images']);
+    },
   });
 };
 
@@ -116,7 +247,10 @@ export const useQueryTripImages = (trip_id: string) => {
         throw new Error('trip_id is not defined');
       }
 
-      return fetchTripImages(trip_id);
+      const images = fetchTripImages(trip_id);
+      //console.log('Images 1-5', images.slice(0, 5));
+
+      return images;
     },
   });
 };
@@ -220,9 +354,6 @@ export const tripViewStore = new Store<StoreState>({
   adding_path: false,
   done_comparing: false,
 
-  
-
-
   map_open: true,
   get_images_for_time: (images: Image[]) => {
     //return images order by time
@@ -239,6 +370,28 @@ export const tripViewStore = new Store<StoreState>({
     images: Image[]
   ) => {
     //return images at that day, ordered by time
+    console.log('Filtering Through Images', images);
+    //get start_date
+    const dateStart = dateFromString(start_date);
+    dateStart.setDate(dateStart.getDate() + selected_date);
+
+    const dateEnd = new Date(dateStart);
+    dateEnd.setDate(dateEnd.getDate() + 1);
+
+    //now filter through images and return images that are on that day
+    //using timeFromString
+
+    const imagesOnDay = images.filter((image) => {
+      const imageDate = timeFromString(image.created_at);
+      return imageDate >= dateStart && imageDate < dateEnd;
+    });
+
+    return imagesOnDay.sort((a, b) => {
+      // convert to epoch, then compare
+      return (
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
 
     //t
     const dateSearch = new Date(start_date);

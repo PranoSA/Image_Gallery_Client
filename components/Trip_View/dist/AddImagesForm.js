@@ -50,45 +50,34 @@ exports.__esModule = true;
 require("@/globals.css");
 var Trip_View_Image_Store_1 = require("@/components/Trip_View/Trip_View_Image_Store");
 var react_1 = require("react");
-var axios_1 = require("axios");
 var TripContext_1 = require("../TripContext");
 function AddImagesForm() {
     var _this = this;
     var id = react_1.useContext(TripContext_1["default"]).id;
+    var addImage = Trip_View_Image_Store_1.useAddImage();
     var handleSubmit = function (e) { return __awaiter(_this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            //when done ... set adding_images to false
-            Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
-                return __assign(__assign({}, state), { adding_images: false });
-            });
-            return [2 /*return*/];
-        });
-    }); };
-    var handleSubmit2 = function (event) { return __awaiter(_this, void 0, void 0, function () {
         var formData, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    event.preventDefault();
-                    formData = new FormData(event.currentTarget);
+                    formData = new FormData(e.currentTarget);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, axios_1["default"].post(process.env.NEXT_PUBLIC_API_URL + "/trip/" + id + "/images/", formData, {
-                            headers: {
-                                'Content-Type': 'multipart/form-data'
-                            }
-                        })];
+                    return [4 /*yield*/, addImage.mutate({ formData: formData, id: id })];
                 case 2:
                     _a.sent();
-                    alert('Images uploaded successfully');
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
                     console.error('Error uploading images:', error_1);
                     alert('Failed to upload images');
                     return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                case 4:
+                    Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
+                        return __assign(__assign({}, state), { adding_images: false });
+                    });
+                    return [2 /*return*/];
             }
         });
     }); };

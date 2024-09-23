@@ -39,6 +39,7 @@ import PathMapModal from '@/components/PathMapModal';
 import {
   useTripViewStore,
   tripViewStore,
+  queryClient,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import Image_View_ByDate from '@/components/Trip_View/Date_View/Image_View_ByDate';
 
@@ -62,13 +63,6 @@ const TripProvider = ({ children, id }: TripProviderProps) => {
   return <TripContext.Provider value={{ id }}>{children}</TripContext.Provider>;
 };
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 const PageWithProvider: React.FC<{ params: { id: string } }> = ({
   params: { id },
 }) => {

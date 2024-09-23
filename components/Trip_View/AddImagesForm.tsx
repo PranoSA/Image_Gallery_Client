@@ -3,45 +3,36 @@ import '@/globals.css';
 import {
   useTripViewStore,
   tripViewStore,
+  useAddImage,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 
 import { useContext } from 'react';
 
-import axios from 'axios';
 import TripContext from '../TripContext';
 
 export default function AddImagesForm() {
   const { id } = useContext(TripContext);
 
+  const addImage = useAddImage();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     //when done ... set adding_images to false
+
+    const formData = new FormData(e.currentTarget);
+
+    try {
+      await addImage.mutate({ formData, id });
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images');
+    }
+
     tripViewStore.setState((state) => {
       return {
         ...state,
         adding_images: false,
       };
     });
-  };
-
-  const handleSubmit2 = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-
-    try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      alert('Images uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      alert('Failed to upload images');
-    }
   };
 
   const closeModal = () => {

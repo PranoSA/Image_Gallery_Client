@@ -7,17 +7,32 @@ import {
   FaChevronDown,
 } from 'react-icons/fa';
 
-import { useTripViewStore, tripViewStore } from './Trip_View_Image_Store';
+import {
+  useTripViewStore,
+  tripViewStore,
+  UpdateImage,
+  useQueryTrip,
+} from './Trip_View_Image_Store';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { FC } from 'react';
+
+import TripContext from '../TripContext';
 
 const EditImageForm: FC = () => {
   //Every time editedImage changed, update this state
   // this ammounts to a reselection of the image
   const [editedImage, setEditedImage] = useState<Image | null>(null);
 
+  const id = useContext(TripContext).id;
+
   const { editingImage } = useTripViewStore();
+
+  //const { data: trip, isLoading, isError } = useQueryTrip(id);
+
+  const { data: trip, isLoading, isError } = useQueryTrip(id);
+
+  const updateImage = UpdateImage();
 
   useEffect(() => {
     setEditedImage(editingImage);
@@ -30,8 +45,15 @@ const EditImageForm: FC = () => {
       //use the update image mutation
       //UpdateImage().mutate(editedImage, trip?.id || '');
 
-      //@ts-ignore
-      UpdateImage(editedImage, trip?.id || '');
+      //UpdateImage(editedImage, trip?.id || '');
+      /*await UpdateImage().mutate({
+        image: editedImage,
+        trip: trip,
+      });*/
+
+      if (!trip) return;
+
+      await updateImage.mutate({ image: editedImage, trip: trip });
 
       //setEditingImage(null)
       tripViewStore.setState((state) => {

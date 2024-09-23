@@ -1,5 +1,16 @@
 'use client';
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -37,10 +48,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.useTripViewStore = exports.tripViewStore = exports.useQueryTripPaths = exports.useQueryTripImages = exports.useQueryTrip = exports.useQueryDaySummary = exports.useUpdateDaySummary = exports.updateDaySummaryMutation = exports.UpdateImage = void 0;
+exports.useTripViewStore = exports.tripViewStore = exports.useQueryTripPaths = exports.useQueryTripImages = exports.useQueryTrip = exports.useQueryDaySummary = exports.useUpdateDaySummary = exports.updateDaySummaryMutation = exports.useAddImage = exports.UpdateImage = exports.queryClient = void 0;
 var react_store_1 = require("@tanstack/react-store");
 var store_1 = require("@tanstack/store");
 var react_query_1 = require("@tanstack/react-query");
+var Time_Functions_1 = require("./Time_Functions");
+var axios_1 = require("axios");
 var fetchTripImages = function (trip_id) { return __awaiter(void 0, void 0, void 0, function () {
     var response;
     return __generator(this, function (_a) {
@@ -52,13 +65,28 @@ var fetchTripImages = function (trip_id) { return __awaiter(void 0, void 0, void
         }
     });
 }); };
+function timestampReviver(key, value) {
+    // Check if the value is a timestamp (e.g., a string that can be parsed as a date)
+    if (typeof value === 'string' && !isNaN(Date.parse(value))) {
+        // Convert the timestamp to a string
+        return value;
+    }
+    return value;
+}
+exports.queryClient = new react_query_1.QueryClient({
+    defaultOptions: {
+        queries: {
+            refetchOnWindowFocus: false
+        }
+    }
+});
 //mutation to update image metadata
 var updateImageMutation = function (image, trip) { return __awaiter(void 0, void 0, void 0, function () {
     var response;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, fetch(process.env.NEXT_PUBLIC_API_URL + "/trip/" + trip.id + "/images/" + image.id, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -76,6 +104,103 @@ exports.UpdateImage = function () {
         mutationFn: function (_a) {
             var image = _a.image, trip = _a.trip;
             return updateImageMutation(image, trip);
+        },
+        onSuccess: function () {
+            //queryClient.invalidateQueries({ queryKey: ['images'] }); // invalidate the query cache
+            //invalidate - then set the images to the new data
+            //queryKey: ['trip', trip_id, 'images'],
+            //queryClient.invalidateQueries({ queryKey: ['images'] });
+        },
+        onMutate: function (newData) { return __awaiter(void 0, void 0, void 0, function () {
+            var previousData, imageToUpdate, new_data;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: 
+                    //the query key is queryKey: ['trip', trip_id, 'images'],
+                    // queryKey: ['trip', trip_id, 'images'],
+                    return [4 /*yield*/, exports.queryClient.cancelQueries({
+                            queryKey: ['trip', newData.trip.id.toString(), 'images']
+                        })];
+                    case 1:
+                        //the query key is queryKey: ['trip', trip_id, 'images'],
+                        // queryKey: ['trip', trip_id, 'images'],
+                        _a.sent();
+                        previousData = exports.queryClient.getQueryData([
+                            'trip',
+                            newData.trip.id.toString(),
+                            'images',
+                        ]);
+                        if (!previousData) {
+                            console.error('No previous data');
+                            console.log("Image's trip id: ", newData.trip.id);
+                            return [2 /*return*/];
+                        }
+                        imageToUpdate = previousData.find(function (image) { return image.id === newData.image.id; });
+                        new_data = previousData.map(function (image) {
+                            if (image.id === newData.image.id) {
+                                return newData.image;
+                            }
+                            return image;
+                        });
+                        exports.queryClient.setQueryData(['trip', newData.trip.id.toString(), 'images'], new_data);
+                        console.log('New Image Data: ', newData.image);
+                        //old image
+                        console.log('Old Image Data: ', imageToUpdate);
+                        //what is the return variable for exactly?
+                        return [2 /*return*/, { imageToUpdate: imageToUpdate, previousData: previousData }];
+                }
+            });
+        }); },
+        onError: function (error, variables, context) {
+            //if there is an error, revert the changes
+            if (context === null || context === void 0 ? void 0 : context.previousData) {
+                exports.queryClient.setQueryData(['images'], context.previousData);
+            }
+        }
+    });
+};
+//delete and  add image mutation
+var addImages = function (formData, id) { return __awaiter(void 0, void 0, void 0, function () {
+    var error_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, axios_1["default"].post(process.env.NEXT_PUBLIC_API_URL + "/trip/" + id + "/images/", formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })];
+            case 1:
+                _a.sent();
+                return [3 /*break*/, 3];
+            case 2:
+                error_1 = _a.sent();
+                console.error('Error uploading images:', error_1);
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
+exports.useAddImage = function () {
+    return react_query_1.useMutation({
+        mutationFn: function (_a) {
+            var formData = _a.formData, id = _a.id;
+            return addImages(formData, id);
+        },
+        onSuccess: function () {
+            //queryClient.invalidateQueries({ queryKey: ['images'] });
+            //just refetch the images
+            exports.queryClient.invalidateQueries({ queryKey: ['images'] });
+            //close the modal
+            exports.tripViewStore.setState(function (state) {
+                return __assign(__assign({}, state), { adding_images: false });
+            });
+            //refetch the images
+        },
+        onMutate: function () {
+            // add the image to the list of images
+            var previousData = exports.queryClient.getQueryData(['images']);
         }
     });
 };
@@ -170,7 +295,9 @@ exports.useQueryTripImages = function (trip_id) {
             if (!trip_id) {
                 throw new Error('trip_id is not defined');
             }
-            return fetchTripImages(trip_id);
+            var images = fetchTripImages(trip_id);
+            //console.log('Images 1-5', images.slice(0, 5));
+            return images;
         }
     });
 };
@@ -209,6 +336,22 @@ exports.tripViewStore = new store_1.Store({
     },
     get_images_for_day: function (selected_date, start_date, images) {
         //return images at that day, ordered by time
+        console.log('Filtering Through Images', images);
+        //get start_date
+        var dateStart = Time_Functions_1.dateFromString(start_date);
+        dateStart.setDate(dateStart.getDate() + selected_date);
+        var dateEnd = new Date(dateStart);
+        dateEnd.setDate(dateEnd.getDate() + 1);
+        //now filter through images and return images that are on that day
+        //using timeFromString
+        var imagesOnDay = images.filter(function (image) {
+            var imageDate = Time_Functions_1.timeFromString(image.created_at);
+            return imageDate >= dateStart && imageDate < dateEnd;
+        });
+        return imagesOnDay.sort(function (a, b) {
+            // convert to epoch, then compare
+            return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        });
         //t
         var dateSearch = new Date(start_date);
         dateSearch.setDate(dateSearch.getDate() + selected_date);

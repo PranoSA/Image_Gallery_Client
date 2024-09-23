@@ -50,33 +50,53 @@ exports.__esModule = true;
 var CoordinateForm_1 = require("@/components/CoordinateForm");
 var Trip_View_Image_Store_1 = require("./Trip_View_Image_Store");
 var react_1 = require("react");
+var TripContext_1 = require("../TripContext");
 var EditImageForm = function () {
     //Every time editedImage changed, update this state
     // this ammounts to a reselection of the image
     var _a = react_1.useState(null), editedImage = _a[0], setEditedImage = _a[1];
+    var id = react_1.useContext(TripContext_1["default"]).id;
     var editingImage = Trip_View_Image_Store_1.useTripViewStore().editingImage;
+    //const { data: trip, isLoading, isError } = useQueryTrip(id);
+    var _b = Trip_View_Image_Store_1.useQueryTrip(id), trip = _b.data, isLoading = _b.isLoading, isError = _b.isError;
+    var updateImage = Trip_View_Image_Store_1.UpdateImage();
     react_1.useEffect(function () {
         setEditedImage(editingImage);
     }, [editingImage]);
     var submitEditedImage = function () { return __awaiter(void 0, void 0, void 0, function () {
+        var err_1;
         return __generator(this, function (_a) {
-            if (!editedImage)
-                return [2 /*return*/];
-            try {
-                //use the update image mutation
-                //UpdateImage().mutate(editedImage, trip?.id || '');
-                //@ts-ignore
-                UpdateImage(editedImage, (trip === null || trip === void 0 ? void 0 : trip.id) || '');
-                //setEditingImage(null)
-                Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
-                    return __assign(__assign({}, state), { editingImage: null });
-                });
-                setEditedImage(null);
+            switch (_a.label) {
+                case 0:
+                    if (!editedImage)
+                        return [2 /*return*/];
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    //use the update image mutation
+                    //UpdateImage().mutate(editedImage, trip?.id || '');
+                    //UpdateImage(editedImage, trip?.id || '');
+                    /*await UpdateImage().mutate({
+                      image: editedImage,
+                      trip: trip,
+                    });*/
+                    if (!trip)
+                        return [2 /*return*/];
+                    return [4 /*yield*/, updateImage.mutate({ image: editedImage, trip: trip })];
+                case 2:
+                    _a.sent();
+                    //setEditingImage(null)
+                    Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
+                        return __assign(__assign({}, state), { editingImage: null });
+                    });
+                    setEditedImage(null);
+                    return [3 /*break*/, 4];
+                case 3:
+                    err_1 = _a.sent();
+                    console.error('Error editing image:', err_1);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
-            catch (err) {
-                console.error('Error editing image:', err);
-            }
-            return [2 /*return*/];
         });
     }); };
     var handleEditedImageChange = function (e) {

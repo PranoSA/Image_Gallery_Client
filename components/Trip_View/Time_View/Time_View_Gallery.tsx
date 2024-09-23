@@ -48,15 +48,6 @@ import NextImage from 'next/image';
 
 import EditImageForm from '../EditImageForm';
 
-const fetchTrip = async (trip_id: string) => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}`);
-  const data = await res.json();
-  return data[0];
-  return new Promise((resolve) => {
-    resolve(data[0]);
-  });
-};
-
 const TimeViewGallery: React.FC = () => {
   const id = useContext(TripContext).id;
 
@@ -85,8 +76,6 @@ const TimeViewGallery: React.FC = () => {
   const groupedOrderedImagesByDay = useMemo(() => {
     const groupImagesByDay = (images: Image[] | undefined) => {
       const grouped: ImagesByDay[] = [];
-
-      console.log('Is groupImagesByDay being called?');
 
       if (!trip) return [];
       if (!images) return [];
@@ -303,9 +292,6 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   ): SubRangeOfImages[] => {
     let current_hour = 0;
 
-    console.log('DATE', date);
-    console.log('IMAGES', images);
-
     //make start_hour to be the hour of the first image
     if (images.length > 0) {
       current_hour = new Date(
@@ -354,12 +340,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
           const passes_filter =
             new Date(getDateAtLocalTime(image.created_at)).getHours() ===
             current_hour;
-          console.log('PASSES FILTER', passes_filter);
-          console.log(
-            'image hour',
-            new Date(getDateAtLocalTime(image.created_at)).getHours()
-          );
-          console.log('current hour', current_hour);
+
           return passes_filter;
         });
 
@@ -409,8 +390,6 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   const store = tripViewStore;
 
   const setSelectedImagePreview = (image: Image) => {
-    console.log('Setting selected image preview');
-
     store.setState((state) => {
       return {
         ...state,
