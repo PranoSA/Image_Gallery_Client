@@ -52,7 +52,7 @@ var TimeViewGallery = function () {
     var id = react_1.useContext(TripContext_1["default"]).id;
     var _a = Trip_View_Image_Store_1.useQueryTrip(id), trip = _a.data, tripLoading = _a.isLoading, tripError = _a.isLoadingError;
     var _b = Trip_View_Image_Store_1.useQueryTripImages(id), images = _b.data, imagesLoading = _b.isLoading, imagesError = _b.isLoadingError;
-    var _c = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _c.selected_date, selected_image_location = _c.selected_image_location;
+    var _c = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _c.selected_date, selected_image_location = _c.selected_image_location, filtered_categories = _c.filtered_categories;
     // Create refs for each date
     var dateRefs = react_1.useRef({});
     var groupedOrderedImagesByDay = react_1.useMemo(function () {
@@ -73,6 +73,9 @@ var TimeViewGallery = function () {
                     .filter(function (image) {
                     return (new Date(image.created_at).toDateString() ===
                         current_date.toDateString());
+                })
+                    .filter(function (image) {
+                    return !filtered_categories.includes(image.category || '');
                 })
                     .sort(function (a, b) {
                     return (new Date(a.created_at).getTime() -

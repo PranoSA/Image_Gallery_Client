@@ -66,6 +66,7 @@ var TripContext_1 = require("@/components/TripContext");
 var react_2 = require("react");
 var Trip_View_Image_Store_2 = require("./Trip_View_Image_Store");
 var AddImagesForm_1 = require("./AddImagesForm");
+var FilteredCategoryForm_1 = require("@/components/Trip_View/FilteredCategoryForm");
 var SelectionComponentGallery = function () {
     var date_or_time_view = Trip_View_Image_Store_2.useTripViewStore().date_or_time_view;
     var store = Trip_View_Image_Store_1.tripViewStore;
@@ -84,6 +85,11 @@ var SelectionComponentGallery = function () {
                     });
                 }, className: "px-4 py-2 bg-green-500 text-white rounded" },
                 React.createElement(fa_1.FaPlus, null))),
+        React.createElement("div", { className: "w-full items-center justify-center" }, store.state.selecting_category ? (React.createElement(FilteredCategoryForm_1["default"], null)) : (React.createElement("button", { onClick: function () {
+                store.setState(function (state) {
+                    return __assign(__assign({}, state), { selecting_category: true });
+                });
+            }, className: "px-4 py-2 bg-blue-500 text-white rounded" }, "Filter Categories"))),
         React.createElement("div", { className: "mb-5 flex justify-around gap-4" },
             React.createElement("button", { onClick: function () { return setView('time'); }, className: "px-4 py-2 text-lg cursor-pointer rounded flex items-center justify-center gap-2 " + (date_or_time_view === 'time'
                     ? 'bg-gray-500 text-white cursor-not-allowed'

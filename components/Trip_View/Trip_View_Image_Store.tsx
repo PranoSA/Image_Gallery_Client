@@ -269,6 +269,9 @@ type StoreState = {
   //start_date: string;
   //end_date: string;
   //selected_trip_id: string;
+  filtered_categories: string[];
+
+  selecting_category: boolean;
 
   selected_images: Image[]; // This is for modification and deletion
 
@@ -334,6 +337,8 @@ type StoreState = {
 
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
+  selecting_category: false,
+  filtered_categories: [],
   editingDaySummary: false,
   selected_date: 0, //'1970-01-01',
   selected_images: [],

@@ -26,6 +26,8 @@ import { useTripViewStore } from './Trip_View_Image_Store';
 
 import AddImagesForm from './AddImagesForm';
 
+import FilteredCategoryForm from '@/components/Trip_View/FilteredCategoryForm';
+
 type SelectionComponentGalleryProps = {
   view: 'time' | 'date';
 };
@@ -59,6 +61,25 @@ const SelectionComponentGallery = () => {
           <FaPlus />
         </button>
       </div>
+      {/* Div For Filtering Categories if filtering_selection, or a button to open it */}
+      <div className="w-full items-center justify-center">
+        {store.state.selecting_category ? (
+          <FilteredCategoryForm />
+        ) : (
+          <button
+            onClick={() => {
+              store.setState((state) => {
+                return { ...state, selecting_category: true };
+              });
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Filter Categories
+          </button>
+        )}
+      </div>
+      {/* Div For Filtering Categories if filtering_selection, or a button to open it */}
+
       <div className="mb-5 flex justify-around gap-4">
         <button
           onClick={() => setView('time')}

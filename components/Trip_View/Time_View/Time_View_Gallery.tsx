@@ -38,6 +38,7 @@ import {
 } from '../Trip_View_Image_Store';
 import TripContext from '@/components/TripContext';
 import { useQuery } from '@tanstack/react-query';
+import FilteredCategoryForm from '@/components/Trip_View/FilteredCategoryForm';
 
 import ImagePreview from '../ImagePreview';
 
@@ -63,7 +64,8 @@ const TimeViewGallery: React.FC = () => {
     isLoadingError: imagesError,
   } = useQueryTripImages(id);
 
-  const { selected_date, selected_image_location } = useTripViewStore();
+  const { selected_date, selected_image_location, filtered_categories } =
+    useTripViewStore();
 
   type ImagesByDay = {
     date: Date;
@@ -95,6 +97,9 @@ const TimeViewGallery: React.FC = () => {
               new Date(image.created_at).toDateString() ===
               current_date.toDateString()
             );
+          })
+          .filter((image) => {
+            return !filtered_categories.includes(image.category || '');
           })
           .sort((a, b) => {
             return (

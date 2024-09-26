@@ -14,6 +14,7 @@ type Category = {
   category: string;
   start_date: string;
   end_date: string;
+  child_categories: Category[];
 };
 
 interface Trip {

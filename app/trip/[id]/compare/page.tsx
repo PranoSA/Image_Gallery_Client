@@ -179,6 +179,7 @@ const AddCategoryForm = ({ onAddCategory }: AddCategoryFormProps) => {
     category: '',
     start_date: '',
     end_date: '',
+    child_categories: [],
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +198,7 @@ const AddCategoryForm = ({ onAddCategory }: AddCategoryFormProps) => {
       category: '',
       start_date: '',
       end_date: '',
+      child_categories: [],
     });
   };
 

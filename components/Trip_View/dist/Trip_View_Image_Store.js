@@ -309,6 +309,8 @@ exports.useQueryTripPaths = function (trip_id) {
 };
 exports.tripViewStore = new store_1.Store({
     //selected_trip_id: '',
+    selecting_category: false,
+    filtered_categories: [],
     editingDaySummary: false,
     selected_date: 0,
     selected_images: [],
