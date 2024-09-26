@@ -7,7 +7,14 @@ interface Image {
   ol_id?: string;
   name: string;
   description: string;
+  category?: string;
 }
+
+type Category = {
+  category: string;
+  start_date: string;
+  end_date: string;
+};
 
 interface Trip {
   id: number;
@@ -15,6 +22,7 @@ interface Trip {
   description: string;
   start_date: string;
   end_date: string;
+  categories: Category[];
   //images: Image[];
   //paths: Path[];
 }
