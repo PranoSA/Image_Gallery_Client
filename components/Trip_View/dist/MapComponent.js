@@ -61,6 +61,7 @@ var format_1 = require("ol/format");
 // store and tanstack query
 var Trip_View_Image_Store_1 = require("./Trip_View_Image_Store");
 var TripContext_1 = require("@/components/TripContext");
+var CategoryLegendAndPoints_1 = require("@/components/Trip_View/Time_View/CategoryLegendAndPoints");
 function MapComponent(_a) {
     var _this = this;
     var _b, _c;
@@ -73,9 +74,10 @@ function MapComponent(_a) {
     var tripsState = Trip_View_Image_Store_1.useQueryTrip(id);
     var pathState = Trip_View_Image_Store_1.useQueryTripPaths(id);
     var imageState = Trip_View_Image_Store_1.useQueryTripImages(id);
+    var convexHullLayer = react_1.useRef(new layer_1.Vector());
     //get information about the day, the image_location
     // for the purpose of filtering paths and stuff and mapopen
-    var _e = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _e.selected_date, selected_image_location = _e.selected_image_location, map_open = _e.map_open, get_images_for_day = _e.get_images_for_day, zoom_on_day_change = _e.zoom_on_day_change, image_heat_map = _e.image_heat_map, paths_open = _e.paths_open;
+    var _e = Trip_View_Image_Store_1.useTripViewStore(), selected_date = _e.selected_date, selected_image_location = _e.selected_image_location, map_open = _e.map_open, get_images_for_day = _e.get_images_for_day, zoom_on_day_change = _e.zoom_on_day_change, image_heat_map = _e.image_heat_map, paths_open = _e.paths_open, selecting_category = _e.selecting_category, filtered_categories = _e.filtered_categories, filtering_images = _e.filtering_images;
     var currentDay = react_1.useMemo(function () {
         var _a;
         //selected_date is a number after the start date
@@ -186,9 +188,16 @@ function MapComponent(_a) {
                 //remove old paths
                 //except the image layer
                 (_a = mapInstanceRef.current) === null || _a === void 0 ? void 0 : _a.getLayers().forEach(function (layer) {
+                    //remove all vector layers except the image layer
                     var _a;
                     if (layer instanceof layer_1.Vector) {
-                        if (layer.getSource() !== imageVectorSource.current) {
+                        console.log('Hello Convex Hull , I am here to remove you');
+                        //console log if finds convex hull layer
+                        if (layer.getSource() === convexHullLayer.current.getSource()) {
+                            console.log('Found Convex Hull Layer');
+                        }
+                        if (layer.getSource() !== imageVectorSource.current &&
+                            layer.getSource() !== convexHullLayer.current.getSource()) {
                             (_a = mapInstanceRef.current) === null || _a === void 0 ? void 0 : _a.removeLayer(layer);
                         }
                     }
@@ -403,6 +412,9 @@ function MapComponent(_a) {
         zoom_on_day_change,
         get_images_for_day,
     ]);
+    //if selecting category is true, show a legend on the bottom right of the map
+    //pick random colors for each category, and then color the points based on the category
+    //draw a convex hull with a margin of a few pixels, with the same color as the category
     //if map is not open, return null
     if (!map_open) {
         return null;
@@ -427,8 +439,24 @@ function MapComponent(_a) {
             "Error: ",
             imageState.error.message);
     }
+    var addVectorSourceToConvexHullLayer = function (source) {
+        var _a, _b, _c, _d;
+        console.log('Adding Vector Source to Convex Hull Layer');
+        // remove old source
+        (_a = convexHullLayer.current) === null || _a === void 0 ? void 0 : _a.setSource(null);
+        // remove layer from map
+        if (convexHullLayer.current) {
+            (_b = mapInstanceRef.current) === null || _b === void 0 ? void 0 : _b.removeLayer(convexHullLayer.current);
+        }
+        // set new source
+        (_c = convexHullLayer.current) === null || _c === void 0 ? void 0 : _c.setSource(source);
+        // add layer to map
+        (_d = mapInstanceRef.current) === null || _d === void 0 ? void 0 : _d.addLayer(convexHullLayer.current);
+        //
+    };
     return (react_1["default"].createElement("div", { className: "flex justify-center items-center" },
         react_1["default"].createElement("div", { ref: mapRef, style: { width: '100%', height: "" + height }, className: "w-full relative " },
+            mapInstanceRef.current && (react_1["default"].createElement(CategoryLegendAndPoints_1["default"], { map: mapInstanceRef.current, convexHullLayer: convexHullLayer, addSource: addVectorSourceToConvexHullLayer })),
             react_1["default"].createElement(PathLegend_1["default"], { paths: selected_date && tripsState.data
                     ? (pathState.data &&
                         pathState.data.filter(function (path) {

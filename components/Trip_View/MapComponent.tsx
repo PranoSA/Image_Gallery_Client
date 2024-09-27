@@ -35,6 +35,9 @@ import {
   tripViewStore,
 } from './Trip_View_Image_Store';
 import TripContext from '@/components/TripContext';
+import { dateFromString } from './Time_Functions';
+
+import CategoryLegendAndPoints from '@/components/Trip_View/Time_View/CategoryLegendAndPoints';
 
 type MapProps = {
   height?: string;
@@ -55,6 +58,8 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
 
   const imageState = useQueryTripImages(id);
 
+  const convexHullLayer = useRef<VectorLayer>(new VectorLayer());
+
   //get information about the day, the image_location
   // for the purpose of filtering paths and stuff and mapopen
   const {
@@ -65,6 +70,9 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     zoom_on_day_change,
     image_heat_map,
     paths_open,
+    selecting_category,
+    filtered_categories,
+    filtering_images,
   } = useTripViewStore();
 
   const currentDay = useMemo<string>(() => {
@@ -197,8 +205,18 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       //except the image layer
 
       mapInstanceRef.current?.getLayers().forEach((layer) => {
+        //remove all vector layers except the image layer
+
         if (layer instanceof VectorLayer) {
-          if (layer.getSource() !== imageVectorSource.current) {
+          console.log('Hello Convex Hull , I am here to remove you');
+          //console log if finds convex hull layer
+          if (layer.getSource() === convexHullLayer.current.getSource()) {
+            console.log('Found Convex Hull Layer');
+          }
+          if (
+            layer.getSource() !== imageVectorSource.current &&
+            layer.getSource() !== convexHullLayer.current.getSource()
+          ) {
             mapInstanceRef.current?.removeLayer(layer);
           }
         }
@@ -488,6 +506,10 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     get_images_for_day,
   ]);
 
+  //if selecting category is true, show a legend on the bottom right of the map
+  //pick random colors for each category, and then color the points based on the category
+  //draw a convex hull with a margin of a few pixels, with the same color as the category
+
   //if map is not open, return null
   if (!map_open) {
     return null;
@@ -511,6 +533,26 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     return <div>Error: {imageState.error.message}</div>;
   }
 
+  const addVectorSourceToConvexHullLayer = (source: VectorSource) => {
+    console.log('Adding Vector Source to Convex Hull Layer');
+
+    // remove old source
+    convexHullLayer.current?.setSource(null);
+
+    // remove layer from map
+    if (convexHullLayer.current) {
+      mapInstanceRef.current?.removeLayer(convexHullLayer.current);
+    }
+
+    // set new source
+    convexHullLayer.current?.setSource(source);
+
+    // add layer to map
+    mapInstanceRef.current?.addLayer(convexHullLayer.current);
+
+    //
+  };
+
   return (
     <div className="flex justify-center items-center">
       {/* MapControlWidget */}
@@ -519,6 +561,14 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         style={{ width: '100%', height: `${height}` }} //'50vh' }}
         className="w-full relative "
       >
+        {mapInstanceRef.current && (
+          <CategoryLegendAndPoints
+            map={mapInstanceRef.current}
+            convexHullLayer={convexHullLayer}
+            addSource={addVectorSourceToConvexHullLayer}
+          />
+        )}
+
         <PathLegend
           paths={
             selected_date && tripsState.data

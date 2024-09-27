@@ -41,7 +41,7 @@ exports.TripDropdownMenu = function () {
     var toggleMenu = function () {
         setMenu(!menu);
     };
-    var _c = Trip_View_Image_Store_1.useTripViewStore(), map_open = _c.map_open, day_by_day_banners = _c.day_by_day_banners, paths_open = _c.paths_open, zoom_on_day_change = _c.zoom_on_day_change, image_heat_map = _c.image_heat_map, comparing_photos = _c.comparing_photos;
+    var _c = Trip_View_Image_Store_1.useTripViewStore(), map_open = _c.map_open, day_by_day_banners = _c.day_by_day_banners, paths_open = _c.paths_open, zoom_on_day_change = _c.zoom_on_day_change, image_heat_map = _c.image_heat_map, comparing_photos = _c.comparing_photos, filtering_images = _c.filtering_images;
     //maybe comparing photos should be a new page?
     // for now , just have it on the same page
     //
@@ -86,6 +86,13 @@ exports.TripDropdownMenu = function () {
                             });
                         }, className: "form-checkbox h-5 w-5 text-gray-600" }),
                     react_1["default"].createElement("span", { className: "text-gray-700 text-sm" }, 'Zoom On Day Change')),
+                react_1["default"].createElement("label", { className: "flex items-center space-x-3" },
+                    react_1["default"].createElement("input", { type: "checkbox", checked: filtering_images, onChange: function () {
+                            return Trip_View_Image_Store_1.tripViewStore.setState(function (state) {
+                                return __assign(__assign({}, state), { filtering_images: !state.filtering_images });
+                            });
+                        }, className: "form-checkbox h-5 w-5 text-gray-600" }),
+                    react_1["default"].createElement("span", { className: "text-gray-700 text-sm" }, 'Display Category Legend')),
                 react_1["default"].createElement("label", { className: "flex items-center space-x-3" },
                     react_1["default"].createElement("input", { type: "checkbox", checked: image_heat_map, onChange: function () {
                             return Trip_View_Image_Store_1.tripViewStore.setState(function (state) {

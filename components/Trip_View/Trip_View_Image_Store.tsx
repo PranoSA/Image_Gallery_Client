@@ -271,7 +271,9 @@ type StoreState = {
   //selected_trip_id: string;
   filtered_categories: string[];
 
-  selecting_category: boolean;
+  selecting_category: boolean; //this is for opening / closing the form
+
+  filtering_images: boolean; //this is for filtering images
 
   selected_images: Image[]; // This is for modification and deletion
 
@@ -337,6 +339,7 @@ type StoreState = {
 
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
+  filtering_images: false,
   selecting_category: false,
   filtered_categories: [],
   editingDaySummary: false,

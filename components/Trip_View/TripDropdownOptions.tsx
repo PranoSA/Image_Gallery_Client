@@ -53,6 +53,7 @@ export const TripDropdownMenu: React.FC = () => {
     zoom_on_day_change,
     image_heat_map,
     comparing_photos,
+    filtering_images,
   } = useTripViewStore();
 
   //maybe comparing photos should be a new page?
@@ -185,6 +186,26 @@ export const TripDropdownMenu: React.FC = () => {
                 {'Zoom On Day Change'}
               </span>
             </label>
+            {/* Display Category Legend*/}
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={filtering_images}
+                onChange={() =>
+                  tripViewStore.setState((state) => {
+                    return {
+                      ...state,
+                      filtering_images: !state.filtering_images,
+                    };
+                  })
+                }
+                className="form-checkbox h-5 w-5 text-gray-600"
+              />
+              <span className="text-gray-700 text-sm">
+                {'Display Category Legend'}
+              </span>
+            </label>
+
             {/* image heat map checkbox*/}
             <label className="flex items-center space-x-3">
               <input
