@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import { signIn, useSession } from 'next-auth/react';
+import { Session } from 'next-auth';
+
+// get server session
 
 interface Trip {
   id: number;
@@ -25,6 +29,12 @@ export default function Home() {
   const [editTrip, setEditTrip] = useState<boolean>(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
+
+  //login status
+  const { data: session, status } = useSession();
+
+  const token = session?.accessToken;
+  console.log('token is', token);
 
   const handleEditTrip = (trip: Trip) => {
     setEditTrip(true);
@@ -231,6 +241,16 @@ export default function Home() {
       console.error('Error creating trip:', error);
     }
   };
+  //get access token from session
+  const accessToken = session?.accessToken;
+  console.log('access token is', accessToken);
+
+  //if not logged in - redirect to keycloak login page
+
+  //if not logged in, redirect to login page
+  if (!session) {
+    return <button onClick={() => signIn('keycloak')}>Sign In </button>;
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">

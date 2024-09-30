@@ -5,6 +5,14 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 const queryClient = new QueryClient();
 const inter = Inter({ subsets: ['latin'] });
+import { SessionProvider } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
+
+const NextAuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  return <SessionProvider>{children}</SessionProvider>;
+};
 
 /*
 export default function RootLayout({
@@ -25,7 +33,9 @@ export default function RootLayout({
 const RootLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <NextAuthProvider>{children}</NextAuthProvider>
+      </body>
     </html>
   );
 };
