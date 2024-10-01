@@ -1,6 +1,6 @@
 'use client';
 import { useStore } from '@tanstack/react-store';
-import { Store } from '@tanstack/store';
+import { Listener, Store } from '@tanstack/store';
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { MdImagesearchRoller } from 'react-icons/md';
 import { updateDaySummary } from '../../../server/src/routes/summaries';
@@ -337,9 +337,16 @@ type StoreState = {
   ) => Image[];
 };
 
+//fetch initial state from local storage
+const init_state: PersistedSettings = JSON.parse(
+  localStorage.getItem('trip_view_settings') || '{}'
+);
+
+console.log('Initial State: ', init_state);
+
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
-  filtering_images: false,
+  filtering_images: init_state.filtering_images || false,
   selecting_category: false,
   filtered_categories: [],
   editingDaySummary: false,
@@ -351,10 +358,10 @@ export const tripViewStore = new Store<StoreState>({
   scroll_position: 0,
   editingImage: null,
   viewed_image_index: null,
-  day_by_day_banners: true,
-  zoom_on_day_change: true,
-  image_heat_map: true,
-  paths_open: true,
+  day_by_day_banners: init_state.day_by_day_banners ?? true,
+  zoom_on_day_change: init_state.zoom_on_day_change ?? true,
+  image_heat_map: init_state.image_heat_map ?? true,
+  paths_open: init_state.paths_open ?? true,
   comparing_photos: false,
 
   adding_images: false,
@@ -362,7 +369,7 @@ export const tripViewStore = new Store<StoreState>({
   adding_path: false,
   done_comparing: false,
 
-  map_open: true,
+  map_open: init_state.map_open ?? true,
   get_images_for_time: (images: Image[]) => {
     //return images order by time
     return images.sort((a, b) => {
@@ -438,4 +445,38 @@ export const tripViewStore = new Store<StoreState>({
 
 export const useTripViewStore = () => {
   return useStore(tripViewStore);
+};
+
+const StoringSate: Listener = () => {
+  console.log('Store State:', tripViewStore);
+
+  //create a persisted settings object
+  const persistedSettings: PersistedSettings = {
+    filtering_images: tripViewStore.state.filtering_images,
+    image_heat_map: tripViewStore.state.image_heat_map,
+    paths_open: tripViewStore.state.paths_open,
+    zoom_on_day_change: tripViewStore.state.zoom_on_day_change,
+    day_by_day_banners: tripViewStore.state.day_by_day_banners,
+    map_open: tripViewStore.state.map_open,
+  };
+
+  //serialize the object
+  const serializedSettings = JSON.stringify(persistedSettings);
+
+  //store the settings
+  localStorage.setItem('trip_view_settings', serializedSettings);
+};
+
+//add listener to the store
+tripViewStore.subscribe(StoringSate);
+//persist the store
+
+type PersistedSettings = {
+  //doesn't include thigns like images, paths, etc state controlling forms, etc.
+  filtering_images: boolean;
+  image_heat_map: boolean;
+  paths_open: boolean;
+  zoom_on_day_change: boolean;
+  day_by_day_banners: boolean;
+  map_open: boolean;
 };

@@ -36,6 +36,30 @@ export default function Home() {
   const token = session?.accessToken;
   console.log('token is', token);
 
+  useEffect(() => {
+    //get access token from session
+    const accessToken = session?.accessToken;
+    console.log('WHOAMI', accessToken);
+
+    // fetch http://localhost:5000/whoami
+    const fetchWhoAmI = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/whoami`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+        console.log('whoami response', response);
+      } catch (error) {
+        console.error('Error fetching whoami:', error);
+      }
+    };
+
+    if (accessToken) {
+      fetchWhoAmI();
+    }
+  }, [session]);
+
   const handleEditTrip = (trip: Trip) => {
     setEditTrip(true);
     setEditedTrip(trip);

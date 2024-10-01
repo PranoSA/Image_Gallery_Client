@@ -59,7 +59,9 @@ export const TripDropdownMenu: React.FC = () => {
   //maybe comparing photos should be a new page?
   // for now , just have it on the same page
   //
-
+  {
+    /* Make Absolute position on the top right of the page */
+  }
   return (
     <div className="relative inline-block text-left">
       <button

@@ -195,7 +195,7 @@ const Image_View_ByDate: React.FC = () => {
   return (
     <div>
       {/* Make Scrollable */}
-      <div className="gallery mt-4">
+      <div className="gallery mt-4 w-full justify-center bg-white rounded-b-lg shadow-lg border border-gray-300">
         {/* {imagesForDay.map((image, i) => (
           <div key={image.id}>
             <NextImage

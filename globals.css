@@ -173,3 +173,27 @@ h2 {
 .close-modal-button:hover {
   background-color: #c82333;
 }
+
+.scrollmenu {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.scrollmenu ul {
+  display: inline-flex;
+}
+
+.scrollmenu li {
+  display: inline-block;
+  text-align: center;
+  padding: 14px;
+  text-decoration: none;
+  color: black; /* Ensure text color is black */
+  flex-shrink: 0; /* Prevent shrinking */
+  font-size: large;
+}
+
+.scrollmenu li:hover {
+  background-color: #777;
+  color: white;
+}

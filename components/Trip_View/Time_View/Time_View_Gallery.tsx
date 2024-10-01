@@ -29,6 +29,7 @@
  */
 
 import '@/globals.css';
+import { timeFromString } from '../Time_Functions';
 import { useContext, useMemo, useRef, useEffect } from 'react';
 import {
   tripViewStore,
@@ -43,6 +44,7 @@ import FilteredCategoryForm from '@/components/Trip_View/FilteredCategoryForm';
 import ImagePreview from '../ImagePreview';
 
 import { HiOutlinePencil, HiEye } from 'react-icons/hi';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 import { Image } from '@/definitions/Trip_View';
 import NextImage from 'next/image';
@@ -176,6 +178,20 @@ const TimeViewGallery: React.FC = () => {
     });
   };
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
+
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const containerTop = event.currentTarget.getBoundingClientRect().top;
     const threshold = 50; // Adjust this value as needed
@@ -220,23 +236,27 @@ const TimeViewGallery: React.FC = () => {
   // Now Render the described UI
   // Now Render the described UI
   return (
-    <div>
+    <div className="w-full">
       <ImagePreview />
-      <ul className="flex space-x-4 overflow-x-auto bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
-        {groupedOrderedImagesByDay.map((group) => (
-          <li
-            key={group.date.toDateString()}
-            className={`cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors ${
-              selectedDate === group.date.toDateString()
-                ? 'bg-gray-400 text-white'
-                : 'bg-white hover:bg-gray-100'
-            }`}
-            onClick={() => scrollToGroup(group.date.toDateString())}
-          >
-            {group.date.toDateString()}
-          </li>
-        ))}
-      </ul>
+      <div className="w-full overflow-x-auto" style={{ flexShrink: 0 }}>
+        <div className="scrollmenu" ref={scrollContainerRef}>
+          <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
+            {groupedOrderedImagesByDay.map((group) => (
+              <li
+                key={group.date.toDateString()}
+                className={`cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors ${
+                  selectedDate === group.date.toDateString()
+                    ? 'bg-gray-400 text-white'
+                    : 'bg-white text-black hover:bg-gray-100'
+                }`}
+                onClick={() => scrollToGroup(group.date.toDateString())}
+              >
+                {group.date.toDateString()}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
       <div
         className="scrollable-container overflow-y-auto h-96 p-4 bg-white rounded-b-lg shadow-lg border border-gray-300"
         onScroll={handleScroll}
@@ -300,14 +320,24 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     //make start_hour to be the hour of the first image
     if (images.length > 0) {
       current_hour = new Date(
-        getDateAtLocalTime(images[0].created_at)
+        //getDateAtLocalTime(images[0].created_at)
+        timeFromString(images[0].created_at)
       ).getHours();
+      //subtract offset
     }
     //let start_hour = 0;
     let start_hour = current_hour;
 
     const list_of_subranges: SubRangeOfImages[] = [];
 
+    //find hour of id=199
+    const image_199 = images.filter((image) => parseInt(image.id) === 199);
+    if (image_199.length > 0) {
+      console.log(
+        'subrange id =199 hour is',
+        timeFromString(image_199[0].created_at).getHours()
+      );
+    }
     while (current_hour < 24) {
       // incriment through hours until adding the next hour would exceed 6 images
       const current_subrange: SubRangeOfImages = {
@@ -317,10 +347,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       };
 
       const images_for_hour = images.filter((image) => {
-        return (
-          new Date(getDateAtLocalTime(image.created_at)).getHours() ===
-          current_hour
-        );
+        return timeFromString(image.created_at).getHours() === current_hour;
       });
 
       //append list of images to current_subrange
@@ -328,8 +355,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       current_hour += 1;
 
       let images_for_next_hour = images.filter((image) => {
-        new Date(getDateAtLocalTime(image.created_at)).getHours() ===
-          current_hour;
+        return timeFromString(image.created_at).getHours() === current_hour;
       });
 
       let number_of_images = images_for_hour.length;
@@ -340,11 +366,29 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
         current_subrange.images =
           current_subrange.images.concat(images_for_next_hour);
 
+        //print if images_for_next_hour contains id=199
+        if (
+          images_for_next_hour.filter((image) => parseInt(image.id) === 199)
+            .length > 0
+        ) {
+          console.log('subrange images for next hour', images_for_next_hour);
+        }
+
         number_of_images += images_for_next_hour.length;
         images_for_next_hour = images.filter((image) => {
           const passes_filter =
-            new Date(getDateAtLocalTime(image.created_at)).getHours() ===
-            current_hour;
+            timeFromString(image.created_at).getHours() === current_hour;
+
+          //print if images_for_next_hour contains id=199
+          if (
+            images_for_next_hour.filter((image) => parseInt(image.id) === 199)
+              .length > 0
+          ) {
+            console.log(
+              'subrange images for next hou 2r',
+              images_for_next_hour
+            );
+          }
 
           return passes_filter;
         });
@@ -371,7 +415,8 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
           ? Math.max(
               current_hour,
               new Date(
-                getDateAtLocalTime(
+                //getDateAtLocalTime(current_subrange.images[current_subrange.images.length - 1].created_at)
+                timeFromString(
                   current_subrange.images[current_subrange.images.length - 1]
                     .created_at
                 )
@@ -383,6 +428,8 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       list_of_subranges.push(current_subrange);
       ///return list_of_subranges;
     }
+    console.log('list of subranges input', images);
+    console.log('list of subranges', list_of_subranges);
     return list_of_subranges;
   };
 

@@ -361,10 +361,18 @@ function Page() {
         )}
       </div>
       */}
-      <TripDropdownMenu />
-      {day_by_day_banners && bannerComponent}
+
+      {/** Make Trip Dropdown Menu not take up any "space" - position absolutely on the page */}
+
+      <div
+        className="z-100 absolute top-0 left-0"
+        style={{ zIndex: 214748364 }}
+      >
+        <TripDropdownMenu />
+      </div>
 
       <div className="content-container">
+        {day_by_day_banners && bannerComponent}
         <div
           className="MapComponent"
           style={{ height: `calc(100vh - ${galleryHeight}px)` }}
@@ -399,7 +407,7 @@ function Page() {
           <SelectionComponentGallery />
         </Resizable>
       </div>
-      <AddPathsForm />
+      {/*<AddPathsForm /> */}
     </div>
   );
 }
