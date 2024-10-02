@@ -195,38 +195,7 @@ const Image_View_ByDate: React.FC = () => {
   return (
     <div>
       {/* Make Scrollable */}
-      <div className="gallery mt-4 w-full justify-center bg-white rounded-b-lg shadow-lg border border-gray-300">
-        {/* {imagesForDay.map((image, i) => (
-          <div key={image.id}>
-            <NextImage
-              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-              alt={`Image for ${image.created_at}`}
-              width={100}
-              height={100}
-              onClick={() => handleImageClick(image)}
-              style={{
-                cursor: 'pointer',
-                margin: '10px',
-                width: '100px',
-                height: '100px',
-                border:
-                  selected_image_location &&
-                  selected_image_location.id === image.id
-                    ? '5px solid blue'
-                    : 'none',
-              }}
-            />
-            <HiOutlinePencil
-              onClick={() => handleEditImage(image)}
-              className="cursor-pointer"
-            />
-            <HiEye
-              onClick={() => setPreviewImage(i)}
-              className="cursor-pointer"
-            />
-          </div>
-        ))}*/}
-      </div>
+      <div className="gallery mt-4 w-full justify-center bg-white rounded-b-lg shadow-lg border border-gray-300"></div>
       <div className="scrollable-container overflow-y-auto h-96 p-4 bg-white rounded-b-lg shadow-lg border border-gray-300">
         <GroupImagesByTime
           images={groupedOrderedImagesByDay[0].images}

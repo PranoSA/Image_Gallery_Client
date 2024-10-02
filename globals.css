@@ -33,6 +33,14 @@
   overflow: hidden;
 }
 
+.content-container-horizontal {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+  height: 100vh;
+  flex-direction: row;
+}
+
 .MapComponent {
   flex-grow: 1;
   overflow: hidden;

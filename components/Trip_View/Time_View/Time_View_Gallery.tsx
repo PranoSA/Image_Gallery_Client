@@ -66,8 +66,12 @@ const TimeViewGallery: React.FC = () => {
     isLoadingError: imagesError,
   } = useQueryTripImages(id);
 
-  const { selected_date, selected_image_location, filtered_categories } =
-    useTripViewStore();
+  const {
+    selected_date,
+    selected_image_location,
+    filtered_categories,
+    horizontally_tabbed,
+  } = useTripViewStore();
 
   type ImagesByDay = {
     date: Date;
@@ -236,7 +240,7 @@ const TimeViewGallery: React.FC = () => {
   // Now Render the described UI
   // Now Render the described UI
   return (
-    <div className="w-full">
+    <div className="w-full h-full">
       <ImagePreview />
       <div className="w-full overflow-x-auto" style={{ flexShrink: 0 }}>
         <div className="scrollmenu" ref={scrollContainerRef}>
@@ -258,7 +262,7 @@ const TimeViewGallery: React.FC = () => {
         </div>
       </div>
       <div
-        className="scrollable-container overflow-y-auto h-96 p-4 bg-white rounded-b-lg shadow-lg border border-gray-300"
+        className="scrollable-container overflow-y-auto h-full p-4 bg-white rounded-b-lg shadow-lg border border-gray-300"
         onScroll={handleScroll}
       >
         {groupedOrderedImagesByDay.map((group) => {
@@ -309,7 +313,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   date,
 }) => {
   // group images into SubRangeOfImages
-  const { selected_image_location } = useTripViewStore();
+  const { selected_image_location, horizontally_tabbed } = useTripViewStore();
 
   const groupedSubRangeImages = (
     images: Image[],
@@ -509,7 +513,11 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 return (
                   <div
                     key={image.id}
-                    className="relative flex flex-col items-center w-1/6"
+                    className={`relative flex flex-col items-center ${
+                      horizontally_tabbed
+                        ? 'w-1/3 xl:w-1/4'
+                        : 'w-1/3 lg:w-1/4 xl:w-1/6'
+                    } p-4 bg-white rounded-lg shadow-lg border border-gray-300`}
                   >
                     <div
                       key={image.id}

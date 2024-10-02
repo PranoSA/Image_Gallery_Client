@@ -86,6 +86,10 @@ function Page() {
   const [galleryHeight, setGalleryHeight] = useState(400); // Initial height of the gallery
   const prevGalleryHeight = useRef<number>(galleryHeight);
 
+  //width of the gallery
+  const [galleryWidth, setGalleryWidth] = useState(600);
+  const prevGalleryWidth = useRef<number>(galleryWidth);
+
   const {
     data: trip,
     isLoading: tripLoading,
@@ -110,6 +114,7 @@ function Page() {
     get_images_for_day,
     selected_image_location,
     day_by_day_banners,
+    horizontally_tabbed,
   } = useTripViewStore();
 
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -313,55 +318,56 @@ function Page() {
     showMenu(!menu);
   };
 
+  //if horizontally tabbed, then return a different component
+  //The Resizable will be done left to right
+  if (horizontally_tabbed) {
+    return (
+      <div className="page-container">
+        <div
+          className="z-100 absolute top-0 left-0"
+          style={{ zIndex: 214748364 }}
+        >
+          <TripDropdownMenu />
+        </div>
+
+        <div className="content-container-horizontal">
+          <div className="MapComponent">
+            <MapComponent height={`calc(100vh - 50px)`} />
+          </div>
+
+          <Resizable
+            size={{ width: galleryWidth }}
+            onResizeStop={(e, direction, ref, d) => {
+              //set minmum size 50px
+
+              setGalleryWidth(
+                Math.max(150, prevGalleryWidth.current + d.width)
+              );
+              prevGalleryWidth.current = Math.max(
+                150,
+                prevGalleryWidth.current + d.width
+              );
+            }}
+            onResize={
+              (e, direction, ref, d) => {
+                setGalleryWidth(prevGalleryWidth.current + d.width);
+              }
+              //console.log('Resizing:', d.height)
+            }
+            style={{
+              borderLeft: '5px solid #000', // Add a top border
+              cursor: 'col-resize',
+            }}
+          >
+            <SelectionComponentGallery />
+          </Resizable>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
-      {/*
-      {pathModalSelected != null && pathModalPosition && (
-        <PathMapModal
-          path={pathModalSelected}
-          closeModal={() => {
-            setPathModalSelected(null);
-          }}
-          position={pathModalPosition}
-        />
-      )}
-      <div className="relative inline-block text-left">
-        <button
-          onClick={toggleMenu}
-          className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-        >
-          {menu ? 'Close Menu' : 'Open Menu'}
-          {menu ? (
-            <FaChevronUp className="ml-2" />
-          ) : (
-            <FaChevronDown className="ml-2" />
-          )}
-        </button>
-        {menu && (
-          <div className="z-50 origin-top-right absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-            <div
-              className="py-1"
-              role="menu"
-              aria-orientation="vertical"
-              aria-labelledby="options-menu"
-            >
-              <button
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                onClick={() => setComparingPhotos(!comparingPhotos)}
-              >
-                {comparingPhotos ? 'Stop Comparing Photos' : 'Compare Photos'}
-              </button>
-              <Modal
-                isOpen={pathModalOpen}
-                onClose={() => setPathModalOpen(!pathModalOpen)}
-                onSubmit={submitModal}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-      */}
-
       {/** Make Trip Dropdown Menu not take up any "space" - position absolutely on the page */}
 
       <div

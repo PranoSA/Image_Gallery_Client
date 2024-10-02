@@ -271,6 +271,8 @@ type StoreState = {
   //selected_trip_id: string;
   filtered_categories: string[];
 
+  horizontally_tabbed: boolean;
+
   selecting_category: boolean; //this is for opening / closing the form
 
   filtering_images: boolean; //this is for filtering images
@@ -363,6 +365,7 @@ export const tripViewStore = new Store<StoreState>({
   image_heat_map: init_state.image_heat_map ?? true,
   paths_open: init_state.paths_open ?? true,
   comparing_photos: false,
+  horizontally_tabbed: init_state.horizontally_tabbed ?? true,
 
   adding_images: false,
 
@@ -458,6 +461,7 @@ const StoringSate: Listener = () => {
     zoom_on_day_change: tripViewStore.state.zoom_on_day_change,
     day_by_day_banners: tripViewStore.state.day_by_day_banners,
     map_open: tripViewStore.state.map_open,
+    horizontally_tabbed: tripViewStore.state.horizontally_tabbed,
   };
 
   //serialize the object
@@ -479,4 +483,5 @@ type PersistedSettings = {
   zoom_on_day_change: boolean;
   day_by_day_banners: boolean;
   map_open: boolean;
+  horizontally_tabbed: boolean;
 };

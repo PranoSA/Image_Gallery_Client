@@ -54,6 +54,7 @@ export const TripDropdownMenu: React.FC = () => {
     image_heat_map,
     comparing_photos,
     filtering_images,
+    horizontally_tabbed,
   } = useTripViewStore();
 
   //maybe comparing photos should be a new page?
@@ -169,6 +170,30 @@ export const TripDropdownMenu: React.FC = () => {
                 {'Show Day By Day Banners'}
               </span>
             </label>
+            {/* Horizontal Tabbing */}
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={horizontally_tabbed}
+                onChange={() => {
+                  console.log('horizontally_tabbed', horizontally_tabbed);
+
+                  const new_state = {
+                    ...tripViewStore.state,
+                    horizontally_tabbed: !horizontally_tabbed,
+                  };
+
+                  tripViewStore.setState((state) => {
+                    return new_state;
+                  });
+                }}
+                className="form-checkbox h-5 w-5 text-gray-600"
+              />
+              <span className="text-gray-700 text-sm">
+                {'Horizontal Tabbing'}
+              </span>
+            </label>
+
             {/* zoom on day change checkbox*/}
             <label className="flex items-center space-x-3">
               <input
