@@ -88,15 +88,15 @@ const EditImageForm: FC = () => {
     //Change the Date of the Edited Image
     if (!editedImage) return;
 
-    //This will splitting the created_at and changing the date and joining the time back
-    const [date, time] = e.target.value.split('T');
+    // get the yyyy-mm-dd part of the date
+    const date = e.target.value;
+    const [year, month, day] = date.split('-').map(Number);
 
     //const new_created_at = `${date}T${editedImage.created_at.split('T')[1]}`;
     const new_created_at = editedImage.created_at;
-    //set the new date
-    const date_from_field = new Date(e.target.value);
-
-    new_created_at.setDate(date_from_field.getDate());
+    new_created_at.setFullYear(year);
+    new_created_at.setMonth(month - 1);
+    new_created_at.setDate(day);
 
     setEditedImage({
       ...editedImage,
@@ -105,28 +105,19 @@ const EditImageForm: FC = () => {
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    //Change the Time of the Edited Image
     if (!editedImage) return;
 
-    //This will splitting the created_at and changing the time and joining the date back
-    //const [date, time] = editedImage.created_at.split('T');
-
-    const date = editedImage.created_at.getDate();
-    const time = editedImage.created_at.getTime();
-
-    const new_time = e.target.value;
-
-    const new_created_at = new Date(date);
-    new_created_at.setHours(parseInt(new_time.split(':')[0]));
-    new_created_at.setMinutes(parseInt(new_time.split(':')[1]));
-    new_created_at.setSeconds(parseInt(new_time.split(':')[2]));
+    const [hours, minutes, seconds] = e.target.value.split(':').map(Number);
+    const newDate = new Date(editedImage.created_at);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(seconds);
 
     setEditedImage({
       ...editedImage,
-      created_at: new_created_at,
+      created_at: newDate,
     });
   };
-
   const cancelEditImage = () => {
     tripViewStore.setState((state) => {
       return {
@@ -138,13 +129,34 @@ const EditImageForm: FC = () => {
 
   if (!editedImage) return null;
 
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTime = (date: Date): string => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  <input
+    type="date"
+    value={editedImage?.created_at ? formatDate(editedImage.created_at) : ''}
+    onChange={handleDateChange}
+    className="w-1/2 px-3 py-2 border rounded-lg"
+  />;
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg">
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            submitEditedImage();
+            //submitEditedImage();
           }}
         >
           <div className="mb-4">
@@ -171,32 +183,30 @@ const EditImageForm: FC = () => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700">Description:</label>
-            <input
-              type="text"
-              name="description"
-              value={editedImage?.description || ''}
-              onChange={handleEditedImageChange}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
+            <label className="block text-gray-700">Date:</label>
+            <div className="flex space-x-2">
+              <input
+                type="date"
+                value={
+                  editedImage?.created_at
+                    ? formatDate(editedImage.created_at)
+                    : ''
+                }
+                onChange={handleDateChange}
+                className="w-1/2 px-3 py-2 border rounded-lg"
+              />
+            </div>
           </div>
+
           <div className="mb-4">
             <label className="block text-gray-700">Created At:</label>
             <div className="flex space-x-2">
               <input
-                type="date"
-                value={editedImage?.created_at.getDate()}
-                onChange={handleDateChange}
-                className="w-1/2 px-3 py-2 border rounded-lg"
-              />
-              <input
                 type="time"
                 value={
-                  editedImage?.created_at.getHours() +
-                  ':' +
-                  editedImage?.created_at.getMinutes() +
-                  ':' +
-                  editedImage?.created_at.getSeconds()
+                  editedImage?.created_at
+                    ? formatTime(editedImage.created_at)
+                    : ''
                 }
                 onChange={handleTimeChange}
                 className="w-1/2 px-3 py-2 border rounded-lg"
@@ -211,7 +221,7 @@ const EditImageForm: FC = () => {
           <button
             type="submit"
             className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-            onClick={submitEditedImage}
+            onClick={() => submitEditedImage()}
           >
             Save
           </button>
