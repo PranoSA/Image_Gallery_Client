@@ -71,6 +71,7 @@ const TimeViewGallery: React.FC = () => {
     selected_image_location,
     filtered_categories,
     horizontally_tabbed,
+    get_images_for_day,
   } = useTripViewStore();
 
   type ImagesByDay = {
@@ -113,13 +114,21 @@ const TimeViewGallery: React.FC = () => {
               new Date(b.created_at).getTime()
             );
           });
+        /*const imagesForDay = get_images_for_day(
+          selected_date,
+          trip?.start_date,
+          images
+        );
+        */
 
         //push to the images for the day
-        if (imagesForDay.length > 0) {
+        if (imagesForDay.length > -1) {
           grouped.push({
             date: new Date(current_date),
             images: imagesForDay,
           });
+          console.log('images for day date', current_date);
+          console.log('images for day', imagesForDay);
         }
         current_date.setDate(current_date.getDate() + 1);
       }
@@ -128,7 +137,7 @@ const TimeViewGallery: React.FC = () => {
     };
 
     return groupImagesByDay(images);
-  }, [images, trip]);
+  }, [get_images_for_day, images, trip]);
 
   const selectedDate = useMemo(() => {
     if (!trip) return new Date().toISOString();
@@ -216,6 +225,17 @@ const TimeViewGallery: React.FC = () => {
     //add a day to the selected date
     setSelectedDate(closestDate);
   };
+  const selectedDateRef = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    if (selectedDateRef.current) {
+      selectedDateRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+    }
+  }, [selectedDate]);
 
   if (tripLoading || imagesLoading) {
     return <div>Loading...</div>;
@@ -248,6 +268,11 @@ const TimeViewGallery: React.FC = () => {
             {groupedOrderedImagesByDay.map((group) => (
               <li
                 key={group.date.toDateString()}
+                ref={
+                  selectedDate === group.date.toDateString()
+                    ? selectedDateRef
+                    : null
+                }
                 className={`cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors ${
                   selectedDate === group.date.toDateString()
                     ? 'bg-gray-400 text-white'
@@ -323,25 +348,15 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
     //make start_hour to be the hour of the first image
     if (images.length > 0) {
-      current_hour = new Date(
-        //getDateAtLocalTime(images[0].created_at)
-        timeFromString(images[0].created_at)
-      ).getHours();
-      //subtract offset
+      current_hour = images[0].created_at.getHours();
+
+      //account for time zone shift
     }
     //let start_hour = 0;
     let start_hour = current_hour;
 
     const list_of_subranges: SubRangeOfImages[] = [];
 
-    //find hour of id=199
-    const image_199 = images.filter((image) => parseInt(image.id) === 199);
-    if (image_199.length > 0) {
-      console.log(
-        'subrange id =199 hour is',
-        timeFromString(image_199[0].created_at).getHours()
-      );
-    }
     while (current_hour < 24) {
       // incriment through hours until adding the next hour would exceed 6 images
       const current_subrange: SubRangeOfImages = {
@@ -351,7 +366,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       };
 
       const images_for_hour = images.filter((image) => {
-        return timeFromString(image.created_at).getHours() === current_hour;
+        return image.created_at.getHours() === current_hour;
       });
 
       //append list of images to current_subrange
@@ -359,40 +374,22 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       current_hour += 1;
 
       let images_for_next_hour = images.filter((image) => {
-        return timeFromString(image.created_at).getHours() === current_hour;
+        return image.created_at.getHours() === current_hour;
       });
 
       let number_of_images = images_for_hour.length;
 
-      while (number_of_images + images_for_next_hour.length <= 6) {
+      while (number_of_images + images_for_next_hour.length <= 8) {
         current_hour++;
         //append list of images to current_subrange
         current_subrange.images =
           current_subrange.images.concat(images_for_next_hour);
 
-        //print if images_for_next_hour contains id=199
-        if (
-          images_for_next_hour.filter((image) => parseInt(image.id) === 199)
-            .length > 0
-        ) {
-          console.log('subrange images for next hour', images_for_next_hour);
-        }
-
         number_of_images += images_for_next_hour.length;
         images_for_next_hour = images.filter((image) => {
           const passes_filter =
-            timeFromString(image.created_at).getHours() === current_hour;
-
-          //print if images_for_next_hour contains id=199
-          if (
-            images_for_next_hour.filter((image) => parseInt(image.id) === 199)
-              .length > 0
-          ) {
-            console.log(
-              'subrange images for next hou 2r',
-              images_for_next_hour
-            );
-          }
+            image.created_at.getHours() === current_hour &&
+            image.created_at.toDateString() === date.toDateString();
 
           return passes_filter;
         });
@@ -418,13 +415,9 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
         current_subrange.images.length > 0
           ? Math.max(
               current_hour,
-              new Date(
-                //getDateAtLocalTime(current_subrange.images[current_subrange.images.length - 1].created_at)
-                timeFromString(
-                  current_subrange.images[current_subrange.images.length - 1]
-                    .created_at
-                )
-              ).getHours()
+              current_subrange.images[
+                current_subrange.images.length - 1
+              ].created_at.getHours()
             )
           : current_hour;
 
@@ -432,8 +425,10 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       list_of_subranges.push(current_subrange);
       ///return list_of_subranges;
     }
-    console.log('list of subranges input', images);
+
+    console.log('list of subranges for day', date.toDateString());
     console.log('list of subranges', list_of_subranges);
+
     return list_of_subranges;
   };
 
@@ -466,6 +461,17 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   // set the selected image location
   const setSelectedImageLocation = (image: Image) => {
+    //check if the image is already selected
+    if (selected_image_location && selected_image_location.id === image.id) {
+      tripViewStore.setState((state) => {
+        return {
+          ...state,
+          selected_image_location: null,
+        };
+      });
+      return;
+    }
+
     store.setState((state) => {
       return {
         ...state,
@@ -498,17 +504,17 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
         });
 
         return (
-          <div key={date.toDateString() + subrange.start_hour} className="mb-8">
+          <div key={date.toDateString() + subrange.start_hour} className="mb-4">
             <div className="text-lg font-semibold mb-2">
               {subrange.start_hour > 12
                 ? `${subrange.start_hour - 12}PM`
                 : `${subrange.start_hour}AM`}{' '}
               -{' '}
-              {subrange.end_hour - 12
+              {subrange.end_hour > 12
                 ? `${subrange.end_hour - 12}PM`
                 : `${subrange.end_hour}AM`}
             </div>
-            <div className="flex flex-wrap flex-row justify-around mt-4 items-center gap-y-4">
+            <div className="flex flex-wrap flex-row justify-around items-center gap-y-1">
               {subrange.images.map((image, i) => {
                 return (
                   <div
@@ -517,30 +523,32 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                       horizontally_tabbed
                         ? 'w-1/3 xl:w-1/4'
                         : 'w-1/3 lg:w-1/4 xl:w-1/6'
-                    } p-4 bg-white rounded-lg shadow-lg border border-gray-300`}
+                    }  bg-white rounded-lg shadow-lg border border-gray-300`}
+                    style={{
+                      border:
+                        selected_image_location &&
+                        selected_image_location.id === image.id
+                          ? '5px solid blue'
+                          : 'none',
+                    }}
                   >
                     <div
                       key={image.id}
-                      className="relative w-full flex m-4 flex-col items-center p-4 bg-white rounded-lg shadow-lg border border-gray-300"
+                      className="relative w-full flex flex-col items-center p-4 bg-white rounded-lg shadow-lg border border-gray-300"
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="w-32 h-[128px] flex items-center justify-center bg-gray-100 p-5 border border-gray-700"
+                        className="w-32  flex items-center justify-center bg-gray-100 p-1 border "
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}
-                          width={128}
-                          height={128}
-                          className="object-contain rounded-lg shadow-md"
+                          width={164}
+                          height={164}
+                          className="object-contain rounded-lg"
                           style={{
                             cursor: 'pointer',
                             margin: '10px',
-                            border:
-                              selected_image_location &&
-                              selected_image_location.id === image.id
-                                ? '5px solid blue'
-                                : 'none',
                           }}
                         />
                       </div>

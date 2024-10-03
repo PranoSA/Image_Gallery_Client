@@ -1,7 +1,7 @@
 interface Image {
   id: string;
   file_path: string;
-  created_at: string;
+  created_at: Date;
   long: string;
   lat: string;
   ol_id?: string;
@@ -18,7 +18,7 @@ type Category = {
 };
 
 interface Trip {
-  id: number;
+  id: string;
   name: string;
   description: string;
   start_date: string;
@@ -29,7 +29,7 @@ interface Trip {
 }
 
 interface Path {
-  id: number;
+  id: string;
   kml_file: string;
   name: string;
   description: string;
@@ -43,4 +43,4 @@ interface Path {
   tripid: number;
 }
 
-export type { Image, Trip, Path };
+export type { Image, Trip, Path, Category };

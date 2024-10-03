@@ -53,10 +53,10 @@ export const authOptions: AuthOptions = {
       //      session.user = user;
       //     session.user.sub = token.sub;
 
-      console.log('Token Expires', session.expires);
+
 
       session.accessToken = token.accessToken as string;
-      console.log('session', session);
+
       return session;
     },
     async jwt({ token, user, account }) {

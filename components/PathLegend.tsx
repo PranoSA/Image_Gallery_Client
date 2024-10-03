@@ -1,5 +1,7 @@
 import { useContext, useEffect, useRef, useMemo } from 'react';
 
+import { Path } from '@/definitions/Trip_View';
+
 interface PathLegendProps {
   paths: Path[];
 }

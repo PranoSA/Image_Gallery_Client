@@ -102,10 +102,7 @@ const Image_View_ByDate: React.FC = () => {
         images
       );
 
-      console.log(
-        'images for child component from parent',
-        imagesForSelectedDate
-      );
+
 
       return [
         {
@@ -228,7 +225,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   // group images into SubRangeOfImages
   const { selected_image_location } = useTripViewStore();
 
-  console.log('images child component', images);
+
 
   const groupedSubRangeImages = (
     images: Image[],
@@ -252,10 +249,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     //find hour of id=199
     const image_199 = images.filter((image) => parseInt(image.id) === 199);
     if (image_199.length > 0) {
-      console.log(
-        'subrange id =199 hour is',
-        timeFromString(image_199[0].created_at).getHours()
-      );
+
     }
     while (current_hour < 24) {
       // incriment through hours until adding the next hour would exceed 6 images
@@ -290,7 +284,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
           images_for_next_hour.filter((image) => parseInt(image.id) === 199)
             .length > 0
         ) {
-          console.log('subrange images for next hour', images_for_next_hour);
+
         }
 
         number_of_images += images_for_next_hour.length;
@@ -303,10 +297,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
             images_for_next_hour.filter((image) => parseInt(image.id) === 199)
               .length > 0
           ) {
-            console.log(
-              'subrange images for next hou 2r',
-              images_for_next_hour
-            );
+
           }
 
           return passes_filter;
@@ -347,8 +338,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       list_of_subranges.push(current_subrange);
       ///return list_of_subranges;
     }
-    console.log('list of subranges input', images);
-    console.log('list of subranges', list_of_subranges);
+
     return list_of_subranges;
   };
 

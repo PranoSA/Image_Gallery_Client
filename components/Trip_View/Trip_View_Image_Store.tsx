@@ -11,11 +11,29 @@ import { Image, Path, Trip } from '@/definitions/Trip_View';
 
 import axios from 'axios';
 
-const fetchTripImages = async (trip_id: string) => {
+const getBearerFromLocalStorage = () => {
+  return localStorage.getItem('accessToken');
+};
+
+const createRequestHeaders: () => HeadersInit = () => {
+  return {
+    Authorization: `Bearer ${getBearerFromLocalStorage()}`,
+  };
+};
+
+const fetchTripImages = async (trip_id: string): Promise<Image[]> => {
+  const auth_token = getBearerFromLocalStorage();
+
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/images`
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/images`,
+    {
+      headers: createRequestHeaders(),
+    }
   );
-  return response.json();
+  const images = await response.json();
+
+  //return images
+  return images;
 };
 
 function timestampReviver(key: any, value: any) {
@@ -42,6 +60,7 @@ const updateImageMutation = async (image: Image, trip: Trip) => {
     {
       method: 'PUT',
       headers: {
+        Authorization: `Bearer ${getBearerFromLocalStorage()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(image),
@@ -81,7 +100,6 @@ export const UpdateImage = () => {
       if (!previousData) {
         console.error('No previous data');
 
-        console.log("Image's trip id: ", newData.trip.id);
         return;
       }
 
@@ -103,11 +121,6 @@ export const UpdateImage = () => {
         ['trip', newData.trip.id.toString(), 'images'],
         new_data
       );
-
-      console.log('New Image Data: ', newData.image);
-
-      //old image
-      console.log('Old Image Data: ', imageToUpdate);
 
       //what is the return variable for exactly?
       return { imageToUpdate, previousData };
@@ -131,6 +144,7 @@ const addImages = async (formData: FormData, id: string) => {
       formData,
       {
         headers: {
+          Authorization: `Bearer ${getBearerFromLocalStorage()}`,
           'Content-Type': 'multipart/form-data',
         },
       }
@@ -169,22 +183,27 @@ export const useAddImage = () => {
 
 const fetchTripPaths = async (trip_id: string) => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/paths`
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/paths`,
+    {
+      headers: createRequestHeaders(),
+    }
   );
   return response.json();
 };
 
 const fetchTrip = async (trip_id: string) => {
+  const auth_token = getBearerFromLocalStorage();
   if (!trip_id) {
-    console.log('failed to fetch trip');
     return [];
     //throw new Error('trip_id is not defined');
     // throw new Error('trip_id is not defined');
   }
-  console.log('Used query trip');
 
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}`
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}`,
+    {
+      headers: createRequestHeaders(),
+    }
   );
   const data = await response.json();
   return data[0];
@@ -192,7 +211,10 @@ const fetchTrip = async (trip_id: string) => {
 
 const fetchDaySummary = async (trip_id: string, date: string) => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summa23123ries/${date}`
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summaries/${date}`,
+    {
+      headers: createRequestHeaders(),
+    }
   );
   return response.json();
 };
@@ -207,6 +229,7 @@ export const updateDaySummaryMutation = async (
     {
       method: 'POST',
       headers: {
+        ...createRequestHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ summary }),
@@ -242,15 +265,27 @@ export const useQueryTrip = (trip_id: string) => {
 export const useQueryTripImages = (trip_id: string) => {
   return useQuery<Image[]>({
     queryKey: ['trip', trip_id, 'images'],
-    queryFn: () => {
+    queryFn: async () => {
       if (!trip_id) {
         throw new Error('trip_id is not defined');
       }
 
-      const images = fetchTripImages(trip_id);
-      //console.log('Images 1-5', images.slice(0, 5));
+      const images: Image[] = await fetchTripImages(trip_id);
+      //serialized images - turn created_at into a Date if it is a string
+      //also, subtract new Date().getTimezoneOffset() from each image
 
-      return images;
+      const subtraction_minutes = new Date().getTimezoneOffset();
+
+      const transformed_images = images.map((image) => {
+        image.created_at = new Date(image.created_at);
+        image.created_at.setMinutes(
+          image.created_at.getMinutes() + subtraction_minutes
+        );
+
+        return image;
+      });
+
+      return transformed_images;
     },
   });
 };
@@ -344,8 +379,6 @@ const init_state: PersistedSettings = JSON.parse(
   localStorage.getItem('trip_view_settings') || '{}'
 );
 
-console.log('Initial State: ', init_state);
-
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
   filtering_images: init_state.filtering_images || false,
@@ -388,7 +421,9 @@ export const tripViewStore = new Store<StoreState>({
     images: Image[]
   ) => {
     //return images at that day, ordered by time
-    console.log('Filtering Through Images', images);
+
+    //easier way to do to this now
+
     //get start_date
     const dateStart = dateFromString(start_date);
     dateStart.setDate(dateStart.getDate() + selected_date);
@@ -400,7 +435,9 @@ export const tripViewStore = new Store<StoreState>({
     //using timeFromString
 
     const imagesOnDay = images.filter((image) => {
-      const imageDate = timeFromString(image.created_at);
+      const imageDate = new Date(image.created_at);
+
+      //const imageDate = timeFromString(image.created_at);
       return imageDate >= dateStart && imageDate < dateEnd;
     });
 
@@ -410,23 +447,6 @@ export const tripViewStore = new Store<StoreState>({
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
     });
-
-    //t
-    const dateSearch = new Date(start_date);
-    dateSearch.setDate(dateSearch.getDate() + selected_date);
-    return images
-      .filter((image) => {
-        return (
-          image.created_at.split('T')[0] ===
-          dateSearch.toISOString().split('T')[0]
-        );
-      })
-      .sort((a, b) => {
-        // convert to epoch, then compare
-        return (
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      });
   },
   get_unsorted_images: (
     images: Image[],
@@ -451,8 +471,6 @@ export const useTripViewStore = () => {
 };
 
 const StoringSate: Listener = () => {
-  console.log('Store State:', tripViewStore);
-
   //create a persisted settings object
   const persistedSettings: PersistedSettings = {
     filtering_images: tripViewStore.state.filtering_images,

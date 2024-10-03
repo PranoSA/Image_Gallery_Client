@@ -183,8 +183,24 @@ h2 {
 }
 
 .scrollmenu {
-  overflow-x: auto;
+  overflow-x: scroll; /* Ensure the scrollbar is always visible */
   white-space: nowrap;
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #888 #e0e0e0; /* For Firefox */
+}
+
+.scrollmenu::-webkit-scrollbar {
+  height: 12px; /* Adjust the height of the scrollbar */
+}
+
+.scrollmenu::-webkit-scrollbar-track {
+  background: #e0e0e0; /* Background of the scrollbar track */
+}
+
+.scrollmenu::-webkit-scrollbar-thumb {
+  background-color: #888; /* Color of the scrollbar thumb */
+  border-radius: 10px; /* Rounded corners */
+  border: 3px solid #e0e0e0; /* Padding around the thumb */
 }
 
 .scrollmenu ul {

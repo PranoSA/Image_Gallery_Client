@@ -5,11 +5,12 @@ import axios from 'axios';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
+import InviteUserToTripForm from '@/components/Home_View/InviteUserToTripForm';
 
 // get server session
 
 interface Trip {
-  id: number;
+  id: string;
   name: string;
   description: string;
   start_date: string;
@@ -23,12 +24,21 @@ export default function Home() {
     description: '',
     start_date: '',
     end_date: '',
+    categories: [],
   });
   const [showForm, setShowForm] = useState(false);
 
   const [editTrip, setEditTrip] = useState<boolean>(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
+
+  //id of trip to invite user to
+  // if null, then no form is shown
+  const [inviteForm, setInviteForm] = useState<string | null>(null);
+
+  const closeInviteForm = () => {
+    setInviteForm(null);
+  };
 
   //login status
   const { data: session, status } = useSession();
@@ -43,6 +53,7 @@ export default function Home() {
 
     // fetch http://localhost:5000/whoami
     const fetchWhoAmI = async () => {
+      return;
       try {
         const response = await axios.get(`http://localhost:5000/whoami`, {
           headers: {
@@ -230,9 +241,19 @@ export default function Home() {
 
   useEffect(() => {
     const fetchTrips = async () => {
+      //if no access token, return
+      if (!session) {
+        return;
+      }
+
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/trips`
+          `${process.env.NEXT_PUBLIC_API_URL}/trips`,
+          {
+            headers: {
+              Authorization: `Bearer ${session?.accessToken}`,
+            },
+          }
         );
         setTrips(response.data);
       } catch (error) {
@@ -241,7 +262,7 @@ export default function Home() {
     };
 
     fetchTrips();
-  }, []);
+  }, [session]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -253,8 +274,18 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/trips`, newTrip);
-      setNewTrip({ name: '', description: '', start_date: '', end_date: '' });
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/trips`, newTrip, {
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
+      setNewTrip({
+        name: '',
+        description: '',
+        start_date: '',
+        end_date: '',
+        categories: [],
+      });
       setShowForm(false);
       // Fetch trips again to update the list
       const response = await axios.get(
@@ -274,6 +305,16 @@ export default function Home() {
   //if not logged in, redirect to login page
   if (!session) {
     return <button onClick={() => signIn('keycloak')}>Sign In </button>;
+  }
+
+  // show invite modal if inviteForm is not null
+  if (inviteForm) {
+    return (
+      <InviteUserToTripForm
+        tripId={inviteForm}
+        closeInviteForm={closeInviteForm}
+      />
+    );
   }
 
   return (
@@ -309,6 +350,12 @@ export default function Home() {
                 Edit
               </button>
               <Link href={`/trip/${trip.id}`}>Visit</Link>
+              <button
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+                onClick={() => setInviteForm(trip.id)}
+              >
+                Invite
+              </button>
             </div>
           </div>
         ))}

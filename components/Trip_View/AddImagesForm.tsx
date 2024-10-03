@@ -9,6 +9,7 @@ import {
 import { useContext } from 'react';
 
 import TripContext from '../TripContext';
+import React from 'react';
 
 export default function AddImagesForm() {
   const { id } = useContext(TripContext);

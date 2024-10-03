@@ -1,6 +1,6 @@
 'use client';
 
-import { Image as Image, Trip } from '@/definitions/Trip_View';
+import { Image as Image, Trip, Category } from '@/definitions/Trip_View';
 
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
@@ -41,7 +41,19 @@ interface TripProviderProps {
 }
 
 const TripProvider = ({ children, id }: TripProviderProps) => {
-  return <TripContext.Provider value={{ id }}>{children}</TripContext.Provider>;
+  const [bearer_token, setBearerToken] = useState<string | null>(null);
+
+  const setBearerTokenFunction = (token: string) => {
+    setBearerToken(token);
+  };
+
+  return (
+    <TripContext.Provider
+      value={{ id, bearer_token, setBearerToken: setBearerTokenFunction }}
+    >
+      {children}
+    </TripContext.Provider>
+  );
 };
 
 const ItemTypes = {
@@ -64,7 +76,6 @@ const saveCategorizedTrip = async (trip: Trip) => {
     body: JSON.stringify(trip),
   })
     .then((res) => res.json())
-    .then((data) => console.log(data))
     .catch((err) => console.error(err));
 };
 
@@ -83,12 +94,10 @@ const saveCategorizedImages = (
 
     //print image if category is not '' or undefined
     if (image.category && image.category !== '') {
-      console.log('noticed image', image);
     }
 
     //print old image if category is not '' or undefined
     if (old_image?.category && old_image.category !== '') {
-      console.log('noticed old image', old_image);
     }
 
     //if old_image category is undefined and image category is not, then return true
@@ -98,8 +107,6 @@ const saveCategorizedImages = (
 
     return old_image?.category !== image.category;
   });
-
-  console.log('filtered_images', filtered_images);
 
   //promise all to update all images
   const promises = filtered_images.map((image) => {
@@ -125,7 +132,6 @@ const saveCategorizedImages = (
       body: JSON.stringify(image),
     })
       .then((res) => res.json())
-      .then((data) => console.log(data))
       .catch((err) => console.error(err));
   }
 };
@@ -191,7 +197,7 @@ const AddCategoryForm = ({ onAddCategory }: AddCategoryFormProps) => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('submitting', category);
+
     onAddCategory(category);
     //clear the form
     setCategory({
@@ -287,8 +293,6 @@ const ImageFolderComponents = () => {
       categories: [...localTrip.categories, category],
     };
 
-    console.log('new trip', newTrip);
-
     setLocalTrip(newTrip);
   };
 
@@ -346,7 +350,6 @@ const ImageFolderComponents = () => {
   const categories_on_date = useMemo(() => {
     const categories = localTrip?.categories || [];
 
-    console.log('categories', categories);
     return categories.filter((category) => {
       const start_date = dateFromString(category.start_date);
       const end_date = dateFromString(category.end_date);
@@ -354,8 +357,6 @@ const ImageFolderComponents = () => {
       return start_date <= current_date && current_date <= end_date;
     });
   }, [localTrip, current_date]);
-
-  console.log('categories_on_date', categories_on_date);
 
   //now , using the categories_on_date, we can create the folders
   const folders = categories_on_date.map((category) => {
@@ -376,8 +377,6 @@ const ImageFolderComponents = () => {
 
     return imagesForDay.filter(imageUnassigned);
   }, [imagesForDay, localTrip]);
-
-  console.log('folders', folders);
 
   // now, render the banner component to go day by day
   //and render the folers that will be the target for the images
@@ -671,9 +670,7 @@ const Folder = ({
   const dropRef = React.useRef<HTMLDivElement>(null);
   drop(dropRef);
 
-  const onDragEnd = (id: string) => {
-    console.log('drag end', id);
-  };
+  const onDragEnd = (id: string) => {};
 
   return (
     <div

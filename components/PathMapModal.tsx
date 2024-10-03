@@ -42,7 +42,6 @@ export const PathMapModal: React.FC<PathMapModalProps> = ({
         tripid: path.tripid,
       })
       .then((res) => {
-        console.log(res.data);
         setIsEditing(false);
       })
       .catch((err) => {

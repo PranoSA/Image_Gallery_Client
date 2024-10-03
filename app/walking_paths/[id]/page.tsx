@@ -55,12 +55,8 @@ const WalkinPathPage: React.FC = () => {
     // get the URL parameter path
     const url = new URL(window.location.href);
 
-    console.log('Building Trip From URL');
-
     // get the path parameter
     const path = url.searchParams.get('path');
-
-    console.log('Path:', path);
 
     if (!path) return;
 
@@ -79,12 +75,8 @@ const WalkinPathPage: React.FC = () => {
         uint8Array[i] = binaryString.charCodeAt(i);
       }
 
-      console.log('Uint8Array:', uint8Array);
       // Decode the Uint8Array to a compressed string
       const compressedString = new TextDecoder().decode(uint8Array);
-
-      console.log('I saw this compressed string: ');
-      console.log(compressedString);
 
       // Decompress the string
       const path_string_uncompressed = LZString.decompress(compressedString);
@@ -95,8 +87,6 @@ const WalkinPathPage: React.FC = () => {
       if (!path_json) {
         return;
       }
-
-      console.log('Path JSON:', path_json);
 
       // Set the trip
       setTrip({
@@ -116,24 +106,16 @@ const WalkinPathPage: React.FC = () => {
     }
   }, []);
 
-  //see when trip has changed
-  useEffect(() => {
-    console.log('Trip has changed', trip);
-  }, [trip]);
-
   // compress the path, and save it to the url
   useEffect(() => {
     //don't do this on the first render
 
     //compress the path
-    console.log('Saving Trip To URL');
 
     // Compress the string
     const path_string_uncompressed = JSON.stringify(tripRef.current.paths);
     const path_string_compressed = LZString.compress(path_string_uncompressed);
 
-    console.log('I want to see this compressed :');
-    console.log(path_string_compressed);
     // Encode the compressed string to a Uint8Array
     const uint8Array = new TextEncoder().encode(path_string_compressed);
 
@@ -162,8 +144,6 @@ const WalkinPathPage: React.FC = () => {
       };
 
       tripRef.current = new_trip;
-
-      console.log('Trip ahs been updated', new_trip);
 
       setTrip(new_trip);
 
@@ -571,9 +551,6 @@ const WalkinPathPage: React.FC = () => {
         const lineFeature = new Feature(lineString);
 
         vectorSourceRef.current.addFeature(lineFeature);
-
-        console.log('Length of Arc:', length_of_arc);
-        console.log('Eucledian Distance:', eucledian_distance_line);
 
         //if the difference isn't more than 20%, then don't draw the line
         if ((eucledian_distance_line - length_of_arc) / length_of_arc < 0.2) {

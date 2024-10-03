@@ -60,9 +60,6 @@ export const Banner_Component: React.FC = () => {
 
     //convert back to UTC date
 
-    console.log('date', date);
-    console.log('selected_date', selected_date);
-    console.log('start_date', start_date);
 
     //return UTC string Day of Week, Month Day, Year
     return date.toUTCString().split(' ').slice(0, 4).join(' ');

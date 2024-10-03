@@ -102,6 +102,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
   // get the categories relevant to the day and filter o
   const categories: string[] = useMemo(() => {
+    return [];
     const categoryies = tripsState.data?.categories || [];
 
     const relevant_categories = categoryies
@@ -131,7 +132,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
         color,
       };
     });
-    console.log('Updating Colored Categories', categorical);
+
     return {
       zoom_to_category: (category: string) => {},
       categories: categorical,
@@ -140,8 +141,6 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
   // Draw a Convex Hull with a margin, first clearing the previous convex hull
   useEffect(() => {
-    console.log('Drawing Convex Hull');
-
     if (!map) return;
 
     if (!filtering_images) {
@@ -150,46 +149,15 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
       addSource(convexHullSource.current);
     }
 
-    //add a random square with black border around [20,50] [30,50], [30,60], [20,60]
-    const square = new Feature({
-      geometry: new Polygon([
-        [
-          fromLonLat([20, 50]),
-          fromLonLat([30, 50]),
-          fromLonLat([30, 60]),
-          fromLonLat([20, 60]),
-          fromLonLat([20, 50]),
-        ],
-      ]),
-    });
-
-    //add to the source
-    square.setStyle(
-      new Style({
-        fill: new Fill({
-          color: 'rgba(0,0,0,0)',
-        }),
-        stroke: new Stroke({
-          color: 'rgba(0,0,0,1)',
-          width: 10,
-        }),
-      })
-    );
-
     //clear the previous convex hull
     convexHullSource.current.clear();
 
-    convexHullSource.current.addFeature(square);
-
     //create points from relevant images for each category
     coloredCategories.categories.forEach((category) => {
-      console.log('Convex Hull Category', category.category);
       // get related images
       const images_filtered = imagesState.data?.filter((image) => {
         return image.category === category.category;
       });
-
-      console.log('Convex Hull Images Filtered', images_filtered);
 
       if (!filtering_images) {
         //set an empty vector source
@@ -212,8 +180,6 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
         .filter((point) => {
           return point[0] != 0 || point[1] != 0;
         });
-
-      console.log('New Convex Hull Points', points);
 
       //if length is less than 2 - draw a circle
       if (points.length == 1) {
@@ -275,8 +241,6 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
       }
 
       if (points.length > 2) {
-        console.log('Creating convex hull for category', category.category);
-
         //draw convex hull
         const hull = turf.convex(turf.points(points));
 
@@ -312,14 +276,9 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
           );
           convexHullSource.current.addFeature(polygonFeature);
           //print coordinates of the convex hull
-          console.log(
-            'Convex Hull Coordinates',
-            polygonFeature.getGeometry()?.getExtent()
-          );
 
           //@ts-ignore
           //convexHullLayer.current?.getSource().addFeature(polygonFeature);
-          console.log('Convex Hull Feature', polygonFeature);
         }
       }
     });
@@ -338,14 +297,11 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
   ]);
 
   if (!filtering_images) {
-    console.log('No filtered categories');
     return null;
   }
 
   //zoom to category
   const zoom_to_category = (category: string) => {
-    console.log('Zoom to Category', category);
-
     //get the images for the category
     const images_category = imagesState.data?.filter((image) => {
       return image.category === category;
@@ -436,8 +392,6 @@ const CategoryLegendComponent: React.FC<CategoryLegendComponentProps> = ({
   categories,
   zoom_to_category,
 }) => {
-  console.log('Categories for legend', categories);
-
   return (
     <div className="absolute top-0 left-0 m-4 p-4 bg-white bg-opacity-75 rounded-lg shadow-lg w-1/3">
       <h3 className="text-xl font-semibold mb-2">Categories</h3>

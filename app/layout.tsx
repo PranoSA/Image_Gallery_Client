@@ -5,13 +5,19 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 const queryClient = new QueryClient();
 const inter = Inter({ subsets: ['latin'] });
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, SessionProviderProps } from 'next-auth/react';
 import { signOut } from 'next-auth/react';
+import { Session } from 'inspector/promises';
 
 const NextAuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  return <SessionProvider>{children}</SessionProvider>;
+  const sessionProps: SessionProviderProps = {
+    children,
+    refetchInterval: 300,
+  };
+
+  return <SessionProvider {...sessionProps} />;
 };
 
 /*

@@ -8,6 +8,7 @@ import { useContext, useEffect, useState, useRef, useMemo } from 'react';
 import { FaX } from 'react-icons/fa6';
 
 import '@/form-modal.css';
+import React from 'react';
 
 const AddPathsForm: React.FC = () => {
   const { id } = useContext(TripContext);

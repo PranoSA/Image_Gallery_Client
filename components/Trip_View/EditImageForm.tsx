@@ -19,6 +19,8 @@ import { FC } from 'react';
 
 import TripContext from '../TripContext';
 
+import { Image } from '@/definitions/Trip_View';
+
 const EditImageForm: FC = () => {
   //Every time editedImage changed, update this state
   // this ammounts to a reselection of the image
@@ -89,7 +91,12 @@ const EditImageForm: FC = () => {
     //This will splitting the created_at and changing the date and joining the time back
     const [date, time] = e.target.value.split('T');
 
-    const new_created_at = `${date}T${editedImage.created_at.split('T')[1]}`;
+    //const new_created_at = `${date}T${editedImage.created_at.split('T')[1]}`;
+    const new_created_at = editedImage.created_at;
+    //set the new date
+    const date_from_field = new Date(e.target.value);
+
+    new_created_at.setDate(date_from_field.getDate());
 
     setEditedImage({
       ...editedImage,
@@ -102,13 +109,17 @@ const EditImageForm: FC = () => {
     if (!editedImage) return;
 
     //This will splitting the created_at and changing the time and joining the date back
-    const [date, time] = editedImage.created_at.split('T');
+    //const [date, time] = editedImage.created_at.split('T');
+
+    const date = editedImage.created_at.getDate();
+    const time = editedImage.created_at.getTime();
 
     const new_time = e.target.value;
 
-    const new_created_at = `${
-      editedImage.created_at.split('T')[0]
-    }T${new_time}`;
+    const new_created_at = new Date(date);
+    new_created_at.setHours(parseInt(new_time.split(':')[0]));
+    new_created_at.setMinutes(parseInt(new_time.split(':')[1]));
+    new_created_at.setSeconds(parseInt(new_time.split(':')[2]));
 
     setEditedImage({
       ...editedImage,
@@ -174,17 +185,18 @@ const EditImageForm: FC = () => {
             <div className="flex space-x-2">
               <input
                 type="date"
-                value={editedImage?.created_at.split('T')[0]}
+                value={editedImage?.created_at.getDate()}
                 onChange={handleDateChange}
                 className="w-1/2 px-3 py-2 border rounded-lg"
               />
               <input
                 type="time"
                 value={
-                  editedImage?.created_at
-                    .split('T')[1]
-                    .split('+')[0]
-                    .split('-')[0]
+                  editedImage?.created_at.getHours() +
+                  ':' +
+                  editedImage?.created_at.getMinutes() +
+                  ':' +
+                  editedImage?.created_at.getSeconds()
                 }
                 onChange={handleTimeChange}
                 className="w-1/2 px-3 py-2 border rounded-lg"

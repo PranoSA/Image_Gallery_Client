@@ -48,7 +48,21 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import TripContext from '@/components/TripContext';
 import SelectionComponentGallery from '@/components/Trip_View/SelectionComponentGallery';
 import { Resizable } from 're-resizable';
+
+import {
+  useSession,
+  UseSessionOptions,
+  SessionProvider,
+} from 'next-auth/react';
 //process.env.NEXT_PUBLIC_API_URL
+
+//create provider next-auth
+//
+const NextAuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  return <SessionProvider>{children}</SessionProvider>;
+};
 
 const useTripContext = () => {
   return useContext(TripContext);
@@ -57,17 +71,32 @@ const useTripContext = () => {
 interface TripProviderProps {
   children: React.ReactNode;
   id: string;
+  bearer_token: string | null;
+  setBearerToken: (token: string) => void;
 }
 
-const TripProvider = ({ children, id }: TripProviderProps) => {
-  return <TripContext.Provider value={{ id }}>{children}</TripContext.Provider>;
+const TripProvider = ({ children, id, setBearerToken }: TripProviderProps) => {
+  return (
+    <TripContext.Provider value={{ id, bearer_token: null, setBearerToken }}>
+      {children}
+    </TripContext.Provider>
+  );
 };
 
 const PageWithProvider: React.FC<{ params: { id: string } }> = ({
   params: { id },
 }) => {
+  const [bearerToken, setBearerToken] = useState<string | null>(null);
+  const setBearerTokenCallback = (toke: string) => {
+    setBearerToken(toke);
+  };
+
   return (
-    <TripProvider id={id || '0'}>
+    <TripProvider
+      id={id || '0'}
+      bearer_token={bearerToken}
+      setBearerToken={setBearerToken}
+    >
       <QueryClientProvider client={queryClient}>
         <Page />
       </QueryClientProvider>
@@ -81,7 +110,7 @@ export default PageWithProvider;
 
 //function Page({ params: { id } }: { params: { id: string } }) {
 function Page() {
-  const { id } = useTripContext();
+  const { id, bearer_token, setBearerToken } = useTripContext();
 
   const [galleryHeight, setGalleryHeight] = useState(400); // Initial height of the gallery
   const prevGalleryHeight = useRef<number>(galleryHeight);
@@ -89,6 +118,18 @@ function Page() {
   //width of the gallery
   const [galleryWidth, setGalleryWidth] = useState(600);
   const prevGalleryWidth = useRef<number>(galleryWidth);
+
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    //store the access token in local storage
+    if (session?.accessToken) {
+      localStorage.removeItem('accessToken');
+      localStorage.setItem('accessToken', session.accessToken);
+    }
+    setBearerToken(session?.accessToken || '');
+    //set tripContext bearer token
+  }, [session, setBearerToken]);
 
   const {
     data: trip,
@@ -141,6 +182,14 @@ function Page() {
   // map to find the path id from the feature
   const pathFromFeature = useRef<Map>(new Map());
 
+  const imagesForDay: Image[] = useMemo(() => {
+    return get_images_for_day(
+      selected_date,
+      trip?.start_date || '1970-01-01',
+      images || []
+    );
+  }, [selected_date, trip, images]);
+
   //add interactivity to the map
 
   const [pathModalSelected, setPathModalSelected] = useState<Path | null>(null);
@@ -187,7 +236,6 @@ function Page() {
         x: event.pixel[0],
         y: event.pixel[1],
       });
-      console.log('Path:', path);
     }
   });
 
@@ -262,13 +310,6 @@ function Page() {
       </div>
     );
   }
-
-  const imagesForDay =
-    (images &&
-      images
-        .filter((i) => i.created_at.split('T')[0] === currentDay())
-        .sort((a, b) => a.created_at.localeCompare(b.created_at))) ||
-    [];
 
   if (comparingPhotos) {
     // Have the Image Gallery for that day instead of the map
@@ -348,12 +389,9 @@ function Page() {
                 prevGalleryWidth.current + d.width
               );
             }}
-            onResize={
-              (e, direction, ref, d) => {
-                setGalleryWidth(prevGalleryWidth.current + d.width);
-              }
-              //console.log('Resizing:', d.height)
-            }
+            onResize={(e, direction, ref, d) => {
+              setGalleryWidth(prevGalleryWidth.current + d.width);
+            }}
             style={{
               borderLeft: '5px solid #000', // Add a top border
               cursor: 'col-resize',
@@ -399,12 +437,9 @@ function Page() {
               prevGalleryHeight.current + d.height
             );
           }}
-          onResize={
-            (e, direction, ref, d) => {
-              setGalleryHeight(prevGalleryHeight.current + d.height);
-            }
-            //console.log('Resizing:', d.height)
-          }
+          onResize={(e, direction, ref, d) => {
+            setGalleryHeight(prevGalleryHeight.current + d.height);
+          }}
           style={{
             borderTop: '5px solid #000', // Add a top border
             cursor: 'row-resize',

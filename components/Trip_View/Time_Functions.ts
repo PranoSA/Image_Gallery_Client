@@ -26,9 +26,7 @@ const timeFromString = (timeString: string | Date): Date => {
   // This should parse the time into a time-zone agnostic
   // so if 2012-01-01T12:00:00 is passed in , no matter what time zone the viewer is in
   // the time should be 2012-01-01T12:00:00
-  console.log('timeString', timeString);
-  //print the type of the timeString
-  console.log('timeString type', typeof timeString);
+
 
   //check if the type is a Date
   if (timeString instanceof Object) {
@@ -51,7 +49,7 @@ const timeFromString = (timeString: string | Date): Date => {
     return new_time;
   }
 
-  console.log('timeString', timeString);
+
 
   //test if the timeStrine string matches the regex
   if (!timeString.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {

@@ -25,6 +25,8 @@ import { Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
 import { KML } from 'ol/format';
+
+import { Path } from '@/definitions/Trip_View';
 // store and tanstack query
 import {
   useQueryTrip,
@@ -94,7 +96,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   const imageVectorSource = useRef(new VectorSource());
 
   // javascript to find the path id from the feature
-  const pathFromFeature = useRef<{ [key: string]: number }>({});
+  const pathFromFeature = useRef<{ [key: string]: string }>({});
 
   //This is used to track the previous selected image (selected_image_location)
   // So that you can remove it when a new one is selected
@@ -170,7 +172,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
             fill: new Fill({ color: 'black' }),
             stroke: new Stroke({
               color: 'black',
-              width: 2,
+              width: 10,
             }),
           }),
         })
@@ -208,10 +210,9 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         //remove all vector layers except the image layer
 
         if (layer instanceof VectorLayer) {
-          console.log('Hello Convex Hull , I am here to remove you');
           //console log if finds convex hull layer
           if (layer.getSource() === convexHullLayer.current.getSource()) {
-            console.log('Found Convex Hull Layer');
+
           }
           if (
             layer.getSource() !== imageVectorSource.current &&
@@ -329,7 +330,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         x: event.pixel[0],
         y: event.pixel[1],
       });
-      console.log('Path:', path);
+
     }
   });
 
@@ -370,10 +371,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         tempImageVectorSource.addFeature(feature);
       });
 
-    console.log(
-      'Heat Map Images Length',
-      tempImageVectorSource.getFeatures().length
-    );
 
     imageHeatMapLayer.current = new Heatmap({
       source: tempImageVectorSource,
@@ -384,21 +381,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       },
     });
 
-    //check if mapInstanceRef is populated
-    if (!mapInstanceRef.current) {
-      console.log('AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH');
-    }
 
-    if (!imageHeatMapLayer.current) {
-      console.log('AAHSDSDOIJOIJOSD');
-    }
-
-    //check features in imageHeatMapLayer
-    console.log(
-      'Heat Map Images Length',
-      //@ts-ignore
-      imageHeatMapLayer.current?.getSource().getFeatures().length
-    );
 
     //add to map
     mapInstanceRef.current?.addLayer(imageHeatMapLayer.current);
@@ -417,6 +400,8 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       return;
     }
 
+
+
     const trip = tripsState.data;
     const images = imageState.data;
     if (!trip || !currentDay) return;
@@ -431,6 +416,11 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       tripsState.data?.start_date || '1970-01-01',
       imageState.data || []
     );
+
+    console.log('Selected Date', selectedDate);
+    console.log('Current Day', currentDay);
+
+    console.log('Images For Day', imagesForDay.length);
 
     if (imagesForDay.length > 0) {
       //set center of view to the center of the images
@@ -489,6 +479,9 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       const max_diff = Math.max(lat_diff, long_diff);
 
       const zoom = Math.floor(9 - Math.log2(max_diff));
+
+      console.log('Extending Zoom', zoom);
+      console.log('Extent of Image', max_lat, min_lat, max_long, min_long);
 
       mapInstanceRef.current?.getView().setZoom(Math.min(zoom, 18));
     }
