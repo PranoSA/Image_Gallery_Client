@@ -324,16 +324,7 @@ const ImageFolderComponents = () => {
 
   const { selected_date } = useTripViewStore();
 
-  const imagesForDay = useMemo(() => {
-    return localImages.filter((image) => {
-      const start_date = dateFromString(trip?.start_date || '1970-01-01');
-      start_date.setDate(start_date.getDate() + selected_date);
-
-      const image_date = dateFromString(image.created_at);
-
-      return start_date.toDateString() === image_date.toDateString();
-    });
-  }, [localImages, selected_date, trip]);
+  const imagesForDay = useMemo(() => {}, [localImages, selected_date, trip]);
 
   // Retreive Categories From Trip
   const categories = trip?.categories || [];

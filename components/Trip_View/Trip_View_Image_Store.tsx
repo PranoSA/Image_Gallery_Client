@@ -84,7 +84,7 @@ export const UpdateImage = () => {
       //the query key is queryKey: ['trip', trip_id, 'images'],
       // queryKey: ['trip', trip_id, 'images'],
       await queryClient.cancelQueries({
-        queryKey: ['trip', newData.trip.id.toString(), 'images'],
+        queryKey: ['trip', newData.trip.id, 'images'],
       });
 
       //get all images from the 'images' query
@@ -93,7 +93,7 @@ export const UpdateImage = () => {
       //the query key is queryKey: ['trip', trip_id, 'images'],
       const previousData = queryClient.getQueryData<Image[]>([
         'trip',
-        newData.trip.id.toString(),
+        newData.trip.id,
         'images',
       ]);
 
@@ -136,10 +136,13 @@ export const UpdateImage = () => {
 };
 
 //delete and  add image mutation
-const addImages = async (formData: FormData, id: string) => {
+const addImages = async (
+  formData: FormData,
+  id: string
+): Promise<Image | null> => {
   //this was done through multipart-form
   try {
-    await axios.post(
+    const res = await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/`,
       formData,
       {
@@ -149,20 +152,102 @@ const addImages = async (formData: FormData, id: string) => {
         },
       }
     );
+    const images: Image[] = res.data;
+
+    return images[0];
   } catch (error) {
     console.error('Error uploading images:', error);
   }
+  return null;
+};
+
+export const useDeleteImage = () => {
+  return useMutation({
+    ///trip/:tripid/images/:id
+    mutationFn: async (image: Image) => {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/trip/${image.tripid}/images/${image.id}`,
+        {
+          method: 'DELETE',
+          headers: createRequestHeaders(),
+        }
+      );
+      const images: Image[] = await response.json();
+
+      return image;
+
+      //return response.json();
+    },
+    onSuccess: (data: Image) => {
+      /*queryClient.invalidateQueries({
+        queryKey: ['trip', data.tripid, 'images'],
+      });*/
+      //remove the selected image from the selected images
+      // using the query key ['trip', data.tripid, 'images']
+
+      /* 
+      const transformed_images = images.map((image) => {
+        image.created_at = new Date(image.created_at);
+        image.created_at.setMinutes(
+          image.created_at.getMinutes() + subtraction_minutes
+        );
+
+        return image;
+      });*/
+
+      queryClient.invalidateQueries({
+        queryKey: ['trip', data.tripid, 'images'],
+      });
+
+      const subtraction_minutes = new Date().getTimezoneOffset();
+
+      const new_image = data;
+      new_image.created_at = new Date(data.created_at);
+      new_image.created_at.setMinutes(
+        new_image.created_at.getMinutes() + subtraction_minutes
+      );
+
+      //remove the image from the selected images
+      queryClient.setQueryData(
+        ['trip', data.tripid, 'images'],
+        (oldData: Image[]) => {
+          return oldData.filter((image) => image.id !== data.id);
+        }
+      );
+    },
+  });
 };
 
 export const useAddImage = () => {
   return useMutation({
-    mutationFn: ({ formData, id }: { formData: FormData; id: string }) =>
-      addImages(formData, id),
-    onSuccess: () => {
+    mutationFn: ({ formData, id }: { formData: FormData; id: string }) => {
+      return addImages(formData, id);
+    },
+    onSuccess: (data) => {
       //queryClient.invalidateQueries({ queryKey: ['images'] });
+      if (data) {
+        //invalidate the query cache
+        queryClient.invalidateQueries({
+          queryKey: ['trip', data.tripid, 'images'],
+        });
 
-      //just refetch the images
-      queryClient.invalidateQueries({ queryKey: ['images'] });
+        const subtraction_minutes = new Date().getTimezoneOffset();
+
+        const new_image = data;
+        new_image.created_at = new Date(data.created_at);
+        new_image.created_at.setMinutes(
+          new_image.created_at.getMinutes() + subtraction_minutes
+        );
+
+        //set the images to the new data
+        queryClient.setQueryData(
+          ['trip', data.tripid, 'images'],
+          (oldData: Image[]) => {
+            console.log('New Data', data);
+            return [...oldData, new_image];
+          }
+        );
+      }
 
       //close the modal
       tripViewStore.setState((state) => {

@@ -5,6 +5,7 @@ interface Image {
   long: string;
   lat: string;
   ol_id?: string;
+  tripid?: string;
   name: string;
   description: string;
   category?: string;

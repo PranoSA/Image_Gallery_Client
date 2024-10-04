@@ -1,6 +1,9 @@
 import NextAuth, { Account, AuthOptions, User } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import KeycloakProvider from 'next-auth/providers/keycloak';
+import { NextResponse } from 'next/server';
+import PostgresAdapter from '@auth/pg-adapter';
+import { Pool } from 'pg';
 
 const refreshAccessToken = async (token: JWT) => {
   try {
@@ -48,12 +51,22 @@ export const authOptions: AuthOptions = {
       issuer: process.env.KEYCLOAK_ISSUER as string,
     }),
   ],
+  //postgres adapter
+
   callbacks: {
     async session({ session, token, user }) {
       //      session.user = user;
       //     session.user.sub = token.sub;
 
-
+      //check session error
+      if (token.error) {
+        //log user out, and invalidate session
+        console.log('Token error', token.error);
+        session.expires = new Date(0).toISOString();
+        session.accessToken = undefined;
+        throw new NextResponse('Unauthorized', { status: 401 });
+        return session;
+      }
 
       session.accessToken = token.accessToken as string;
 
@@ -70,9 +83,11 @@ export const authOptions: AuthOptions = {
 
       // Initial sign in
       if (account && user) {
+        console.log('account', account);
         return {
           accessToken: account.accessToken,
           //@ts-ignore
+          //add a month to the current date
           accessTokenExpires: Date.now() + account.expires_in * 1000,
           refreshToken: account.refresh_token,
           user,
@@ -84,9 +99,22 @@ export const authOptions: AuthOptions = {
       if (Date.now() < token.accessTokenExpires) {
         return token;
       }
+      console.log('Token expired, refreshing', token);
+
+      //if refresh token is expires, log out
 
       // Access token has expired, try to update it
-      return refreshAccessToken(token);
+      const extrapolated = refreshAccessToken(token);
+
+      //@ts-ignore
+      if (extrapolated.error) {
+        //log user out
+        return {
+          error: 'RefreshAccessTokenError',
+        };
+      }
+
+      return extrapolated;
     },
   },
 };

@@ -119,9 +119,27 @@ function Page() {
   const [galleryWidth, setGalleryWidth] = useState(600);
   const prevGalleryWidth = useRef<number>(galleryWidth);
 
-  const { data: session } = useSession();
+  const { data: session, update, status } = useSession();
+
+  //set timeout that reads session.accessToken every 140 seconds
+  //if it changes, then update the bearer token
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('new session', session);
+      //store the access token in local storage
+      if (session?.accessToken) {
+        localStorage.removeItem('accessToken');
+        localStorage.setItem('accessToken', session.accessToken);
+      }
+      setBearerToken(session?.accessToken || '');
+      //set tripContext bearer token
+    }, 140000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
+    console.log('new session', session);
     //store the access token in local storage
     if (session?.accessToken) {
       localStorage.removeItem('accessToken');

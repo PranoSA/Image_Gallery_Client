@@ -44,12 +44,10 @@ export default function Home() {
   const { data: session, status } = useSession();
 
   const token = session?.accessToken;
-  console.log('token is', token);
 
   useEffect(() => {
     //get access token from session
     const accessToken = session?.accessToken;
-    console.log('WHOAMI', accessToken);
 
     // fetch http://localhost:5000/whoami
     const fetchWhoAmI = async () => {
@@ -60,7 +58,6 @@ export default function Home() {
             Authorization: `Bearer ${accessToken}`,
           },
         });
-        console.log('whoami response', response);
       } catch (error) {
         console.error('Error fetching whoami:', error);
       }
@@ -298,7 +295,6 @@ export default function Home() {
   };
   //get access token from session
   const accessToken = session?.accessToken;
-  console.log('access token is', accessToken);
 
   //if not logged in - redirect to keycloak login page
 

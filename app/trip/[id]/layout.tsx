@@ -14,7 +14,7 @@ const NextAuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const sessionProps: SessionProviderProps = {
     children,
-    refetchInterval: 300,
+    refetchInterval: 280,
   };
 
   return <SessionProvider {...sessionProps} />;

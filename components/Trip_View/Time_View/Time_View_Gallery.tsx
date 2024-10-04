@@ -33,6 +33,7 @@ import { timeFromString } from '../Time_Functions';
 import { useContext, useMemo, useRef, useEffect } from 'react';
 import {
   tripViewStore,
+  useDeleteImage,
   useQueryTrip,
   useQueryTripImages,
   useTripViewStore,
@@ -50,6 +51,9 @@ import { Image } from '@/definitions/Trip_View';
 import NextImage from 'next/image';
 
 import EditImageForm from '../EditImageForm';
+
+//Trash Icon for deletion
+import { AiFillDelete } from 'react-icons/ai';
 
 const TimeViewGallery: React.FC = () => {
   const id = useContext(TripContext).id;
@@ -340,6 +344,13 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   // group images into SubRangeOfImages
   const { selected_image_location, horizontally_tabbed } = useTripViewStore();
 
+  const deleteImageMutation = useDeleteImage();
+
+  const deleteImage = async (image: Image) => {
+    //use mutation to delete image
+    const rizzed = await deleteImageMutation.mutate(image);
+  };
+
   const groupedSubRangeImages = (
     images: Image[],
     date: Date
@@ -553,6 +564,12 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         />
                       </div>
                       <div className="absolute top-1 right-1 flex ">
+                        <AiFillDelete
+                          onClick={() => deleteImage(image)}
+                          className="cursor-pointer"
+                          size={24}
+                          style={{ marginRight: '10px' }}
+                        />
                         <HiOutlinePencil
                           onClick={() => setEditingImage(image)}
                           className="cursor-pointer"
