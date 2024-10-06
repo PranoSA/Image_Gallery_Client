@@ -22,7 +22,9 @@ export default function AddImagesForm() {
     const formData = new FormData(e.currentTarget);
 
     try {
-      await addImage.mutate({ formData, id });
+      const image = await addImage.mutate({ formData, id });
+
+      //add
     } catch (error) {
       console.error('Error uploading images:', error);
       alert('Failed to upload images');

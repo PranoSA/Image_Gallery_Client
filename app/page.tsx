@@ -1,11 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import '@/globals.css';
+
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { signIn, useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
 import InviteUserToTripForm from '@/components/Home_View/InviteUserToTripForm';
+
+//import query provider
+import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+
+import { useAddImage } from '@/components/Trip_View/Trip_View_Image_Store';
+import AddImagesForm from '../components/Trip_View/AddImagesForm';
+import { Image } from '@/definitions/Trip_View';
 
 // get server session
 
@@ -17,7 +27,18 @@ interface Trip {
   end_date: string;
 }
 
-export default function Home() {
+const queryClient = new QueryClient();
+
+//Context Provider For Home Page
+export default function HomeProvider() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Home />
+    </QueryClientProvider>
+  );
+}
+
+function Home() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [newTrip, setNewTrip] = useState({
     name: '',
@@ -43,7 +64,35 @@ export default function Home() {
   //login status
   const { data: session, status } = useSession();
 
+  const addImage = useAddImage();
+
   const token = session?.accessToken;
+
+  const [selectedTripUploadImage, setSelectedTripUploadImage] = useState<
+    string | null
+  >(null);
+
+  const handleSubmitImages = async (e: React.FormEvent<HTMLFormElement>) => {
+    //when done ... set adding_images to false
+    const formData = new FormData(e.currentTarget);
+
+    const id = selectedTripUploadImage;
+
+    if (!id) {
+      return;
+    }
+
+    try {
+      const image = await addImage.mutate({ formData, id });
+
+      //add
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images');
+    }
+
+    setSelectedTripUploadImage(null);
+  };
 
   useEffect(() => {
     //get access token from session
@@ -313,8 +362,19 @@ export default function Home() {
     );
   }
 
+  const handleAddImagesClick = (trip_id: string | null) => {
+    setSelectedTripUploadImage(trip_id);
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      {selectedTripUploadImage && (
+        <ImageUploadModal
+          tripId={selectedTripUploadImage}
+          onClose={() => setSelectedTripUploadImage(null)}
+          handleSubmitImages={handleSubmitImages}
+        />
+      )}
       {
         //EDIT TRIP MODAL
         editTrip && editTripModal(editedTrip || trips[0])
@@ -341,7 +401,7 @@ export default function Home() {
             <div className="flex justify-between mt-4">
               <button
                 className="bg-yellow-500 text-white px-4 py-2 rounded"
-                onClick={(e) => handleEditTrip(trip)}
+                onClick={() => handleEditTrip(trip)}
               >
                 Edit
               </button>
@@ -351,6 +411,12 @@ export default function Home() {
                 onClick={() => setInviteForm(trip.id)}
               >
                 Invite
+              </button>
+              <button
+                className="bg-green-500 text-white px-4 py-2 rounded"
+                onClick={() => handleAddImagesClick(trip.id)}
+              >
+                Add Images
               </button>
             </div>
           </div>
@@ -448,3 +514,58 @@ export default function Home() {
     </main>
   );
 }
+
+type ImageUploadModalProps = {
+  tripId: string;
+  onClose: () => void;
+  handleSubmitImages: (e: React.FormEvent<HTMLFormElement>) => void;
+};
+
+const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
+  tripId,
+  onClose,
+  handleSubmitImages,
+}) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmitImages(e);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h2>Upload Images</h2>
+        <form onSubmit={handleFormSubmit}>
+          <div className="form-group">
+            <label htmlFor="name">Name:</label>
+            <input type="text" id="name" name="name" required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="description">Description:</label>
+            <textarea id="description" name="description" required></textarea>
+          </div>
+          <div className="form-group">
+            <label htmlFor="images">Images:</label>
+            <input
+              type="file"
+              id="image"
+              name="image"
+              multiple
+              accept="image/*"
+              required
+            />
+          </div>
+          <button type="submit" className="submit-button">
+            Upload
+          </button>
+        </form>
+        <button onClick={onClose} className="close-modal-button">
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
