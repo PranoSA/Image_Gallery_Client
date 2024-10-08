@@ -536,11 +536,11 @@ const TripListCompontent = () => {
         {trips.map((trip) => (
           <div key={trip.id} className="bg-white shadow-md rounded p-4">
             <h2 className="text-xl font-bold">{trip.name}</h2>
-            <p>{trip.description}</p>
-            <ScrollableImageBar trip_id={trip.id} />
-            <p>
+            <p className="font-bold text-center">
               {trip.start_date} - {trip.end_date}
             </p>
+            <p className="text-gray-600">{trip.description}</p>
+            <ScrollableImageBar trip_id={trip.id} />
 
             <div className="flex justify-between mt-4">
               <button
