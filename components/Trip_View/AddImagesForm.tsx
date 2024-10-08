@@ -4,6 +4,7 @@ import {
   useTripViewStore,
   tripViewStore,
   useAddImage,
+  useQueryTripImages,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 
 import { useContext } from 'react';

@@ -1,7 +1,12 @@
 'use client';
 import { useStore } from '@tanstack/react-store';
 import { Listener, Store } from '@tanstack/store';
-import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import {
+  QueryClient,
+  useMutation,
+  useQueries,
+  useQuery,
+} from '@tanstack/react-query';
 import { MdImagesearchRoller } from 'react-icons/md';
 import { updateDaySummary } from '../../../server/src/routes/summaries';
 
@@ -19,6 +24,31 @@ const createRequestHeaders: () => HeadersInit = () => {
   return {
     Authorization: `Bearer ${getBearerFromLocalStorage()}`,
   };
+};
+
+const fetchMyTrips = async (): Promise<Trip[]> => {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/trips`, {
+    headers: createRequestHeaders(),
+  });
+  return response.json();
+};
+
+const useGetMyTripImages = (trips: Trip[]) => {
+  return useQueries({
+    queries: trips.map((trip) => {
+      return {
+        queryKey: ['trip', trip.id, 'images'],
+        queryFn: () => fetchTripImages(trip.id),
+      };
+    }),
+  });
+};
+
+export const useFetchMyTrips = () => {
+  return useQuery<Trip[]>({
+    queryKey: ['trips'],
+    queryFn: fetchMyTrips,
+  });
 };
 
 const fetchTripImages = async (trip_id: string): Promise<Image[]> => {
