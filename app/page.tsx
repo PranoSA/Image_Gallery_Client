@@ -23,6 +23,16 @@ import AddImagesForm from '../components/Trip_View/AddImagesForm';
 import { Image, Trip } from '@/definitions/Trip_View';
 import { useFetchMyTrips } from '@/components/Trip_View/Trip_View_Image_Store';
 import { useQueryTripImages } from '@/components/Trip_View/Trip_View_Image_Store';
+//pencil faIcon for editing
+import { FaPencilAlt } from 'react-icons/fa';
+
+//add person icon for inviting users
+import { FaUserPlus } from 'react-icons/fa';
+
+//icon for adding images
+import { FaPlus } from 'react-icons/fa';
+//image upload icon
+import { FaImage } from 'react-icons/fa';
 
 // get server session
 
@@ -53,7 +63,7 @@ function Home() {
 
   //id of trip to invite user to
   // if null, then no form is shown
-  const [inviteForm, setInviteForm] = useState<string | null>(null);
+  const [inviteForm, setInviteForm] = useState<Trip | null>(null);
 
   const {
     data: trips,
@@ -129,6 +139,12 @@ function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      {inviteForm && (
+        <InviteUserToTripForm
+          trip={inviteForm}
+          closeInviteForm={closeInviteForm}
+        />
+      )}
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
         <h1 className="text-2xl font-bold">My Trips</h1>
         <button
@@ -314,7 +330,7 @@ const TripListCompontent = () => {
 
   //id of trip to invite user to
   // if null, then no form is shown
-  const [inviteForm, setInviteForm] = useState<string | null>(null);
+  const [inviteForm, setInviteForm] = useState<Trip | null>(null);
 
   const handleEditTrip = (trip: Trip) => {
     setEditTrip(true);
@@ -518,8 +534,20 @@ const TripListCompontent = () => {
     setSelectedTripUploadImage(null);
   };
 
+  const closeInviteForm = () => {
+    setInviteForm(null);
+  };
+
   return (
     <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
+      <div className="w-full z-100 flex justify-between">
+        {inviteForm && (
+          <InviteUserToTripForm
+            trip={inviteForm}
+            closeInviteForm={closeInviteForm}
+          />
+        )}
+      </div>
       {selectedTripUploadImage && (
         <ImageUploadModal
           tripId={selectedTripUploadImage}
@@ -534,34 +562,40 @@ const TripListCompontent = () => {
       }
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
         {trips.map((trip) => (
-          <div key={trip.id} className="bg-white shadow-md rounded p-4">
-            <h2 className="text-xl font-bold">{trip.name}</h2>
+          <div
+            key={trip.id}
+            className="flex flex-col justify-between bg-white shadow-md rounded p-4"
+          >
+            <div className="w-full flex-row flex justify-around">
+              <Link href={`/trip/${trip.id}`} passHref>
+                <h2 className="text-xl font-bold cursor-pointer hover:text-blue-600 transition duration-300 ease-in-out">
+                  {trip.name}
+                </h2>
+              </Link>
+              <FaPencilAlt
+                className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
+                onClick={() => handleEditTrip(trip)}
+              />
+            </div>
             <p className="font-bold text-center">
               {trip.start_date} - {trip.end_date}
             </p>
             <p className="text-gray-600">{trip.description}</p>
             <ScrollableImageBar trip_id={trip.id} />
 
-            <div className="flex justify-between mt-4">
-              <button
-                className="bg-yellow-500 text-white px-4 py-2 rounded"
-                onClick={() => handleEditTrip(trip)}
-              >
-                Edit
-              </button>
-              <Link href={`/trip/${trip.id}`}>Visit</Link>
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-                onClick={() => setInviteForm(trip.id)}
-              >
-                Invite
-              </button>
-              <button
-                className="bg-green-500 text-white px-4 py-2 rounded"
+            <div className="flex justify-between mt-auto space-x-2 flex-row w-full justify-between">
+              <FaUserPlus
+                className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
+                onClick={() => setInviteForm(trip)}
+                size={20}
+              />
+              <div
+                className="flex-row flex flex-wrap"
                 onClick={() => handleAddImagesClick(trip.id)}
               >
-                Add Images
-              </button>
+                <FaPlus className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
+                <FaImage className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
+              </div>
             </div>
           </div>
         ))}

@@ -33,7 +33,7 @@ const fetchMyTrips = async (): Promise<Trip[]> => {
   return response.json();
 };
 
-const useGetMyTripImages = (trips: Trip[]) => {
+export const useGetMyTripImages = (trips: Trip[]) => {
   return useQueries({
     queries: trips.map((trip) => {
       return {
