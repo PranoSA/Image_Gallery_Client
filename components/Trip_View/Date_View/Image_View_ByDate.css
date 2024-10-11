@@ -1,0 +1,16 @@
+/* styles.css */
+.parent-relative-width {
+  width: calc(100% / 3); /* Adjust the fraction as needed */
+}
+
+@media (min-width: 1024px) {
+  .parent-relative-width-lg {
+    width: calc(100% / 4); /* Adjust the fraction as needed */
+  }
+}
+
+@media (min-width: 1280px) {
+  .parent-relative-width-xl {
+    width: calc(100% / 6); /* Adjust the fraction as needed */
+  }
+}

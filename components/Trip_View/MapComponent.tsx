@@ -212,7 +212,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         if (layer instanceof VectorLayer) {
           //console log if finds convex hull layer
           if (layer.getSource() === convexHullLayer.current.getSource()) {
-
           }
           if (
             layer.getSource() !== imageVectorSource.current &&
@@ -330,7 +329,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         x: event.pixel[0],
         y: event.pixel[1],
       });
-
     }
   });
 
@@ -357,6 +355,8 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     if (!images || !currentDay || !trip) return;
 
     images
+      .filter((i) => i.lat && i.long)
+      .filter((i) => parseFloat(i.lat) !== 0 || parseFloat(i.long) !== 0)
 
       //.filter((i) => i.created_at.split('T')[0] === currentDay)
       .forEach((image) => {
@@ -371,7 +371,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         tempImageVectorSource.addFeature(feature);
       });
 
-
     imageHeatMapLayer.current = new Heatmap({
       source: tempImageVectorSource,
       radius: 5,
@@ -380,8 +379,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
         return 1;
       },
     });
-
-
 
     //add to map
     mapInstanceRef.current?.addLayer(imageHeatMapLayer.current);
@@ -399,8 +396,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     if (!zoom_on_day_change) {
       return;
     }
-
-
 
     const trip = tripsState.data;
     const images = imageState.data;

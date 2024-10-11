@@ -337,7 +337,7 @@ const getDateAtLocalTime = (time_string: string): Date => {
   return new Date(time_in_local);
 };
 
-const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
+export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   images,
   date,
 }) => {

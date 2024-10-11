@@ -30,6 +30,12 @@ const fetchMyTrips = async (): Promise<Trip[]> => {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/trips`, {
     headers: createRequestHeaders(),
   });
+
+  if (!response.ok) {
+    throw new Error(
+      'Error fetching trips, Status is' + response.status.toString()
+    );
+  }
   return response.json();
 };
 
@@ -60,6 +66,19 @@ const fetchTripImages = async (trip_id: string): Promise<Image[]> => {
       headers: createRequestHeaders(),
     }
   );
+
+  if (!response.ok) {
+    if (response.status === 500) {
+      throw new Error(
+        'Apologies, there was an error fetching the images. Please try again later.'
+      );
+    }
+    if (response.status === 404) {
+      throw new Error('Images not found');
+    }
+    throw new Error('Error fetching images');
+  }
+
   const images = await response.json();
 
   //return images
@@ -320,17 +339,40 @@ const fetchTrip = async (trip_id: string) => {
       headers: createRequestHeaders(),
     }
   );
+
+  if (!response.ok) {
+    if (response.status === 500) {
+      throw new Error(
+        'Apologies, there was an error fetching the trip. Please try again later.'
+      );
+    }
+    if (response.status === 404) {
+      throw new Error('Trip not found');
+    }
+    throw new Error('Error fetching trip');
+  }
+
   const data = await response.json();
   return data[0];
 };
 
-const fetchDaySummary = async (trip_id: string, date: string) => {
+type DaySummary = {
+  day: string;
+  summary: string;
+  tripid: string;
+};
+
+const fetchDaySummary = async (
+  trip_id: string,
+  date: string
+): Promise<DaySummary[]> => {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summaries/${date}`,
     {
       headers: createRequestHeaders(),
     }
   );
+  console.log('day summary response', response);
   return response.json();
 };
 
@@ -340,7 +382,7 @@ export const updateDaySummaryMutation = async (
   summary: string
 ) => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summa123123123ries/${date}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summaries/${date}`,
     {
       method: 'POST',
       headers: {
@@ -365,7 +407,11 @@ export const useUpdateDaySummary = () => {
 export const useQueryDaySummary = (trip_id: string, date: string) => {
   return useQuery({
     queryKey: ['trip', trip_id, 'day_summary', date],
-    queryFn: () => fetchDaySummary(trip_id, date),
+    queryFn: async () => {
+      const response = await fetchDaySummary(trip_id, date);
+
+      return response[0];
+    },
     retry: false,
   });
 };
@@ -385,7 +431,15 @@ export const useQueryTripImages = (trip_id: string) => {
         throw new Error('trip_id is not defined');
       }
 
-      const images: Image[] = await fetchTripImages(trip_id);
+      const unsorted_images: Image[] = await fetchTripImages(trip_id);
+
+      //sort images by time
+      const images = unsorted_images.sort((a, b) => {
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
+
       //serialized images - turn created_at into a Date if it is a string
       //also, subtract new Date().getTimezoneOffset() from each image
 

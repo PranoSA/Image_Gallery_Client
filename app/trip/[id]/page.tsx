@@ -7,7 +7,6 @@ import React, {
   useMemo,
   useContext,
 } from 'react';
-import 'ol/ol.css';
 import Map from 'ol/Map';
 
 import '@/globals.css';
@@ -116,7 +115,11 @@ function Page() {
   const prevGalleryHeight = useRef<number>(galleryHeight);
 
   //width of the gallery
-  const [galleryWidth, setGalleryWidth] = useState(600);
+
+  //make a media query for 1/2 the screen width
+  const screen_width = window.innerWidth;
+
+  const [galleryWidth, setGalleryWidth] = useState(screen_width / 2); // Initial width of the gallery
   const prevGalleryWidth = useRef<number>(galleryWidth);
 
   const { data: session, update, status } = useSession();
@@ -389,9 +392,9 @@ function Page() {
           <TripDropdownMenu />
         </div>
 
-        <div className="content-container-horizontal">
-          <div className="MapComponent">
-            <MapComponent height={`calc(100vh - 50px)`} />
+        <div className="content-container-horizontal h-screen flex ">
+          <div className="MapComponent flex-grow">
+            <MapComponent height={`calc(100vh)`} />
           </div>
 
           <Resizable
@@ -411,8 +414,8 @@ function Page() {
               setGalleryWidth(prevGalleryWidth.current + d.width);
             }}
             style={{
-              borderLeft: '5px solid #000', // Add a top border
               cursor: 'col-resize',
+              height: '100vh',
             }}
           >
             <SelectionComponentGallery />
@@ -434,7 +437,6 @@ function Page() {
       </div>
 
       <div className="content-container">
-        {day_by_day_banners && bannerComponent}
         <div
           className="MapComponent"
           style={{ height: `calc(100vh - ${galleryHeight}px)` }}
@@ -459,7 +461,7 @@ function Page() {
             setGalleryHeight(prevGalleryHeight.current + d.height);
           }}
           style={{
-            borderTop: '5px solid #000', // Add a top border
+            borderTop: '', // Add a top border
             cursor: 'row-resize',
           }}
         >

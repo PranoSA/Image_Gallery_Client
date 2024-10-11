@@ -152,7 +152,7 @@ const EditImageForm: FC = () => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-h-[80vh] max-w-lg overflow-y-auto">
         <form
           onSubmit={(e) => {
             e.preventDefault();

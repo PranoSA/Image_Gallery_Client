@@ -12,6 +12,7 @@ import {
   useQueryTripImages,
   useQueryTrip,
   tripViewStore,
+  useDeleteImage,
   UpdateImage,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
@@ -20,21 +21,22 @@ import { useState, useContext, useMemo } from 'react';
 import EditImageForm from '@/components/Trip_View/EditImageForm';
 import ImagePreview from '@/components/Trip_View/ImagePreview';
 
-import TripContext from '@/components/TripContext';
+import '@/components/Trip_View/Date_View/Image_View_ByDate.css';
 
-import {
-  dateFromString,
-  timeFromString,
-} from '@/components/Trip_View/Time_Functions';
+import TripContext from '@/components/TripContext';
+import { Banner_Component } from '@/components/Trip_View/Banner_Component';
+
+import {} from '@/components/Trip_View/Time_View/Time_View_Gallery';
+
+import { AiFillDelete } from 'react-icons/ai';
 
 const Image_View_ByDate: React.FC = () => {
   const {
     selected_date,
 
-    get_images_for_day,
-    viewed_image_index,
     selected_image_location,
     editingImage,
+    filtered_categories,
   } = useTripViewStore();
 
   // mutate
@@ -58,61 +60,73 @@ const Image_View_ByDate: React.FC = () => {
 
   const [editedImage, setEditedImage] = useState<Image | null>(null);
 
-  const selectedDate = useMemo<Date>(() => {
-    //const start_date = new Date(trip?.start_date || '1970-01-01');
-    const start_date = dateFromString(trip?.start_date || '1970-01-01');
-    //forcibly move the date to UTC - so extrapolate the
-    start_date.setDate(start_date.getDate() + selected_date);
-
-    return start_date;
-  }, [selected_date, trip]);
+  const bannerComponent = useMemo(() => {
+    return <Banner_Component />;
+  }, []);
 
   type ImagesByDay = {
     date: Date;
-    images: Image[];
+    images: (Image & { index: number })[];
   };
 
-  const groupedOrderedImagesByDay = useMemo(() => {
+  const groupedOrderedImagesByDay: ImagesByDay = useMemo(() => {
     const groupImagesByDay = (images: Image[] | undefined) => {
-      const grouped: ImagesByDay[] = [];
+      const grouped: ImagesByDay = {
+        date: new Date(),
+        images: [],
+      };
 
-      if (!trip) return [];
-      if (!images) return [];
+      if (!trip) return grouped;
+      if (!images) return grouped;
 
-      //here is what we want to do -----
+      //iterate through dates of trip
+      const start_date = new Date(trip.start_date);
 
-      // get the selected date
-      // add 24 hours to the selected date
+      start_date.setDate(start_date.getDate() + selected_date);
+      const end_date = new Date(trip.start_date);
+      //add offset from UTC in current time-zoen - to accurately translate what it isin== UTC to the current time zone
+      const offset_minutes = start_date.getTimezoneOffset();
+      start_date.setMinutes(start_date.getMinutes() + offset_minutes);
 
-      //for each image, transform the created_at to a time using the timeFromString function
-      // that I built
+      end_date.setHours(23, 59, 59, 999);
+      end_date.setMinutes(end_date.getMinutes() + offset_minutes);
 
-      // return images that are between the selected date and the selected date + 24 hours
+      console.log('start_date', start_date);
+      console.log('end_date', end_date);
 
-      const selectedDate = dateFromString(trip.start_date);
-      selectedDate.setDate(selectedDate.getDate() + selected_date);
+      const start_index = images.findIndex((image) => {
+        return new Date(image.created_at) >= start_date;
+      });
 
-      const selectedDateEnd = new Date(selectedDate);
-      selectedDateEnd.setDate(selectedDateEnd.getDate() + 1);
+      const imagesForDay = images
+        .filter((image) => {
+          return (
+            new Date(image.created_at).toDateString() ===
+            start_date.toDateString()
+          );
+        })
+        .filter((image) => {
+          return !filtered_categories.includes(image.category || '');
+        })
+        .sort((a, b) => {
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        });
 
-      //now  use get images for day to get the images for the selected date
-      const imagesForSelectedDate = get_images_for_day(
-        selected_date,
-        trip.start_date,
-        images
-      );
+      grouped.date = start_date;
+      grouped.images = imagesForDay.map((image, index) => {
+        return {
+          ...image,
+          index: index + start_index,
+        };
+      });
 
-
-
-      return [
-        {
-          date: selectedDate,
-          images: imagesForSelectedDate,
-        },
-      ];
+      return grouped;
     };
+
     return groupImagesByDay(images);
-  }, [images, trip, selected_date, selectedDate]);
+  }, [images, trip, selected_date, filtered_categories]);
 
   //set up mutation for updating the image
   if (error) {
@@ -128,14 +142,8 @@ const Image_View_ByDate: React.FC = () => {
     return <div>Loading...</div>;
   }
   if (tripLoadingError) {
-    return <div>Error Loading Trip</div>;
+    return <div>Trip Failed To Load {tripLoadingError.message}</div>;
   }
-
-  const imagesForDay = get_images_for_day(
-    selected_date,
-    trip?.start_date || '1970-01-01',
-    images || []
-  );
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -190,13 +198,14 @@ const Image_View_ByDate: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="w-full h-full">
       {/* Make Scrollable */}
       <div className="gallery mt-4 w-full justify-center bg-white rounded-b-lg shadow-lg border border-gray-300"></div>
-      <div className="scrollable-container overflow-y-auto h-96 p-4 bg-white rounded-b-lg shadow-lg border border-gray-300">
+      <div className="w-full h-full scrollable-container overflow-y-auto  p-4 bg-white rounded-b-lg shadow-lg border border-gray-300">
+        {bannerComponent}
         <GroupImagesByTime
-          images={groupedOrderedImagesByDay[0].images}
-          date={groupedOrderedImagesByDay[0].date}
+          images={groupedOrderedImagesByDay.images}
+          date={groupedOrderedImagesByDay.date}
         />
       </div>
       <ImagePreview />
@@ -210,11 +219,11 @@ const Image_View_ByDate: React.FC = () => {
 type SubRangeOfImages = {
   start_hour: number; // 0..23
   end_hour: number; // 0..23
-  images: Image[];
+  images: (Image & { index: number })[];
 };
 
 type groupImagesByTimeProps = {
-  images: Image[];
+  images: (Image & { index: number })[];
   date: Date;
 };
 
@@ -223,34 +232,32 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   date,
 }) => {
   // group images into SubRangeOfImages
-  const { selected_image_location } = useTripViewStore();
+  const { selected_image_location, horizontally_tabbed } = useTripViewStore();
 
+  const deleteImageMutation = useDeleteImage();
 
+  const deleteImage = async (image: Image) => {
+    //use mutation to delete image
+    const rizzed = await deleteImageMutation.mutate(image);
+  };
 
   const groupedSubRangeImages = (
-    images: Image[],
+    images: (Image & { index: number })[],
     date: Date
   ): SubRangeOfImages[] => {
     let current_hour = 0;
 
     //make start_hour to be the hour of the first image
     if (images.length > 0) {
-      current_hour = new Date(
-        //getDateAtLocalTime(images[0].created_at)
-        timeFromString(images[0].created_at)
-      ).getHours();
-      //subtract offset
+      current_hour = images[0].created_at.getHours();
+
+      //account for time zone shift
     }
     //let start_hour = 0;
     let start_hour = current_hour;
 
     const list_of_subranges: SubRangeOfImages[] = [];
 
-    //find hour of id=199
-    const image_199 = images.filter((image) => parseInt(image.id) === 199);
-    if (image_199.length > 0) {
-
-    }
     while (current_hour < 24) {
       // incriment through hours until adding the next hour would exceed 6 images
       const current_subrange: SubRangeOfImages = {
@@ -260,7 +267,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       };
 
       const images_for_hour = images.filter((image) => {
-        return timeFromString(image.created_at).getHours() === current_hour;
+        return image.created_at.getHours() === current_hour;
       });
 
       //append list of images to current_subrange
@@ -268,37 +275,22 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       current_hour += 1;
 
       let images_for_next_hour = images.filter((image) => {
-        return timeFromString(image.created_at).getHours() === current_hour;
+        return image.created_at.getHours() === current_hour;
       });
 
       let number_of_images = images_for_hour.length;
 
-      while (number_of_images + images_for_next_hour.length <= 6) {
+      while (number_of_images + images_for_next_hour.length <= 8) {
         current_hour++;
         //append list of images to current_subrange
         current_subrange.images =
           current_subrange.images.concat(images_for_next_hour);
 
-        //print if images_for_next_hour contains id=199
-        if (
-          images_for_next_hour.filter((image) => parseInt(image.id) === 199)
-            .length > 0
-        ) {
-
-        }
-
         number_of_images += images_for_next_hour.length;
         images_for_next_hour = images.filter((image) => {
           const passes_filter =
-            timeFromString(image.created_at).getHours() === current_hour;
-
-          //print if images_for_next_hour contains id=199
-          if (
-            images_for_next_hour.filter((image) => parseInt(image.id) === 199)
-              .length > 0
-          ) {
-
-          }
+            image.created_at.getHours() === current_hour &&
+            image.created_at.toDateString() === date.toDateString();
 
           return passes_filter;
         });
@@ -324,13 +316,9 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
         current_subrange.images.length > 0
           ? Math.max(
               current_hour,
-              new Date(
-                //getDateAtLocalTime(current_subrange.images[current_subrange.images.length - 1].created_at)
-                timeFromString(
-                  current_subrange.images[current_subrange.images.length - 1]
-                    .created_at
-                )
-              ).getHours()
+              current_subrange.images[
+                current_subrange.images.length - 1
+              ].created_at.getHours()
             )
           : current_hour;
 
@@ -371,6 +359,17 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   // set the selected image location
   const setSelectedImageLocation = (image: Image) => {
+    //check if the image is already selected
+    if (selected_image_location && selected_image_location.id === image.id) {
+      tripViewStore.setState((state) => {
+        return {
+          ...state,
+          selected_image_location: null,
+        };
+      });
+      return;
+    }
+
     store.setState((state) => {
       return {
         ...state,
@@ -388,64 +387,70 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  //child size should be 1/3 of the parent
+
   //return gallery based on subranges
   return (
-    <div className="p-4">
-      <div className="text-2xl font-bold mb-4">{date.toDateString()}</div>
+    <div className="p-4 mb-5" id="2312">
       {subranges.map((subrange) => {
-        const startHour = new Date(subrange.start_hour).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        const endHour = new Date(subrange.end_hour).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
+        const parent_width = document.getElementById('2312')?.clientWidth || 0;
 
         return (
-          <div key={date.toDateString() + subrange.start_hour} className="mb-8">
+          <div key={date.toDateString() + subrange.start_hour} className="mb-4">
             <div className="text-lg font-semibold mb-2">
               {subrange.start_hour > 12
                 ? `${subrange.start_hour - 12}PM`
                 : `${subrange.start_hour}AM`}{' '}
               -{' '}
-              {subrange.end_hour - 12
+              {subrange.end_hour > 12
                 ? `${subrange.end_hour - 12}PM`
                 : `${subrange.end_hour}AM`}
             </div>
-            <div className="flex flex-wrap flex-row justify-around mt-4 items-center gap-y-4">
+            <div className="flex flex-wrap flex-row items-stretch justify-around items-center gap-y-1 parent-container">
               {subrange.images.map((image, i) => {
                 return (
                   <div
                     key={image.id}
-                    className="relative flex flex-col items-center w-1/6"
+                    className={`relative flex flex-col  h-100% ${
+                      horizontally_tabbed ? 'w-1/4' : 'w-1/4'
+                    } bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]`}
+                    style={{
+                      border:
+                        selected_image_location &&
+                        selected_image_location.id === image.id
+                          ? '5px solid blue'
+                          : 'none',
+                    }}
                   >
                     <div
                       key={image.id}
-                      className="relative w-full flex m-4 flex-col items-center p-4 bg-white rounded-lg shadow-lg border border-gray-300"
+                      className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300"
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="w-32 h-[128px] flex items-center justify-center bg-gray-100 p-5 border border-gray-700"
+                        className="flex flex-grow items-center justify-center bg-gray-100 p-1 border  "
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}
-                          width={128}
-                          height={128}
-                          className="object-contain rounded-lg shadow-md"
+                          width={164}
+                          height={164}
+                          className="object-contain rounded-lg"
                           style={{
                             cursor: 'pointer',
                             margin: '10px',
-                            border:
-                              selected_image_location &&
-                              selected_image_location.id === image.id
-                                ? '5px solid blue'
-                                : 'none',
+                            //allign self to center
+                            justifySelf: 'flex-end',
                           }}
                         />
                       </div>
                       <div className="absolute top-1 right-1 flex ">
+                        <AiFillDelete
+                          onClick={() => deleteImage(image)}
+                          className="cursor-pointer"
+                          size={24}
+                          style={{ marginRight: '10px' }}
+                        />
                         <HiOutlinePencil
                           onClick={() => setEditingImage(image)}
                           className="cursor-pointer"
@@ -453,12 +458,12 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           style={{ marginRight: '10px' }}
                         />
                         <HiEye
-                          onClick={() => setPreviewImage(i)}
+                          onClick={() => setPreviewImage(image.index)}
                           className="cursor-pointer"
                           size={24}
                         />
                       </div>
-                      <div className="mt-2 text-center text-sm font-medium text-gray-700">
+                      <div className="mt-2 text-center text-sm font-medium text-gray-700 justify-self-end">
                         {image.name}
                       </div>
                     </div>

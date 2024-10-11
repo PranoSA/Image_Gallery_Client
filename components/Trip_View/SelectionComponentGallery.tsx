@@ -44,25 +44,58 @@ const SelectionComponentGallery = () => {
 
   //pre-render TimeViewGallery
 
+  const handleToggle = () => {
+    if (date_or_time_view === 'time') {
+      setView('date');
+    } else {
+      setView('time');
+    }
+  };
+
   return (
-    <div className="text-center my-5 ">
+    <div className="text-center ">
       {/* Should be Singular Row with justify space around*/}
-      <div className="w-full flex flex-wrap flex-row items-center justify-around pb-3">
+      <div className="w-full flex flex-wrap flex-row items-center justify-around ">
         <div className="w-1/4 flex justify-center">
-          <button
-            onClick={() => setView('time')}
-            className={`px-4 py-2 text-lg cursor-pointer rounded flex items-center justify-center gap-2 ${
-              date_or_time_view === 'time'
-                ? 'bg-gray-500 text-white cursor-not-allowed'
-                : 'bg-blue-500 text-white'
-            }`}
-            disabled={date_or_time_view === 'time'}
-          >
-            <FaClock />
-            Time View
-          </button>
+          <div className="relative inline-flex items-center">
+            <input
+              type="checkbox"
+              id="toggle"
+              className="sr-only"
+              checked={date_or_time_view === 'date'}
+              onChange={handleToggle}
+            />
+            <label
+              htmlFor="toggle"
+              className="flex items-center cursor-pointer"
+            >
+              <div className="relative">
+                <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                <div
+                  className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${
+                    date_or_time_view === 'date'
+                      ? 'transform translate-x-full bg-green-500'
+                      : 'bg-blue-500'
+                  }`}
+                ></div>
+              </div>
+              <div className="ml-3 text-gray-700 font-medium">
+                {date_or_time_view === 'time' ? (
+                  <div className="flex items-center gap-2">
+                    <FaClock size={30} />
+                    Time View
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <FaCalendar size={20} />
+                    Date View
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
         </div>
-        <div className="w-1/4 flex flex-col items-center justify-center space-y-2">
+        <div className="w-1/4 flex flex-col items-center justify-center">
           {/* Modal to Add New Images */}
           <AddImagesForm />
           {/* Plus Icon To Add New Image */}
@@ -73,17 +106,16 @@ const SelectionComponentGallery = () => {
                   return { ...state, adding_images: true };
                 });
               }}
-              className="px-2 py-1 bg-green-500 text-white rounded"
+              className=" hover:text-blue-700 transition-colors duration-200"
             >
               <div className="flex flex-row items-center justify-center gap-1">
-                <span className="text-lg"> Add Images </span>
+                <span className="text-lg">Add Images</span>
                 <FaPlus />
               </div>
             </button>
           </div>
         </div>
         <div className="w-1/4 flex justify-center">
-          {' '}
           {/* Div For Filtering Categories if filtering_selection, or a button to open it */}
           <div className="w-full flex justify-center">
             {store.state.selecting_category ? (
@@ -95,27 +127,14 @@ const SelectionComponentGallery = () => {
                     return { ...state, selecting_category: true };
                   });
                 }}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
+                className=" hover:text-blue-700 transition-colors duration-200"
               >
-                Filter Categories
+                <div className="flex flex-row items-center justify-center gap-1">
+                  <span className="text-lg">Filter Categories</span>
+                </div>
               </button>
             )}
           </div>
-        </div>
-
-        <div className="w-1/4 flex justify-center">
-          <button
-            onClick={() => setView('date')}
-            className={`px-4 py-2 text-lg cursor-pointer rounded flex items-center justify-center gap-2 ${
-              date_or_time_view === 'date'
-                ? 'bg-gray-500 text-white cursor-not-allowed'
-                : 'bg-green-500 text-white'
-            }`}
-            disabled={date_or_time_view === 'date'}
-          >
-            <FaCalendar />
-            Date View
-          </button>
         </div>
       </div>
       <div className=" w-full flex flex-wrap justify-center  bg-white rounded-b-lg shadow-lg border border-gray-300">

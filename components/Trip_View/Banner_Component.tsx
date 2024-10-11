@@ -13,7 +13,7 @@ import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { HiChevronLeft, HiOutlinePencil } from 'react-icons/hi';
 import { HiChevronRight } from 'react-icons/hi';
 
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import TripContext from '@/components/TripContext';
 
 export const Banner_Component: React.FC = () => {
@@ -52,6 +52,17 @@ export const Banner_Component: React.FC = () => {
 
     const start_date = trip?.start_date || '1970-01-01';
 
+    const trip_start_date = new Date(start_date);
+    trip_start_date.setDate(trip_start_date.getDate() + selected_date);
+
+    //add offset from UTC in current time-zoen - to accurately translate what it isin== UTC to the current time zone
+    const offset_minutes = trip_start_date.getTimezoneOffset();
+
+    //add the offset to the start_date
+    trip_start_date.setMinutes(trip_start_date.getMinutes() + offset_minutes);
+
+    return trip_start_date.toDateString();
+
     const [year, month, day] = start_date.split('-').map(Number);
 
     const date = new Date(Date.UTC(year, month - 1, day));
@@ -60,14 +71,19 @@ export const Banner_Component: React.FC = () => {
 
     //convert back to UTC date
 
-
     //return UTC string Day of Week, Month Day, Year
     return date.toUTCString().split(' ').slice(0, 4).join(' ');
   }, [selected_date, trip]);
 
+  useEffect(() => {
+    if (daySummary && !daySummaryLoading) {
+      setDaySummaryFormInput(daySummary.summary);
+    }
+  }, [daySummary, daySummaryLoading]);
+
   //set the day summary when the trip is loaded
   if (daySummary && !daySummaryLoading) {
-    setDaySummaryFormInput(daySummary);
+    //setDaySummaryFormInput(daySummary);
   }
 
   if (!selected_trip_id) {
@@ -89,13 +105,6 @@ export const Banner_Component: React.FC = () => {
         editingDaySummary: value,
       };
     });
-  };
-
-  const calculateDaysElapsed = (start_date: string, end_date: string) => {
-    const start = new Date(start_date);
-    const end = new Date(end_date);
-    const elapsed = end.getTime() - start.getTime();
-    return elapsed / (1000 * 3600 * 24);
   };
 
   /*
@@ -154,11 +163,11 @@ export const Banner_Component: React.FC = () => {
 
     const elapsed = end_date.getTime() - start_date.getTime();
 
-    return Math.ceil(elapsed / (1000 * 3600 * 24));
+    return Math.ceil(elapsed / (1000 * 3600 * 24)) + 1;
   };
 
   return (
-    <div className="flex justify-around items-center mb-4">
+    <div className="flex justify-around items-center mb-4 p=5">
       <FaChevronLeft
         onClick={() => {
           if (selected_date !== 0) {
@@ -175,7 +184,7 @@ export const Banner_Component: React.FC = () => {
           <span className="w-full text-center">
             Day # {selected_date + 1} / {total_days()}
           </span>
-          <span className="w-full text-center">{currentDay}</span>
+          <div className="text-2xl font-bold mb-4">{currentDay.toString()}</div>
         </div>
         {/* Display the Day Summary, and then allow editing of it */}
         <div className="flex flex-col items-center mt-4">
@@ -192,7 +201,7 @@ export const Banner_Component: React.FC = () => {
                 onChange={(e) => setDaySummaryFormInput(e.target.value)}
                 className="w-full h-40 p-4 max-w-2xl"
               ></textarea>
-              <button onClick={submitDayDescription} className="mt-2">
+              <button onClick={(e) => submitDayDescription(e)} className="mt-2">
                 Save
               </button>
               <button
@@ -203,7 +212,7 @@ export const Banner_Component: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="w-full text-center">{daySummary}</div>
+            <div className="w-full text-center">{daySummary?.summary}</div>
           )}
         </div>
       </div>

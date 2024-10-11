@@ -52,6 +52,9 @@ export const authOptions: AuthOptions = {
     }),
   ],
   //postgres adapter
+  session: {
+    maxAge: 30 * 24 * 60 * 60, //30 days
+  },
 
   callbacks: {
     async session({ session, token, user }) {
@@ -83,11 +86,11 @@ export const authOptions: AuthOptions = {
 
       // Initial sign in
       if (account && user) {
-        console.log('account', account);
         return {
           accessToken: account.accessToken,
           //@ts-ignore
           //add a month to the current date
+          //next-auth should expire the token after a month
           accessTokenExpires: Date.now() + account.expires_in * 1000,
           refreshToken: account.refresh_token,
           user,

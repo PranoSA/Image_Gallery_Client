@@ -15,12 +15,9 @@ import NextImage from 'next/image';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { QueryClient } from '@tanstack/react-query';
 
-import {
-  useAddImage,
-  useGetMyTripImages,
-} from '@/components/Trip_View/Trip_View_Image_Store';
+import { useAddImage } from '@/components/Trip_View/Trip_View_Image_Store';
 import AddImagesForm from '../components/Trip_View/AddImagesForm';
-import { Image, Trip } from '@/definitions/Trip_View';
+import { Category, Image, Trip } from '@/definitions/Trip_View';
 import { useFetchMyTrips } from '@/components/Trip_View/Trip_View_Image_Store';
 import { useQueryTripImages } from '@/components/Trip_View/Trip_View_Image_Store';
 //pencil faIcon for editing
@@ -47,8 +44,16 @@ export default function HomeProvider() {
   );
 }
 
+type TripSubmitState = {
+  name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  categories: Category[];
+};
+
 function Home() {
-  const [newTrip, setNewTrip] = useState({
+  const [newTrip, setNewTrip] = useState<TripSubmitState>({
     name: '',
     description: '',
     start_date: '',
@@ -60,6 +65,10 @@ function Home() {
   const [editTrip, setEditTrip] = useState<boolean>(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log('New Categories', newTrip.categories);
+  }, [newTrip]);
 
   //id of trip to invite user to
   // if null, then no form is shown
@@ -138,7 +147,7 @@ function Home() {
   // show invite modal if inviteForm is not null
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-col items-center justify-between ">
       {inviteForm && (
         <InviteUserToTripForm
           trip={inviteForm}
@@ -156,8 +165,8 @@ function Home() {
       </div>
       <TripListCompontent />
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded shadow-md w-full max-w-md z-60 max-h-[75vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">New Trip</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
@@ -317,6 +326,10 @@ const TripListCompontent = () => {
 
   const { data: trips, status, error } = useFetchMyTrips();
 
+  console.log('Trips:', trips);
+  console.log('Status:', status);
+  console.log('Error:', error);
+
   // when done loading, load the images
 
   const [name, setName] = useState('');
@@ -331,6 +344,15 @@ const TripListCompontent = () => {
   //id of trip to invite user to
   // if null, then no form is shown
   const [inviteForm, setInviteForm] = useState<Trip | null>(null);
+
+  const [selectedTripUploadImage, setSelectedTripUploadImage] = useState<
+    string | null
+  >(null);
+  const addImage = useAddImage();
+
+  if (status === 'pending') {
+    return <p>Loading...</p>;
+  }
 
   const handleEditTrip = (trip: Trip) => {
     setEditTrip(true);
@@ -389,10 +411,18 @@ const TripListCompontent = () => {
     }
 
     try {
-      await axios.put(
+      await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/trips/${editedTrip?.id}`,
-        editedTrip
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+          body: JSON.stringify(editedTrip),
+        }
       );
+
       setEditTrip(false);
       setEditedTrip(null);
       setEditTripError(null);
@@ -403,99 +433,104 @@ const TripListCompontent = () => {
 
   const editTripModal = (trip: Trip) => {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        {/* FORM FOR filling out trip fields, */}
+      <div className="z-50 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="z-60 bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg">
+          {/* FORM FOR filling out trip fields, */}
 
-        <form>
-          {/* Name */}
-          <div className="mb-4">
-            <label className="block text-sm font-bold mb-2" htmlFor="name">
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={editedTrip?.name}
-              onChange={handleChangeToTrip}
-              className="w-full px-3 py-2 border rounded"
-              required
-            />
-          </div>
-          {/* Description */}
-          <div className="mb-4">
-            <label
-              className="block text-sm font-bold mb-2"
-              htmlFor="description"
+          <form>
+            {/* Name */}
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-2" htmlFor="name">
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={editedTrip?.name}
+                onChange={handleChangeToTrip}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+            </div>
+            {/* Description */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="description"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={editedTrip?.description}
+                onChange={handleChangeToTrip}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+            </div>
+
+            {/* Start Date */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="start_date"
+              >
+                Start Date
+              </label>
+              <input
+                type="date"
+                id="start_date"
+                name="start_date"
+                value={editedTrip?.start_date}
+                onChange={handleChangeToTrip}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+            </div>
+
+            {/* End Date */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="end_date"
+              >
+                End Date
+              </label>
+              <input
+                type="date"
+                id="end_date"
+                name="end_date"
+                value={editedTrip?.end_date}
+                onChange={handleChangeToTrip}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+            </div>
+            {editTripError && <p className="text-red-500">{editTripError}</p>}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              onClick={submitForm}
+              className="bg-blue-500 text-white px-4 py-2 rounded"
             >
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={editedTrip?.description}
-              onChange={handleChangeToTrip}
-              className="w-full px-3 py-2 border rounded"
-              required
-            />
-          </div>
-
-          {/* Start Date */}
-          <div className="mb-4">
-            <label
-              className="block text-sm font-bold mb-2"
-              htmlFor="start_date"
+              Submit
+            </button>
+            {/* Cancel Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setEditTrip(false);
+                setEditedTrip(null);
+              }}
+              className="bg-gray-500 text-white px-4 py-2 rounded"
             >
-              Start Date
-            </label>
-            <input
-              type="date"
-              id="start_date"
-              name="start_date"
-              value={editedTrip?.start_date}
-              onChange={handleChangeToTrip}
-              className="w-full px-3 py-2 border rounded"
-              required
-            />
-          </div>
-
-          {/* End Date */}
-          <div className="mb-4">
-            <label className="block text-sm font-bold mb-2" htmlFor="end_date">
-              End Date
-            </label>
-            <input
-              type="date"
-              id="end_date"
-              name="end_date"
-              value={editedTrip?.end_date}
-              onChange={handleChangeToTrip}
-              className="w-full px-3 py-2 border rounded"
-              required
-            />
-          </div>
-          {editTripError && <p className="text-red-500">{editTripError}</p>}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            onClick={submitForm}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Submit
-          </button>
-          {/* Cancel Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setEditTrip(false);
-              setEditedTrip(null);
-            }}
-            className="bg-gray-500 text-white px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-        </form>
+              Cancel
+            </button>
+          </form>
+        </div>
       </div>
     );
   };
@@ -503,11 +538,6 @@ const TripListCompontent = () => {
   const handleAddImagesClick = (trip_id: string | null) => {
     setSelectedTripUploadImage(trip_id);
   };
-
-  const [selectedTripUploadImage, setSelectedTripUploadImage] = useState<
-    string | null
-  >(null);
-  const addImage = useAddImage();
 
   if (!trips) {
     return null;
@@ -538,9 +568,14 @@ const TripListCompontent = () => {
     setInviteForm(null);
   };
 
+  //check errors for fetching trips
+  if (status === 'error') {
+    return <p>Error loading trips</p>;
+  }
+
   return (
     <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-      <div className="w-full z-100 flex justify-between">
+      <div className="w-full z-100 flex justify-between border-4 border-blue-500">
         {inviteForm && (
           <InviteUserToTripForm
             trip={inviteForm}
