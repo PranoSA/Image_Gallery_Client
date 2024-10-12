@@ -1,275 +1,90 @@
-'use client';
-
-import { Image as Image, Trip, Category } from '@/definitions/Trip_View';
-
+import { useContext, useMemo, useState } from 'react';
+import AddCategoryForm from './AddCategoryModal';
+import TripContext from '@/components/TripContext';
 import {
-  CompareViewStore,
-  useCompareViewStore,
-} from '@/components/Trip_View/Compare_View/CompareStore';
-
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+  useQueryTrip,
+  useTripViewStore,
+  useQueryTripImages,
+} from '../Trip_View_Image_Store';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import TripContext from '@/components/TripContext';
-
-import {
-  useQueryTrip,
-  useQueryTripImages,
-  useQueryTripPaths,
-  useTripViewStore,
-  tripViewStore,
-} from '@/components/Trip_View/Trip_View_Image_Store';
-import { dateFromString } from '@/components/Trip_View/Time_Functions';
-
-import { Banner_Component } from '@/components/Trip_View/Banner_Component';
-import NextImage from 'next/image';
-
-//import folder icon from FaIcons
 import { FaChevronUp, FaFolder } from 'react-icons/fa';
 
-import AddCategoryForm from '@/components/Trip_View/Compare_View/AddCategoryModal';
-
-//import trash icon from FaIcons
-import { FaTrash } from 'react-icons/fa';
-
-//import icon that intuitively looks like "open up"
+import { Image } from '@/definitions/Trip_View';
+import React from 'react';
+import NextImage from 'next/image';
 import { FaChevronDown } from 'react-icons/fa';
-import axios from 'axios';
-
-const useTripContext = () => {
-  return useContext(TripContext);
-};
-
-interface TripProviderProps {
-  children: React.ReactNode;
-  id: string;
-}
-
-const TripProvider = ({ children, id }: TripProviderProps) => {
-  const [bearer_token, setBearerToken] = useState<string | null>(null);
-
-  const setBearerTokenFunction = (token: string) => {
-    setBearerToken(token);
-  };
-
-  return (
-    <TripContext.Provider
-      value={{ id, bearer_token, setBearerToken: setBearerTokenFunction }}
-    >
-      {children}
-    </TripContext.Provider>
-  );
-};
+import { Banner_Component } from '../Banner_Component';
 
 const ItemTypes = {
   IMAGE: 'image',
 };
 
-//save categorized trip
-const saveCategorizedTrip = async (trip: Trip) => {
-  const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trips/${trip.id}`;
-
-  const res = await axios.put(api_url, trip);
-
-  return res.data;
-
-  fetch(api_url, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(trip),
-  })
-    .then((res) => res.json())
-    .catch((err) => console.error(err));
-};
-
-//save categorized images
-const saveCategorizedImages = (
-  images: Image[],
-  trip_id: string,
-  old_images: Image[]
-) => {
-  const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/images/`;
-
-  /// print all ima
-
-  const filtered_images = images.filter((image) => {
-    const old_image = old_images.find((old_image) => old_image.id === image.id);
-
-    //print image if category is not '' or undefined
-    if (image.category && image.category !== '') {
-    }
-
-    //print old image if category is not '' or undefined
-    if (old_image?.category && old_image.category !== '') {
-    }
-
-    //if old_image category is undefined and image category is not, then return true
-    if (!old_image?.category && image.category) {
-      return true;
-    }
-
-    return old_image?.category !== image.category;
-  });
-
-  //promise all to update all images
-  const promises = filtered_images.map((image) => {
-    return fetch(`${api_url}${image.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(image),
-    });
-  });
-
-  // return Promise.all(promises)
-
-  return Promise.all(promises);
-
-  for (const image of images) {
-    fetch(`${api_url}/${image.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(image),
-    })
-      .then((res) => res.json())
-      .catch((err) => console.error(err));
-  }
-};
-
-const queryClient = new QueryClient();
-
-const PageWithProvider: React.FC<{ params: { id: string } }> = ({
-  params: { id },
-}) => {
-  return (
-    <TripProvider id={id || '0'}>
-      <QueryClientProvider client={queryClient}>
-        <ImageFolderComponents />
-      </QueryClientProvider>
-    </TripProvider>
-  );
-};
-
-const Page = () => {
-  const { id } = useTripContext();
+const CategoryView = () => {
+  const { id } = useContext(TripContext);
+  const [localImages, setLocalImages] = useState<Image[]>([]);
+  const {
+    data: trip,
+    isLoading: tripIsLoading,
+    isError: tripIsError,
+  } = useQueryTrip(id);
 
   const {
-    mode,
-    compare_or_filter_stage,
-    compared_image_indexes,
-    filtered_image_indexes,
-  } = useCompareViewStore();
-
-  const changeComparePageMode = (
-    mode: 'sort' | 'undated' | 'unlocated' | 'view' | 'compare'
-  ) => {
-    CompareViewStore.setState((state) => ({
-      ...state,
-      mode,
-    }));
-  };
-};
-
-const ImageFolderComponents = () => {
-  const { id } = useTripContext();
-
-  const [localImages, setLocalImages] = useState<Image[]>([]);
-
-  //local trip that you can add categories to or remove categories from
-  const [localTrip, setLocalTrip] = useState<Trip | null>(null);
+    data: images,
+    isLoading: imagesIsLoading,
+    isError: imagesIsError,
+  } = useQueryTripImages(id);
 
   const [openCategoryFolder, setOpenCategoryFolder] = useState<string | null>(
     null
   );
 
-  const onAddCategory = (category: Category) => {
-    if (!localTrip) {
-      return;
-    }
-    const newTrip = {
-      ...localTrip,
-      categories: [...localTrip.categories, category],
-    };
-
-    setLocalTrip(newTrip);
-  };
-
-  const {
-    data: trip,
-    isLoading: tripLoading,
-    error: tripError,
-  } = useQueryTrip(id);
-
-  //same with images
-  const {
-    data: images,
-    isLoading: imagesLoading,
-    error: imagesError,
-  } = useQueryTripImages(id);
-
-  useEffect(() => {
-    if (images) {
-      //deep copy the images
-      setLocalImages(JSON.parse(JSON.stringify(images)));
-    }
-  }, [images]);
-
-  useEffect(() => {
-    if (trip) {
-      setLocalTrip(trip);
-    }
-  }, [trip]);
-
   const { selected_date } = useTripViewStore();
 
-  const imagesForDay: Image[] = useMemo(() => {
-    if (!trip || !images) return [];
-    //get selected date
-    //get trip start date
-    const start_date = dateFromString(trip?.start_date || '1970-01-01');
-    //add offset to start date
-    start_date.setDate(start_date.getDate() + selected_date);
+  const imagesForDay = useMemo(() => {
+    if (!images || !trip) return [];
 
-    //add timezone offset
-    const timezone_offset = start_date.getTimezoneOffset();
-    start_date.setMinutes(start_date.getMinutes() + timezone_offset);
-    //filter images with the same date
-    return images?.filter((img) => {
-      const image_date = img.created_at.toDateString();
-      const start_date_date = start_date.toDateString();
-      return image_date === start_date_date;
+    const date = new Date(trip?.start_date);
+    date.setDate(date.getDate() + selected_date);
+    //set offset
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+
+    return images.filter((image) => {
+      const image_date = new Date(image.created_at);
+      image_date.setMinutes(
+        image_date.getMinutes() + image_date.getTimezoneOffset()
+      );
+      return image_date.toDateString() === date.toDateString();
     });
-  }, [localImages, selected_date, trip]);
-
-  // Retreive Categories From Trip
-  const categories = trip?.categories || [];
-
-  //get folders that overlap with the selected date
+  }, [selected_date, images, trip]);
 
   const current_date: Date = useMemo(() => {
-    const start_date = dateFromString(trip?.start_date || '1970-01-01');
+    if (!trip) return new Date();
+
+    const start_date = new Date(trip?.start_date);
     start_date.setDate(start_date.getDate() + selected_date);
+    start_date.setMinutes(
+      start_date.getMinutes() + start_date.getTimezoneOffset()
+    );
 
     return start_date;
   }, [selected_date, trip]);
 
   const categories_on_date = useMemo(() => {
-    const categories = localTrip?.categories || [];
+    const categories = trip?.categories || [];
 
     return categories.filter((category) => {
-      const start_date = dateFromString(category.start_date);
-      const end_date = dateFromString(category.end_date);
+      const start_date = new Date(category.start_date);
+      const end_date = new Date(category.end_date);
+      start_date.setMinutes(
+        start_date.getMinutes() + start_date.getTimezoneOffset()
+      );
+      end_date.setMinutes(end_date.getMinutes() + end_date.getTimezoneOffset());
 
       return start_date <= current_date && current_date <= end_date;
     });
-  }, [localTrip, current_date]);
+  }, [trip, current_date]);
 
   //now , using the categories_on_date, we can create the folders
   const folders = categories_on_date.map((category) => {
@@ -289,10 +104,7 @@ const ImageFolderComponents = () => {
     };
 
     return imagesForDay.filter(imageUnassigned);
-  }, [imagesForDay, localTrip]);
-
-  // now, render the banner component to go day by day
-  //and render the folers that will be the target for the images
+  }, [imagesForDay, folders]);
 
   const handleDropImage = (imageId: Image, folderName: string) => {
     //set the category of the image to the folder name
@@ -314,22 +126,75 @@ const ImageFolderComponents = () => {
     );
   };
 
-  if (tripLoading || imagesLoading) {
-    return <div>Loading...</div>;
-  }
+  //save categorized images
+  const saveCategorizedImages = (
+    images: Image[],
+    trip_id: string,
+    old_images: Image[]
+  ) => {
+    const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/images/`;
 
-  if (!images || !trip) {
-    return <div>Error...</div>;
-  }
+    /// print all ima
+
+    const filtered_images = images.filter((image) => {
+      const old_image = old_images.find(
+        (old_image) => old_image.id === image.id
+      );
+
+      //print image if category is not '' or undefined
+      if (image.category && image.category !== '') {
+      }
+
+      //print old image if category is not '' or undefined
+      if (old_image?.category && old_image.category !== '') {
+      }
+
+      //if old_image category is undefined and image category is not, then return true
+      if (!old_image?.category && image.category) {
+        return true;
+      }
+
+      return old_image?.category !== image.category;
+    });
+
+    //promise all to update all images
+    const promises = filtered_images.map((image) => {
+      return fetch(`${api_url}${image.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(image),
+      });
+    });
+
+    // return Promise.all(promises)
+
+    return Promise.all(promises);
+
+    for (const image of images) {
+      fetch(`${api_url}/${image.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(image),
+      })
+        .then((res) => res.json())
+        .catch((err) => console.error(err));
+    }
+  };
 
   const saveState = async () => {
     const trip_id = id;
+
+    if (!images) return;
 
     try {
       const _ = await saveCategorizedImages(localImages, trip_id, images);
 
       //save the trip
-      const __ = await saveCategorizedTrip(localTrip as Trip);
+      //const __ = await saveCategorizedTrip(localTrip as Trip);
 
       //if both work, set trip to local trip
       //and set images to local images
@@ -380,7 +245,6 @@ const ImageFolderComponents = () => {
   );
 };
 
-//Now a gallery to view the images to drag and drop
 const ImageGallery = ({
   images,
   onDragEnd,
@@ -517,9 +381,3 @@ const ImageItem = ({
     </div>
   );
 };
-
-//export default FolderView;
-
-//export default PageWithProvider;
-
-export default PageWithProvider;

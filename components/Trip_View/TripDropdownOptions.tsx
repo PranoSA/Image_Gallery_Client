@@ -31,6 +31,11 @@ import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 import Modal from '@/components/PathModal';
 
+//import Link Icon from react-icons/fa
+import { FaExternalLinkAlt } from 'react-icons/fa';
+
+import Link from 'next/link';
+
 export const TripDropdownMenu: React.FC = () => {
   const [menu, setMenu] = useState(false);
 
@@ -252,6 +257,17 @@ export const TripDropdownMenu: React.FC = () => {
                 {'Enable Image Heat Map'}
               </span>
             </label>
+            {/* Go TO ${current_path}/compare */}
+            <label className="flex items-center space-x-3">
+              <Link
+                href={`/trip/${id}/compare`}
+                className="flex items-center text-blue-500 hover:text-blue-700"
+              >
+                Compare Trip
+                <FaExternalLinkAlt className="ml-2" />
+              </Link>
+            </label>
+
             {/*<Modal />*/}
             {/* No Longer check-boxes - this next one is a button to set add_path to true to open the form */}
             <button

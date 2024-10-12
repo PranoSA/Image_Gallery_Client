@@ -12,7 +12,7 @@ import { updateDaySummary } from '../../../server/src/routes/summaries';
 
 import { dateFromString, timeFromString } from './Time_Functions';
 
-import { Image, Path, Trip } from '@/definitions/Trip_View';
+import { Category, Image, Path, Trip } from '@/definitions/Trip_View';
 
 import axios from 'axios';
 
@@ -420,6 +420,61 @@ export const useQueryTrip = (trip_id: string) => {
   return useQuery<Trip>({
     queryKey: ['trip', trip_id || '0'],
     queryFn: () => fetchTrip(trip_id || '0'),
+  });
+};
+
+const editTrip = async (trip: Trip) => {
+  const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip.id}`;
+
+  const edited_trip = await fetch(api_url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...createRequestHeaders(),
+    },
+  });
+
+  if (!edited_trip.ok) {
+    throw new Error('Error editing trip');
+  }
+
+  return edited_trip.json();
+};
+
+export const useAddTripCategory = () => {
+  return useMutation({
+    onSuccess: (data) => {
+      //invalidate the query cache
+      queryClient.invalidateQueries({
+        queryKey: ['trip'],
+      });
+
+      //add to the trip
+      queryClient.setQueryData(['trip'], data[0]);
+    },
+
+    mutationFn: async ({
+      trip,
+      category,
+    }: {
+      trip: Trip;
+      category: Category;
+    }) => {
+      //use editTrip - add category to the trip
+
+      //edit the trip
+      const new_trip = {
+        ...trip,
+        categories: [...trip.categories, category],
+      };
+
+      //edit the trip
+      const edited_trip = await editTrip(new_trip);
+
+      //now -> inv
+
+      return edited_trip;
+    },
   });
 };
 
