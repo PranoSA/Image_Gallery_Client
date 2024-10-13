@@ -126,14 +126,15 @@ const UntimedImagesView = () => {
   //"Eye" -> Sets Preview Image to the image
   //"Edit" -> Opens Up EditImageModal
   //"Delete" -> Deletes the Image
+  //grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4
   return (
-    <div className="container mx-auto p-4">
+    <div className="relative flex flex-row w-full p-4">
       {editingImage && <EditImageModal />}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="flex flex-wrap w-full flex-row  ">
         {unlocatedImages.map((image, index) => (
           <div
             key={index}
-            className="relative border rounded-lg overflow-hidden"
+            className="relative border rounded-lg overflow-hidden w-full md:w-1/2 lg:w-1/3 xl:w-1/4"
           >
             <NextImage
               src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}

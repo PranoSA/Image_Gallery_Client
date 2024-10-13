@@ -58,6 +58,11 @@ const UntimedImagesView = () => {
 
     const trip_end = new Date(trip.end_date);
     trip_end.setMinutes(trip_end.getMinutes() + offset_minutes);
+    //add 23 hours, 59 minutes, 59 seconds to the trip end date
+    trip_end.setHours(trip_end.getHours() + 23);
+    trip_end.setMinutes(trip_end.getMinutes() + 59);
+    trip_end.setSeconds(trip_end.getSeconds() + 59);
+    trip_end.setMilliseconds(trip_end.getMilliseconds() + 999);
 
     return images.filter((image) => {
       //test if before trip start

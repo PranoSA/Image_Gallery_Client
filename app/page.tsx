@@ -31,9 +31,11 @@ import { FaPlus } from 'react-icons/fa';
 //image upload icon
 import { FaImage } from 'react-icons/fa';
 
+import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';
+
 // get server session
 
-const queryClient = new QueryClient();
+//const queryClient = new QueryClient();
 
 //Context Provider For Home Page
 export default function HomeProvider() {

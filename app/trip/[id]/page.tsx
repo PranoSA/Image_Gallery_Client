@@ -42,7 +42,7 @@ import {
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import Image_View_ByDate from '@/components/Trip_View/Date_View/Image_View_ByDate';
 
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 import TripContext from '@/components/TripContext';
 import SelectionComponentGallery from '@/components/Trip_View/SelectionComponentGallery';

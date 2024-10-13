@@ -1,4 +1,5 @@
 import TripContext from '@/components/TripContext';
+
 import React, { useState, useContext } from 'react';
 import '@/globals.css';
 import {
@@ -6,6 +7,9 @@ import {
   useAddTripCategory,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import { Image as Image, Trip, Category } from '@/definitions/Trip_View';
+//add close out icon
+import { FaTimes } from 'react-icons/fa';
+import { useCompareViewStore, CompareViewStore } from './CompareStore';
 
 const AddCategoryForm = () => {
   //get trip id from context
@@ -18,6 +22,7 @@ const AddCategoryForm = () => {
   const [categoryError, setCategoryError] = useState<string | null>(null);
 
   const addCategory = useAddTripCategory();
+  //add listener for add category
 
   const onAddCategory = async (category: Category) => {
     if (!trip) return;
@@ -76,7 +81,23 @@ const AddCategoryForm = () => {
 
     //add the category to the trip
 
+    console.log('Adding Category', category);
+
     const new_trip = await addCategory.mutate({ trip, category });
+
+    //check if successful
+    if (addCategory.error) {
+      //set the error in AddCategoryError
+      console.error('Error adding category', addCategory.error);
+    }
+
+    //for now, just close the modal
+    CompareViewStore.setState((state) => {
+      return {
+        ...state,
+        add_category_modal_open: false,
+      };
+    });
   };
 
   const [category, setCategory] = useState<Category>({
@@ -93,10 +114,10 @@ const AddCategoryForm = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    onAddCategory(category);
+    console.log('Submitting Category', category);
+    await onAddCategory(category);
 
     return;
     //clear the form
@@ -111,6 +132,19 @@ const AddCategoryForm = () => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
+        <div className="flex justify-center w-full">
+          <FaTimes
+            className="text-2xl cursor-pointer"
+            onClick={() => {
+              CompareViewStore.setState((state) => {
+                return {
+                  ...state,
+                  add_category_modal_open: false,
+                };
+              });
+            }}
+          />
+        </div>
         <form
           onSubmit={handleSubmit}
           className="max-w-md mx-auto p-4 bg-white shadow-md rounded-lg"

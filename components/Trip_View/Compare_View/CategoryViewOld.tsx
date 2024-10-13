@@ -1,183 +1,77 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
-import AddCategoryForm from './AddCategoryModal';
-import TripContext from '@/components/TripContext';
-import {
-  useQueryTrip,
-  useTripViewStore,
-  useQueryTripImages,
-  useAddImage,
-  UpdateImage,
-} from '../Trip_View_Image_Store';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { FaChevronUp, FaFolder } from 'react-icons/fa';
+import { Image, Trip, Category } from '@/definitions/Trip_View';
 
-import { Image } from '@/definitions/Trip_View';
-import React from 'react';
+import {
+  useQueryTrip,
+  useTripViewStore,
+  tripViewStore,
+  useQueryTripImages,
+} from '@/components/Trip_View/Trip_View_Image_Store';
+
 import NextImage from 'next/image';
-import { FaChevronDown } from 'react-icons/fa';
-import { Banner_Component } from '../Banner_Component';
-import { useCompareViewStore, CompareViewStore } from './CompareStore';
 
-const ItemTypes = {
-  IMAGE: 'image',
+import TripContext from '@/components/TripContext';
+import AddCategoryForm from './AddCategoryModal';
+import { Banner_Component } from '../Banner_Component';
+import { FaChevronDown, FaChevronUp, FaFolder } from 'react-icons/fa';
+
+const useTripContext = () => {
+  return useContext(TripContext);
 };
 
-const CategoryView = () => {
-  const { id } = useContext(TripContext);
-  const [localImages, setLocalImages] = useState<Image[]>([]);
-  const {
-    data: trip,
-    isLoading: tripIsLoading,
-    isError: tripIsError,
-  } = useQueryTrip(id);
+const CategoryViewOld = () => {
+  const { id } = useTripContext();
 
-  const {
-    data: images,
-    isLoading: imagesIsLoading,
-    isError: imagesIsError,
-  } = useQueryTripImages(id);
+  const [localImages, setLocalImages] = useState<Image[]>([]);
+
+  //local trip that you can add categories to or remove categories from
+  const [localTrip, setLocalTrip] = useState<Trip | null>(null);
 
   const [openCategoryFolder, setOpenCategoryFolder] = useState<string | null>(
     null
   );
 
-  const { selected_date } = useTripViewStore();
-
-  const { add_category_modal_open } = useCompareViewStore();
-
-  const addImage = useAddImage();
-  const editImage = UpdateImage();
-
-  const imagesForDay = useMemo(() => {
-    if (!images || !trip) return [];
-
-    console.log('# of images', images.length);
-
-    const date = new Date(trip?.start_date);
-    date.setDate(date.getDate() + selected_date);
-    //set offset
-    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-
-    return images.filter((image) => {
-      const image_date = new Date(image.created_at);
-      return image_date.toDateString() === date.toDateString();
-    });
-  }, [selected_date, images, trip]);
-
-  const current_date: Date = useMemo(() => {
-    if (!trip) return new Date();
-
-    const start_date = new Date(trip?.start_date);
-    start_date.setDate(start_date.getDate() + selected_date);
-    start_date.setMinutes(
-      start_date.getMinutes() + start_date.getTimezoneOffset()
-    );
-
-    return start_date;
-  }, [selected_date, trip]);
-
-  const categories_on_date = useMemo(() => {
-    const categories = trip?.categories || [];
-
-    return categories.filter((category) => {
-      const start_date = new Date(category.start_date);
-      const end_date = new Date(category.end_date);
-      start_date.setMinutes(
-        start_date.getMinutes() + start_date.getTimezoneOffset()
-      );
-      end_date.setMinutes(end_date.getMinutes() + end_date.getTimezoneOffset());
-
-      return start_date <= current_date && current_date <= end_date;
-    });
-  }, [trip, current_date]);
-
-  //now , using the categories_on_date, we can create the folders
-  const folders = categories_on_date.map((category) => {
-    return {
-      name: category.category,
-    };
-  });
-
-  const images_for_day_and_unassigned: Image[] = useMemo(() => {
-    console.log('Images for day', imagesForDay);
-    const imageUnassigned = (image: Image): boolean => {
-      //make sure its in a category not '', and that the category actually exists
-      return (
-        !image.category ||
-        image.category === '' ||
-        image.category === null ||
-        !folders.find((folder) => folder.name === image.category)
-      );
+  const onAddCategory = (category: Category) => {
+    if (!localTrip) {
+      return;
+    }
+    const newTrip = {
+      ...localTrip,
+      categories: [...localTrip.categories, category],
     };
 
-    return imagesForDay.filter(imageUnassigned);
-  }, [imagesForDay, folders]);
-
-  const handleDropImage = async (imageId: Image, folderName: string) => {
-    //set the category of the image to the folder name
-    //update the image
-    //update the image store
-    console.log('Dropped image', imageId, 'into folder', folderName);
-
-    if (!trip) return;
-    if (!images) return;
-
-    const selected_image = images.find((img) => img.id === imageId.id);
-    if (!selected_image) return;
-
-    const new_image = {
-      ...selected_image,
-      category: folderName,
-    };
-
-    const res = await editImage.mutateAsync({
-      image: new_image,
-      trip,
-    });
-
-    //use mutation endpoint to update the image
-    const edit_image =
-      //update local images
-      setLocalImages((prevImages) =>
-        prevImages.map((img) =>
-          img.id === imageId.id ? { ...img, category: folderName } : img
-        )
-      );
+    setLocalTrip(newTrip);
   };
 
-  const handleDragEnd = async (id: string) => {
-    console.log('Drag ended', id);
-    if (!images) return;
-    //find that image with id and set the category to ''
-    //create '' category for the image
-    const image = images.find((img) => img.id === id);
-    if (!image) return;
-    if (!trip) return;
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    error: tripError,
+  } = useQueryTrip(id);
 
-    //mutation now
-    const new_image = {
-      ...image,
-      category: '',
-    };
+  //same with images
+  const {
+    data: images,
+    isLoading: imagesLoading,
+    error: imagesError,
+  } = useQueryTripImages(id);
 
-    console.log('New Image', new_image);
+  useEffect(() => {
+    if (images) {
+      //deep copy the images
+      setLocalImages(JSON.parse(JSON.stringify(images)));
+    }
+  }, [images]);
 
-    //update the image
-    const res = await editImage.mutate({
-      image: new_image,
-      trip,
-    });
+  useEffect(() => {
+    if (trip) {
+      setLocalTrip(trip);
+    }
+  }, [trip]);
 
-    console.log('Edit Image', res);
-
-    setLocalImages((prevImages) =>
-      prevImages.map((img) => (img.id === id ? { ...img, category: '' } : img))
-    );
-  };
-
-  //save categorized images
   //save categorized images
   const saveCategorizedImages = (
     images: Image[],
@@ -237,15 +131,118 @@ const CategoryView = () => {
     }
   };
 
+  const { selected_date } = useTripViewStore();
+
+  const imagesForDay = useMemo(() => {
+    if (!images || !trip) return [];
+
+    const date = new Date(trip?.start_date);
+    date.setDate(date.getDate() + selected_date);
+    //set offset
+    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+
+    return images.filter((image) => {
+      const image_date = new Date(image.created_at);
+      image_date.setMinutes(
+        image_date.getMinutes() + image_date.getTimezoneOffset()
+      );
+      return image_date.toDateString() === date.toDateString();
+    });
+  }, [selected_date, images, trip]);
+
+  // Retreive Categories From Trip
+  const categories = trip?.categories || [];
+
+  //get folders that overlap with the selected date
+
+  const current_date: Date = useMemo(() => {
+    const trip_start = new Date(trip?.start_date || '');
+    trip_start.setDate(trip_start.getDate() + selected_date);
+    //add offset to the start date
+    trip_start.setMinutes(
+      trip_start.getMinutes() + trip_start.getTimezoneOffset()
+    );
+
+    return trip_start;
+  }, [selected_date, trip]);
+
+  const categories_on_date = useMemo(() => {
+    const categories = trip?.categories || [];
+
+    return categories.filter((category) => {
+      const start_date = new Date(category.start_date);
+      const end_date = new Date(category.end_date);
+      start_date.setMinutes(
+        start_date.getMinutes() + start_date.getTimezoneOffset()
+      );
+      end_date.setMinutes(end_date.getMinutes() + end_date.getTimezoneOffset());
+
+      return start_date <= current_date && current_date <= end_date;
+    });
+  }, [trip, current_date]);
+
+  //now , using the categories_on_date, we can create the folders
+  const folders = categories_on_date.map((category) => {
+    return {
+      name: category.category,
+    };
+  });
+
+  const images_for_day_and_unassigned: Image[] = useMemo(() => {
+    const imageUnassigned = (image: Image): boolean => {
+      //make sure its in a category not '', and that the category actually exists
+      return (
+        !image.category ||
+        image.category === '' ||
+        !folders.find((folder) => folder.name === image.category)
+      );
+    };
+
+    return imagesForDay.filter(imageUnassigned);
+  }, [imagesForDay, folders]);
+
+  // now, render the banner component to go day by day
+  //and render the folers that will be the target for the imagesconst
+
+  const handleCategroizeImage = (imageId: Image, folderName: string) => {
+    //
+  };
+
+  const handleDropImage = (imageId: Image, folderName: string) => {
+    //set the category of the image to the folder name
+    //update the image
+    //update the image store
+    console.log('Dropped image', imageId, 'into folder', folderName);
+    //update local images
+    setLocalImages((prevImages) =>
+      prevImages.map((img) =>
+        img.id === imageId.id ? { ...img, category: folderName } : img
+      )
+    );
+  };
+
+  const handleDragEnd = (id: string) => {
+    //find that image with id and set the category to ''
+    setLocalImages((prevImages) =>
+      prevImages.map((img) => (img.id === id ? { ...img, category: '' } : img))
+    );
+  };
+
+  if (tripLoading || imagesLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!images || !trip) {
+    return <div>Error...</div>;
+  }
+
   const saveState = async () => {
     const trip_id = id;
-
-    if (!images) return;
 
     try {
       const _ = await saveCategorizedImages(localImages, trip_id, images);
 
-      //save the trip
+      //save the trip --------> I AM NOW SAVING THE TRIP AUTOMATICALLY
       //const __ = await saveCategorizedTrip(localTrip as Trip);
 
       //if both work, set trip to local trip
@@ -257,25 +254,6 @@ const CategoryView = () => {
 
   return (
     <div>
-      <div className="flex justify-center space-x-4 w-full">
-        {/* Button to add a category */}
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={() => {
-              CompareViewStore.setState((state) => {
-                return {
-                  ...state,
-                  add_category_modal_open: true,
-                };
-              });
-            }}
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Add Category
-          </button>
-        </div>
-        {add_category_modal_open && <AddCategoryForm />}
-      </div>
       <DndProvider backend={HTML5Backend}>
         {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
         <div className="flex justify-center space-x-4">
@@ -295,9 +273,7 @@ const CategoryView = () => {
             <ImageDragFolder
               key={folder.name}
               folder={folder}
-              images={(images || []).filter(
-                (img) => img.category === folder.name
-              )}
+              images={localImages.filter((img) => img.category === folder.name)}
               onDropImage={handleDropImage}
               onDragEnd={handleDragEnd}
               opened={openCategoryFolder === folder.name}
@@ -315,20 +291,8 @@ const CategoryView = () => {
   );
 };
 
-const ImageGallery = ({
-  images,
-  onDragEnd,
-}: {
-  images: Image[];
-  onDragEnd: (id: string) => void;
-}) => {
-  return (
-    <div className="grid grid-cols-6 gap-2">
-      {images.map((image) => (
-        <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
-      ))}
-    </div>
-  );
+const ItemTypes = {
+  IMAGE: 'image',
 };
 
 const ImageDragFolder = ({
@@ -436,19 +400,36 @@ const ImageItem = ({
   return (
     <div
       ref={dragRef}
-      className={` relative p-2 h-[128px] border rounded w-full ${
+      className={`p-2 h-[128px] border rounded ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
       <NextImage
         src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
         alt={`Image for ${image.created_at}`}
-        className="h-[128px]"
-        layout="fill"
-        objectFit="contain"
+        width={128}
+        height={128}
+        className="object-contain rounded-lg shadow-md"
+        layout="fixed"
       />
     </div>
   );
 };
 
-export default CategoryView;
+const ImageGallery = ({
+  images,
+  onDragEnd,
+}: {
+  images: Image[];
+  onDragEnd: (id: string) => void;
+}) => {
+  return (
+    <div className="grid grid-cols-6 gap-2">
+      {images.map((image) => (
+        <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
+      ))}
+    </div>
+  );
+};
+
+export default CategoryViewOld;

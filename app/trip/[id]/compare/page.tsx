@@ -11,8 +11,12 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
+
+import { QueryClientProvider } from '@tanstack/react-query';
 import TripContext from '@/components/TripContext';
+
+import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
 
 import {
   useQueryTrip,
@@ -37,6 +41,11 @@ import { FaTrash } from 'react-icons/fa';
 //import icon that intuitively looks like "open up"
 import { FaChevronDown } from 'react-icons/fa';
 import axios from 'axios';
+
+import UntimedImagesView from '@/components/Trip_View/Compare_View/UntimedImagesView';
+import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedImages';
+import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
+import { queryClient } from '../../../../components/Trip_View/Trip_View_Image_Store';
 
 const useTripContext = () => {
   return useContext(TripContext);
@@ -143,15 +152,13 @@ const saveCategorizedImages = (
   }
 };
 
-const queryClient = new QueryClient();
-
 const PageWithProvider: React.FC<{ params: { id: string } }> = ({
   params: { id },
 }) => {
   return (
     <TripProvider id={id || '0'}>
       <QueryClientProvider client={queryClient}>
-        <ImageFolderComponents />
+        <Page />
       </QueryClientProvider>
     </TripProvider>
   );
@@ -167,7 +174,21 @@ const Page = () => {
     filtered_image_indexes,
   } = useCompareViewStore();
 
-  const changeComparePageMode = (
+  const { update, data, status } = useSession();
+
+  useEffect(() => {
+    const session = data;
+    console.log('new session', session);
+    //store the access token in local storage
+    if (session?.accessToken) {
+      localStorage.removeItem('accessToken');
+      localStorage.setItem('accessToken', session.accessToken);
+    }
+    //setBearerToken(session?.accessToken || '');
+    //set tripContext bearer token
+  }, [data]);
+
+  const setMode = (
     mode: 'sort' | 'undated' | 'unlocated' | 'view' | 'compare'
   ) => {
     CompareViewStore.setState((state) => ({
@@ -175,351 +196,84 @@ const Page = () => {
       mode,
     }));
   };
-};
 
-const ImageFolderComponents = () => {
-  const { id } = useTripContext();
+  /**
+   * Create a Navarbar that helps you select a mode
+   * If Mode is sort -> Then use CategoryView Component
+   * If Mode is undated -> Then use UntimedImagesView Component
+   * If Mode is unlocated -> Then use UnlocatedImagesView Component
+   * If Mode is view -> Then for now -> Just say "view" -> not sure what to do here
+   */
 
-  const [localImages, setLocalImages] = useState<Image[]>([]);
-
-  //local trip that you can add categories to or remove categories from
-  const [localTrip, setLocalTrip] = useState<Trip | null>(null);
-
-  const [openCategoryFolder, setOpenCategoryFolder] = useState<string | null>(
-    null
-  );
-
-  const onAddCategory = (category: Category) => {
-    if (!localTrip) {
-      return;
+  const renderContent = () => {
+    switch (mode) {
+      case 'sort':
+        return <CategoryView />;
+      case 'undated':
+        return <UntimedImagesView />;
+      case 'unlocated':
+        return <UnlocatedImagesView />;
+      case 'view':
+        return <div className="text-center text-xl">View Mode</div>;
+      default:
+        return null;
     }
-    const newTrip = {
-      ...localTrip,
-      categories: [...localTrip.categories, category],
-    };
-
-    setLocalTrip(newTrip);
   };
 
-  const {
-    data: trip,
-    isLoading: tripLoading,
-    error: tripError,
-  } = useQueryTrip(id);
-
-  //same with images
-  const {
-    data: images,
-    isLoading: imagesLoading,
-    error: imagesError,
-  } = useQueryTripImages(id);
-
-  useEffect(() => {
-    if (images) {
-      //deep copy the images
-      setLocalImages(JSON.parse(JSON.stringify(images)));
-    }
-  }, [images]);
-
-  useEffect(() => {
-    if (trip) {
-      setLocalTrip(trip);
-    }
-  }, [trip]);
-
-  const { selected_date } = useTripViewStore();
-
-  const imagesForDay: Image[] = useMemo(() => {
-    if (!trip || !images) return [];
-    //get selected date
-    //get trip start date
-    const start_date = dateFromString(trip?.start_date || '1970-01-01');
-    //add offset to start date
-    start_date.setDate(start_date.getDate() + selected_date);
-
-    //add timezone offset
-    const timezone_offset = start_date.getTimezoneOffset();
-    start_date.setMinutes(start_date.getMinutes() + timezone_offset);
-    //filter images with the same date
-    return images?.filter((img) => {
-      const image_date = img.created_at.toDateString();
-      const start_date_date = start_date.toDateString();
-      return image_date === start_date_date;
-    });
-  }, [localImages, selected_date, trip]);
-
-  // Retreive Categories From Trip
-  const categories = trip?.categories || [];
-
-  //get folders that overlap with the selected date
-
-  const current_date: Date = useMemo(() => {
-    const start_date = dateFromString(trip?.start_date || '1970-01-01');
-    start_date.setDate(start_date.getDate() + selected_date);
-
-    return start_date;
-  }, [selected_date, trip]);
-
-  const categories_on_date = useMemo(() => {
-    const categories = localTrip?.categories || [];
-
-    return categories.filter((category) => {
-      const start_date = dateFromString(category.start_date);
-      const end_date = dateFromString(category.end_date);
-
-      return start_date <= current_date && current_date <= end_date;
-    });
-  }, [localTrip, current_date]);
-
-  //now , using the categories_on_date, we can create the folders
-  const folders = categories_on_date.map((category) => {
-    return {
-      name: category.category,
-    };
-  });
-
-  const images_for_day_and_unassigned: Image[] = useMemo(() => {
-    const imageUnassigned = (image: Image): boolean => {
-      //make sure its in a category not '', and that the category actually exists
-      return (
-        !image.category ||
-        image.category === '' ||
-        !folders.find((folder) => folder.name === image.category)
-      );
-    };
-
-    return imagesForDay.filter(imageUnassigned);
-  }, [imagesForDay, localTrip]);
-
-  // now, render the banner component to go day by day
-  //and render the folers that will be the target for the images
-
-  const handleDropImage = (imageId: Image, folderName: string) => {
-    //set the category of the image to the folder name
-    //update the image
-    //update the image store
-
-    //update local images
-    setLocalImages((prevImages) =>
-      prevImages.map((img) =>
-        img.id === imageId.id ? { ...img, category: folderName } : img
-      )
-    );
-  };
-
-  const handleDragEnd = (id: string) => {
-    //find that image with id and set the category to ''
-    setLocalImages((prevImages) =>
-      prevImages.map((img) => (img.id === id ? { ...img, category: '' } : img))
-    );
-  };
-
-  if (tripLoading || imagesLoading) {
+  //check if authenticated
+  if (status === 'loading') {
     return <div>Loading...</div>;
   }
 
-  if (!images || !trip) {
-    return <div>Error...</div>;
+  if (status === 'unauthenticated') {
+    return <div>Unauthenticated</div>;
   }
 
-  const saveState = async () => {
-    const trip_id = id;
-
-    try {
-      const _ = await saveCategorizedImages(localImages, trip_id, images);
-
-      //save the trip
-      const __ = await saveCategorizedTrip(localTrip as Trip);
-
-      //if both work, set trip to local trip
-      //and set images to local images
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   return (
-    <div>
-      <DndProvider backend={HTML5Backend}>
-        <AddCategoryForm />
-        {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
-        <div className="flex justify-center space-x-4">
+    <div className="min-h-screen bg-gray-100">
+      <nav className="bg-blue-500 p-4 shadow-md">
+        <div className="container mx-auto flex justify-around">
           <button
-            onClick={() => {
-              saveState();
-            }}
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'sort' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('sort')}
           >
-            Save State and Images
+            Sort
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'undated'
+                ? 'bg-blue-700'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('undated')}
+          >
+            Undated
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'unlocated'
+                ? 'bg-blue-700'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('unlocated')}
+          >
+            Unlocated
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'view' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('view')}
+          >
+            View
           </button>
         </div>
-
-        <Banner_Component />
-        <div className="grid grid-cols-3 gap-4">
-          {folders.map((folder) => (
-            <ImageDragFolder
-              key={folder.name}
-              folder={folder}
-              images={imagesForDay.filter(
-                (img) => img.category === folder.name
-              )}
-              onDropImage={handleDropImage}
-              onDragEnd={handleDragEnd}
-              opened={openCategoryFolder === folder.name}
-              setOpen={(name: string | null) => setOpenCategoryFolder(name)}
-            />
-          ))}
-        </div>
-
-        <ImageGallery
-          images={images_for_day_and_unassigned}
-          onDragEnd={handleDragEnd}
-        />
-      </DndProvider>
+      </nav>
+      <div className="container mx-auto p-4">{renderContent()}</div>
     </div>
   );
 };
-
-//Now a gallery to view the images to drag and drop
-const ImageGallery = ({
-  images,
-  onDragEnd,
-}: {
-  images: Image[];
-  onDragEnd: (id: string) => void;
-}) => {
-  return (
-    <div className="grid grid-cols-6 gap-2">
-      {images.map((image) => (
-        <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
-      ))}
-    </div>
-  );
-};
-
-const ImageDragFolder = ({
-  folder,
-  images,
-  onDropImage,
-  onDragEnd,
-  opened,
-  setOpen,
-}: {
-  folder: { name: string };
-  images: Image[];
-  onDropImage: (item: Image, folderName: string) => void;
-  onDragEnd: (id: string) => void;
-  opened: boolean;
-  setOpen: (folder_name: string | null) => void;
-}) => {
-  const [{ isOver }, drop] = useDrop({
-    accept: ItemTypes.IMAGE,
-    drop: (item: Image) => onDropImage(item, folder.name),
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-    }),
-  });
-
-  const dropRef = React.useRef<HTMLDivElement>(null);
-  drop(dropRef);
-
-  return (
-    <div
-      className="w-full flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg"
-      ref={dropRef}
-    >
-      <FaFolder className="text-6xl text-yellow-500 mr-2" />
-      {!opened ? (
-        <FaChevronDown
-          className="text-2xl cursor-pointer"
-          onClick={() => setOpen(folder.name)}
-        />
-      ) : (
-        <FaChevronUp
-          className="text-2xl cursor-pointer"
-          onClick={() => setOpen(null)}
-        />
-      )}
-      <h2 className="text-xl w-full font-semibold">{folder.name}</h2>
-      {!opened ? (
-        //return the "stack" of images that compresses them
-        <>
-          <div className="relative w-full flex flex-wrap flex-row">
-            {images.slice(0, 3).map((image, index) => (
-              <div
-                key={image.id}
-                className="flex relative w-1/2 h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
-              >
-                <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
-              </div>
-            ))}
-            {images.length > 3 && (
-              <div className=" w-1/2  h-[128px]  flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-40">
-                <span className="text-white text-lg font-bold">
-                  +{images.length - 3}
-                </span>
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        //return list of images that makes each one accessible
-        <div className="grid grid-cols-2 gap-2">
-          {images.map((image) => (
-            <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const ImageItem = ({
-  image,
-  onDropImage,
-  onDragEnd,
-}: {
-  image: Image;
-  onDropImage?: (id: number, folderName: string) => void;
-  onDragEnd: (id: string) => void;
-}) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes.IMAGE,
-    item: { id: image.id },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-    end: (item, monitor) => {
-      if (!monitor.didDrop()) {
-        onDragEnd(item.id);
-      }
-    },
-  }));
-
-  const dragRef = React.useRef<HTMLDivElement>(null);
-  drag(dragRef);
-
-  return (
-    <div
-      ref={dragRef}
-      className={`p-2 h-[128px] border rounded ${
-        isDragging ? 'opacity-50' : 'opacity-100'
-      }`}
-    >
-      <NextImage
-        src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-        alt={`Image for ${image.created_at}`}
-        width={128}
-        height={128}
-        className="object-contain rounded-lg shadow-md"
-        layout="fixed"
-      />
-    </div>
-  );
-};
-
-//export default FolderView;
-
-//export default PageWithProvider;
 
 export default PageWithProvider;

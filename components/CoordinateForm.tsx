@@ -36,15 +36,28 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
   const setFromGoogleCoordinates = (value_string: string) => {
     //format 34°18'06.7"N 119°18'06.7"W
     //52°15'0.0"N 21°0'42.0"E
+
+    console.log('"setFromGoogleCoordinates"', value_string);
+
+    //49°58′45″N 20°3′50″E﻿ / ﻿49.97917°N 20.06389°E
+    //49°58′45″N 20°3′50″E -> Why is this giving me an error?
+
+    //49°58′45″N 20°3′50″E
+    const regex_2 =
+      /(\d+)°(\d+)[′'](\d+(\.\d+)?)["″]([NSEW]) (\d+)°(\d+)[′'](\d+(\.\d+)?)["″]([NSEW])/g;
+
     const regex =
       /(\d+)°(\d+)'(\d+(\.\d+)?)"([N|S|E|W]) (\d+)°(\d+)'(\d+(\.\d+)?)"([N|S|E|W])/g;
 
-    if (!editedImage) return;
-
+    if (!editedImage) {
+      console.error('No Image');
+      return;
+    }
     //find long in degrees
     const input = value_string;
 
     if (regex.test(input)) {
+      console.log('Passed Test');
       // split the input into two parts
       const [lat, long] = input.split(' ');
 
@@ -77,6 +90,11 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         minutes_lat / 60 +
         (seconds_lat / 3600) * (Nors === 'S' ? -1 : 1);
 
+      console.log('Passed Test');
+
+      console.log('decimalDegreesLong', decimalDegreesLong);
+      console.log('decimalDegreesLat', decimalDegreesLat);
+
       setEditedImage({
         ...editedImage,
         lat: `${decimalDegreesLat}`,
@@ -85,7 +103,52 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
 
       //make sure its in
     }
+    //test if it passes the second regex
+    if (regex_2.test(input)) {
+      console.log('Passed Test 2');
+      // split the input into two parts
+      const [lat, long] = input.split(' ');
 
+      //test if N or S
+      const Nors = lat.includes('N') ? 'N' : 'S';
+
+      const degrees_lat = parseInt(lat.split('°')[0]);
+
+      const minutes_lat = parseInt(lat.split('°')[1].split('′')[0]);
+
+      const seconds_lat = parseFloat(lat.split('′')[1].split('″')[0]);
+
+      //test if E or W
+      const WorE = long.includes('E') ? 'E' : 'W';
+
+      const degrees_long = parseInt(long.split('°')[0]);
+
+      const minutes_long = parseInt(long.split('°')[1].split('′')[0]);
+
+      const seconds_long = parseFloat(long.split('′')[1].split('″')[0]);
+
+      //get decimal degrees long and lat
+      const decimalDegreesLong =
+        degrees_long +
+        minutes_long / 60 +
+        (seconds_long / 3600) * (WorE === 'W' ? -1 : 1);
+
+      const decimalDegreesLat =
+        degrees_lat +
+        minutes_lat / 60 +
+        (seconds_lat / 3600) * (Nors === 'S' ? -1 : 1);
+
+      console.log('Passed Test 2');
+
+      console.log('decimalDegreesLong', decimalDegreesLong);
+      console.log('decimalDegreesLat', decimalDegreesLat);
+
+      setEditedImage({
+        ...editedImage,
+        lat: `${decimalDegreesLat}`,
+        long: `${decimalDegreesLong}`,
+      });
+    }
     //test format
   };
 

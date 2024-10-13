@@ -20,6 +20,7 @@ import { FC } from 'react';
 import TripContext from '../TripContext';
 
 import { Image } from '@/definitions/Trip_View';
+import { FaTimes } from 'react-icons/fa';
 
 const EditImageForm: FC = () => {
   //Every time editedImage changed, update this state
@@ -150,9 +151,28 @@ const EditImageForm: FC = () => {
     className="w-1/2 px-3 py-2 border rounded-lg"
   />;
 
+  {
+    /*     <div className="fixed z-690 inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="relative inset-0 z-800 bg-white p-6 rounded-lg shadow-lg w-11/12 max-h-[80vh] max-w-lg overflow-y-auto">*/
+  }
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-h-[80vh] max-w-lg overflow-y-auto">
+    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="z-60 bg-white p-6 rounded-lg shadow-lg w-11/12 max-h-[80vh] max-w-lg overflow-y-auto">
+        <div className="w-full flex justify-end">
+          <FaTimes
+            className="text-2xl cursor-pointer"
+            onClick={() => {
+              tripViewStore.setState((state) => {
+                return {
+                  ...state,
+                  editingImage: null,
+                };
+              });
+            }}
+          />
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();

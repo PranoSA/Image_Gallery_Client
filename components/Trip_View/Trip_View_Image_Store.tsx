@@ -2,6 +2,7 @@
 import { useStore } from '@tanstack/react-store';
 import { Listener, Store } from '@tanstack/store';
 import {
+  InvalidateOptions,
   QueryClient,
   useMutation,
   useQueries,
@@ -104,6 +105,15 @@ export const queryClient = new QueryClient({
 
 //mutation to update image metadata
 const updateImageMutation = async (image: Image, trip: Trip) => {
+  const de_shifted_image = {
+    ...image,
+    created_at: new Date(image.created_at),
+  };
+
+  de_shifted_image.created_at.setMinutes(
+    de_shifted_image.created_at.getMinutes() - new Date().getTimezoneOffset()
+  );
+
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip.id}/images/${image.id}`,
     {
@@ -210,6 +220,7 @@ const addImages = async (
   return null;
 };
 
+//['trip', trip_id, 'images']
 export const useDeleteImage = () => {
   return useMutation({
     ///trip/:tripid/images/:id
@@ -256,10 +267,24 @@ export const useDeleteImage = () => {
         new_image.created_at.getMinutes() + subtraction_minutes
       );
 
+      //force clients to refetch the images
+      /*queryClient.invalidateQueries(
+        {
+          queryKey: ['trip', data.tripid, 'images'],
+        },
+        {}
+      );*/
       //remove the image from the selected images
       queryClient.setQueryData(
         ['trip', data.tripid, 'images'],
         (oldData: Image[]) => {
+          //create a new array
+          console.log('Deleted Image', data.id);
+          console.log('Old Data Length', oldData.length);
+          const new_data = oldData.filter((image) => image.id !== data.id);
+          console.log('New Data Length', new_data.length);
+          return new_data;
+
           return oldData.filter((image) => image.id !== data.id);
         }
       );
@@ -432,6 +457,7 @@ const editTrip = async (trip: Trip) => {
       'Content-Type': 'application/json',
       ...createRequestHeaders(),
     },
+    body: JSON.stringify(trip),
   });
 
   if (!edited_trip.ok) {
@@ -467,6 +493,8 @@ export const useAddTripCategory = () => {
         ...trip,
         categories: [...trip.categories, category],
       };
+
+      console.log('New Trip Store', new_trip);
 
       //edit the trip
       const edited_trip = await editTrip(new_trip);

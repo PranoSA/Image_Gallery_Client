@@ -25,6 +25,8 @@ type CompareViewStoreType = {
   compared_image_indexes: number[]; //This only applies if mode is compare
 
   filtered_image_indexes: number[]; //This only applies if mode is filter
+
+  add_category_modal_open: boolean;
 };
 
 const InitialValue: CompareViewStoreType = {
@@ -32,6 +34,7 @@ const InitialValue: CompareViewStoreType = {
   compare_or_filter_stage: 'compare',
   compared_image_indexes: [],
   filtered_image_indexes: [],
+  add_category_modal_open: false,
 };
 
 //create the store
