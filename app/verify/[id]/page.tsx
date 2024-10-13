@@ -81,7 +81,6 @@ const useQueryVerification = (id: string, code: string) => {
   return useQuery({
     queryKey: ['verify', id, code],
     queryFn: async ({ queryKey }) => {
-      console.log('query', queryKey);
       const [_, id, code] = queryKey;
 
       const response = await fetch(
@@ -101,8 +100,6 @@ const useQueryVerification = (id: string, code: string) => {
 
 const Page: React.FC = () => {
   const { id } = useContext(VerifyContext);
-
-  console.log('Verify Page', id);
 
   //code is the query parameter
   const code = new URLSearchParams(window.location.search).get('code') || '';

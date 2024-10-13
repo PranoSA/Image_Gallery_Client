@@ -60,7 +60,6 @@ const AddPathsForm: React.FC = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('Success:', data);
         handleCloseModal();
       })
       .catch((error) => {

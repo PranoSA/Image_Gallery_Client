@@ -64,7 +64,6 @@ export const authOptions: AuthOptions = {
       //check session error
       if (token.error) {
         //log user out, and invalidate session
-        console.log('Token error', token.error);
         session.expires = new Date(0).toISOString();
         session.accessToken = undefined;
         throw new NextResponse('Unauthorized', { status: 401 });
@@ -102,7 +101,7 @@ export const authOptions: AuthOptions = {
       if (Date.now() < token.accessTokenExpires) {
         return token;
       }
-      console.log('Token expired, refreshing', token);
+
 
       //if refresh token is expires, log out
 

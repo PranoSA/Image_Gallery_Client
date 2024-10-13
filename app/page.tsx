@@ -68,9 +68,7 @@ function Home() {
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log('New Categories', newTrip.categories);
-  }, [newTrip]);
+
 
   //id of trip to invite user to
   // if null, then no form is shown
@@ -328,9 +326,6 @@ const TripListCompontent = () => {
 
   const { data: trips, status, error } = useFetchMyTrips();
 
-  console.log('Trips:', trips);
-  console.log('Status:', status);
-  console.log('Error:', error);
 
   // when done loading, load the images
 

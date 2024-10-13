@@ -181,8 +181,6 @@ export const TripDropdownMenu: React.FC = () => {
                 type="checkbox"
                 checked={horizontally_tabbed}
                 onChange={() => {
-                  console.log('horizontally_tabbed', horizontally_tabbed);
-
                   const new_state = {
                     ...tripViewStore.state,
                     horizontally_tabbed: !horizontally_tabbed,

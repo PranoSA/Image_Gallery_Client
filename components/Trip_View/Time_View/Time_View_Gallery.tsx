@@ -131,8 +131,7 @@ const TimeViewGallery: React.FC = () => {
             date: new Date(current_date),
             images: imagesForDay,
           });
-          console.log('images for day date', current_date);
-          console.log('images for day', imagesForDay);
+
         }
         current_date.setDate(current_date.getDate() + 1);
       }
@@ -437,8 +436,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       ///return list_of_subranges;
     }
 
-    console.log('list of subranges for day', date.toDateString());
-    console.log('list of subranges', list_of_subranges);
+
 
     return list_of_subranges;
   };

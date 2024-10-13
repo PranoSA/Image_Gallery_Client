@@ -279,10 +279,9 @@ export const useDeleteImage = () => {
         ['trip', data.tripid, 'images'],
         (oldData: Image[]) => {
           //create a new array
-          console.log('Deleted Image', data.id);
-          console.log('Old Data Length', oldData.length);
+
           const new_data = oldData.filter((image) => image.id !== data.id);
-          console.log('New Data Length', new_data.length);
+
           return new_data;
 
           return oldData.filter((image) => image.id !== data.id);
@@ -317,7 +316,6 @@ export const useAddImage = () => {
         queryClient.setQueryData(
           ['trip', data.tripid, 'images'],
           (oldData: Image[]) => {
-            console.log('New Data', data);
             return [...oldData, new_image];
           }
         );
@@ -397,7 +395,7 @@ const fetchDaySummary = async (
       headers: createRequestHeaders(),
     }
   );
-  console.log('day summary response', response);
+
   return response.json();
 };
 
@@ -494,7 +492,6 @@ export const useAddTripCategory = () => {
         categories: [...trip.categories, category],
       };
 
-      console.log('New Trip Store', new_trip);
 
       //edit the trip
       const edited_trip = await editTrip(new_trip);

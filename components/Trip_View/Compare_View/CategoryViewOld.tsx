@@ -212,7 +212,7 @@ const CategoryViewOld = () => {
     //set the category of the image to the folder name
     //update the image
     //update the image store
-    console.log('Dropped image', imageId, 'into folder', folderName);
+
     //update local images
     setLocalImages((prevImages) =>
       prevImages.map((img) =>

@@ -37,8 +37,6 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     //format 34°18'06.7"N 119°18'06.7"W
     //52°15'0.0"N 21°0'42.0"E
 
-    console.log('"setFromGoogleCoordinates"', value_string);
-
     //49°58′45″N 20°3′50″E﻿ / ﻿49.97917°N 20.06389°E
     //49°58′45″N 20°3′50″E -> Why is this giving me an error?
 
@@ -57,7 +55,6 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     const input = value_string;
 
     if (regex.test(input)) {
-      console.log('Passed Test');
       // split the input into two parts
       const [lat, long] = input.split(' ');
 
@@ -90,11 +87,6 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         minutes_lat / 60 +
         (seconds_lat / 3600) * (Nors === 'S' ? -1 : 1);
 
-      console.log('Passed Test');
-
-      console.log('decimalDegreesLong', decimalDegreesLong);
-      console.log('decimalDegreesLat', decimalDegreesLat);
-
       setEditedImage({
         ...editedImage,
         lat: `${decimalDegreesLat}`,
@@ -105,7 +97,6 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
     }
     //test if it passes the second regex
     if (regex_2.test(input)) {
-      console.log('Passed Test 2');
       // split the input into two parts
       const [lat, long] = input.split(' ');
 
@@ -137,11 +128,6 @@ const CoordinateForm: React.FC<CoordinateFormProps> = ({
         degrees_lat +
         minutes_lat / 60 +
         (seconds_lat / 3600) * (Nors === 'S' ? -1 : 1);
-
-      console.log('Passed Test 2');
-
-      console.log('decimalDegreesLong', decimalDegreesLong);
-      console.log('decimalDegreesLat', decimalDegreesLat);
 
       setEditedImage({
         ...editedImage,

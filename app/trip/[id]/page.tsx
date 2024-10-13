@@ -128,7 +128,6 @@ function Page() {
   //if it changes, then update the bearer token
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('new session', session);
       //store the access token in local storage
       if (session?.accessToken) {
         localStorage.removeItem('accessToken');
@@ -142,7 +141,6 @@ function Page() {
   }, []);
 
   useEffect(() => {
-    console.log('new session', session);
     //store the access token in local storage
     if (session?.accessToken) {
       localStorage.removeItem('accessToken');

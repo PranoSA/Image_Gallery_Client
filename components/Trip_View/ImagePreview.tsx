@@ -80,7 +80,7 @@ const ImagePreview: React.FC = () => {
     });
   }, [images, viewed_image_index]);
 
-  console.log('Viewed Image Index', viewed_image_index);
+
 
   if (imagesLoading || tripLoading) {
     return <div>Loading...</div>;

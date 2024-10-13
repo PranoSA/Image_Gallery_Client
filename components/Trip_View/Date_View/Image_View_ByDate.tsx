@@ -91,9 +91,6 @@ const Image_View_ByDate: React.FC = () => {
       end_date.setHours(23, 59, 59, 999);
       end_date.setMinutes(end_date.getMinutes() + offset_minutes);
 
-      console.log('start_date', start_date);
-      console.log('end_date', end_date);
-
       const start_index = images.findIndex((image) => {
         return new Date(image.created_at) >= start_date;
       });

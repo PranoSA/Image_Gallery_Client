@@ -53,7 +53,6 @@ const CategoryView = () => {
   const imagesForDay = useMemo(() => {
     if (!images || !trip) return [];
 
-    console.log('# of images', images.length);
 
     const date = new Date(trip?.start_date);
     date.setDate(date.getDate() + selected_date);
@@ -101,7 +100,7 @@ const CategoryView = () => {
   });
 
   const images_for_day_and_unassigned: Image[] = useMemo(() => {
-    console.log('Images for day', imagesForDay);
+
     const imageUnassigned = (image: Image): boolean => {
       //make sure its in a category not '', and that the category actually exists
       return (
@@ -119,7 +118,7 @@ const CategoryView = () => {
     //set the category of the image to the folder name
     //update the image
     //update the image store
-    console.log('Dropped image', imageId, 'into folder', folderName);
+
 
     if (!trip) return;
     if (!images) return;
@@ -148,7 +147,7 @@ const CategoryView = () => {
   };
 
   const handleDragEnd = async (id: string) => {
-    console.log('Drag ended', id);
+
     if (!images) return;
     //find that image with id and set the category to ''
     //create '' category for the image
@@ -162,7 +161,7 @@ const CategoryView = () => {
       category: '',
     };
 
-    console.log('New Image', new_image);
+
 
     //update the image
     const res = await editImage.mutate({
@@ -170,7 +169,7 @@ const CategoryView = () => {
       trip,
     });
 
-    console.log('Edit Image', res);
+
 
     setLocalImages((prevImages) =>
       prevImages.map((img) => (img.id === id ? { ...img, category: '' } : img))

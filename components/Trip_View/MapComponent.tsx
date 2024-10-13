@@ -412,11 +412,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       imageState.data || []
     );
 
-    console.log('Selected Date', selectedDate);
-    console.log('Current Day', currentDay);
-
-    console.log('Images For Day', imagesForDay.length);
-
     if (imagesForDay.length > 0) {
       //set center of view to the center of the images
       const candidateImages = imagesForDay
@@ -475,9 +470,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
 
       const zoom = Math.floor(9 - Math.log2(max_diff));
 
-      console.log('Extending Zoom', zoom);
-      console.log('Extent of Image', max_lat, min_lat, max_long, min_long);
-
       mapInstanceRef.current?.getView().setZoom(Math.min(zoom, 18));
     }
 
@@ -522,8 +514,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   }
 
   const addVectorSourceToConvexHullLayer = (source: VectorSource) => {
-    console.log('Adding Vector Source to Convex Hull Layer');
-
     // remove old source
     convexHullLayer.current?.setSource(null);
 

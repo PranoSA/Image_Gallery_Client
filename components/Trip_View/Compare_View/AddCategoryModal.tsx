@@ -81,7 +81,7 @@ const AddCategoryForm = () => {
 
     //add the category to the trip
 
-    console.log('Adding Category', category);
+
 
     const new_trip = await addCategory.mutate({ trip, category });
 
@@ -116,7 +116,7 @@ const AddCategoryForm = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Submitting Category', category);
+
     await onAddCategory(category);
 
     return;

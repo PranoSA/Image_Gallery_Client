@@ -16,6 +16,9 @@ import { useSession } from 'next-auth/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import TripContext from '@/components/TripContext';
 
+//back arrow icon
+import { FaArrowLeft } from 'react-icons/fa';
+
 import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
 
 import {
@@ -46,6 +49,7 @@ import UntimedImagesView from '@/components/Trip_View/Compare_View/UntimedImages
 import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedImages';
 import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
 import { queryClient } from '../../../../components/Trip_View/Trip_View_Image_Store';
+import { useRouter } from 'next/router';
 
 const useTripContext = () => {
   return useContext(TripContext);
@@ -178,7 +182,7 @@ const Page = () => {
 
   useEffect(() => {
     const session = data;
-    console.log('new session', session);
+
     //store the access token in local storage
     if (session?.accessToken) {
       localStorage.removeItem('accessToken');
@@ -219,6 +223,7 @@ const Page = () => {
         return null;
     }
   };
+  //const router = useRouter();
 
   //check if authenticated
   if (status === 'loading') {
@@ -229,10 +234,28 @@ const Page = () => {
     return <div>Unauthenticated</div>;
   }
 
+  //go back
+  const goBack = () => {
+    //go to /trip/${id}
+    //window.location.href = `/trip/${id}`;
+    //load the page /trip/${id} --> not using window.history
+    //use router to go back
+    // router.push(`/trip/${id}`);
+    window.location.href = `/trip/${id}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-blue-500 p-4 shadow-md">
         <div className="container mx-auto flex justify-around">
+          {/* back button */}
+          <FaArrowLeft
+            className="text-white text-2xl cursor-pointer"
+            onClick={goBack}
+          >
+            Back
+          </FaArrowLeft>
+
           <button
             className={`px-4 py-2 rounded-lg text-white ${
               mode === 'sort' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
