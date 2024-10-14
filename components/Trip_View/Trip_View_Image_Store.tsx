@@ -122,7 +122,7 @@ const updateImageMutation = async (image: Image, trip: Trip) => {
         Authorization: `Bearer ${getBearerFromLocalStorage()}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(image),
+      body: JSON.stringify(de_shifted_image),
     }
   );
   return response.json();
@@ -491,7 +491,6 @@ export const useAddTripCategory = () => {
         ...trip,
         categories: [...trip.categories, category],
       };
-
 
       //edit the trip
       const edited_trip = await editTrip(new_trip);

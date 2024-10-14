@@ -1,90 +1,61 @@
-'use client';
 /**
  *
+ * Plain View Will Come With 3 Options
  *
- * This component is responsible for displaying the images of the trip.
+ * 1. No Categories [All Images Shown]
+ * 2. Only Categories [Shows Images as Folders and Images in the Folders]
+ * 3. Categories and Uncategorised Images [Shows Images as Folders and Images in the Folders]
  *
- * But in a timed order
- *
- * The way to do this is sort images by created_at
- * Then between each day - write the day
- *
- * Also, if more than 6 images in a day, then write an hour time-range that encapsulates the images
- *
- * Make the widget scrollable
- *
- * The time ranges should encapsulate 6 images - but can encapsulate more or less depending on
- *
- * Here is the algorithm, split on the hours according to the largest hour that encapsulates 6 images
- *
- * 1. Needs to be in hour increments, so if 4pm-5pm entailed more than 6 photos, then 4pm to 5pm is fine
- * 2. If 4pm - 6pm has 9 photos, then split them up into 4pm-5pm and 5pm-6pm
- * 3. If 4pm - 6pm has 5 photos, and 4pm -7pm has 6 photos, then it should be 4pm-7pm
- * 4. if 4pm-7pm has 5 photos and 4pm-8pm has 7 photos, should be 4pm-7pm and then apply the logic starting at7pm
- *
- *
- * Also when you click an image - it should selected the selected_image_location in the store
- * When you click the "eye" icon, it should set the selected_image_preview in the store
- * When you click the edit icon, it should set the editingImage in the store
  */
 
-import '@/globals.css';
-import { timeFromString } from '../Time_Functions';
-import { useContext, useMemo, useRef, useEffect } from 'react';
+import { useContext, useState, useMemo, useRef, useEffect } from 'react';
 import {
-  tripViewStore,
-  useDeleteImage,
-  useQueryTrip,
   useQueryTripImages,
-  useTripViewStore,
+  useQueryTrip,
+  useDeleteImage,
 } from '../Trip_View_Image_Store';
 import TripContext from '@/components/TripContext';
-import { useQuery } from '@tanstack/react-query';
-import FilteredCategoryForm from '@/components/Trip_View/FilteredCategoryForm';
-
-import ImagePreview from '../ImagePreview';
-
-import { HiOutlinePencil, HiEye } from 'react-icons/hi';
-import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-
-import { Image } from '@/definitions/Trip_View';
-import NextImage from 'next/image';
-
+import { useTripViewStore, tripViewStore } from '../Trip_View_Image_Store';
+import { Banner_Component } from '../Banner_Component';
 import EditImageForm from '../EditImageForm';
-
-//Trash Icon for deletion
+import NextImage from 'next/image';
+import { Image, Trip } from '@/definitions/Trip_View';
 import { AiFillDelete } from 'react-icons/ai';
 
-const TimeViewGallery: React.FC = () => {
-  const id = useContext(TripContext).id;
+import { HiEye, HiOutlinePencil } from 'react-icons/hi';
+import ImagePreview from '../ImagePreview';
 
-  const {
-    data: trip,
-    isLoading: tripLoading,
-    isLoadingError: tripError,
-  } = useQueryTrip(id);
+const PlainView = () => {
+  const [mode, setMode] = useState<
+    'no_categories' | 'only_categories' | 'categories_and_uncategorised'
+  >('no_categories');
+
+  const id = useContext(TripContext).id;
 
   const {
     data: images,
     isLoading: imagesLoading,
-    isLoadingError: imagesError,
+    isError: imagesError,
   } = useQueryTripImages(id);
 
   const {
-    selected_date,
-    selected_image_location,
-    filtered_categories,
-    horizontally_tabbed,
-    get_images_for_day,
-  } = useTripViewStore();
+    data: trip,
+    isLoading: tripLoading,
+    isError: tripError,
+  } = useQueryTrip(id);
+
+  const { selected_date } = useTripViewStore();
+
+  //Create a LARGE Immage Gallery With All Images
+  //It will be separated by day and by time like before
+  //but do not include days without images
+
+  type IndexedImage = Image & { index: number };
 
   type ImagesByDay = {
     date: Date;
-    images: Image[];
+    images: IndexedImage[];
   };
-
-  // Create refs for each date
-  const dateRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const groupedOrderedImagesByDay = useMemo(() => {
     const groupImagesByDay = (images: Image[] | undefined) => {
@@ -101,6 +72,8 @@ const TimeViewGallery: React.FC = () => {
 
       let current_date = new Date(trip.start_date);
 
+      let last_last_index = 0;
+
       while (current_date.getTime() <= end_date.getTime()) {
         const imagesForDay = images
           .filter((image) => {
@@ -109,14 +82,14 @@ const TimeViewGallery: React.FC = () => {
               current_date.toDateString()
             );
           })
-          .filter((image) => {
-            return !filtered_categories.includes(image.category || '');
-          })
           .sort((a, b) => {
             return (
               new Date(a.created_at).getTime() -
               new Date(b.created_at).getTime()
             );
+          })
+          .map((image, index) => {
+            return { ...image, index: index + last_last_index };
           });
         /*const imagesForDay = get_images_for_day(
           selected_date,
@@ -125,8 +98,10 @@ const TimeViewGallery: React.FC = () => {
         );
         */
 
+        last_last_index += imagesForDay.length;
+
         //push to the images for the day
-        if (imagesForDay.length > -1) {
+        if (imagesForDay.length > 0) {
           grouped.push({
             date: new Date(current_date),
             images: imagesForDay,
@@ -139,7 +114,7 @@ const TimeViewGallery: React.FC = () => {
     };
 
     return groupImagesByDay(images);
-  }, [filtered_categories, images, trip]);
+  }, [images, trip]);
 
   const selectedDate = useMemo(() => {
     if (!trip) return new Date().toISOString();
@@ -206,6 +181,8 @@ const TimeViewGallery: React.FC = () => {
       scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
     }
   };
+
+  const dateRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const containerTop = event.currentTarget.getBoundingClientRect().top;
@@ -310,17 +287,14 @@ const TimeViewGallery: React.FC = () => {
   );
 };
 
-//component that takes in date and list of images, and returns a sub-gallery of images
-// provisioned into time ranges
-
 type SubRangeOfImages = {
   start_hour: number; // 0..23
   end_hour: number; // 0..23
-  images: Image[];
+  images: (Image & { index: number })[];
 };
 
 type groupImagesByTimeProps = {
-  images: Image[];
+  images: (Image & { index: number })[];
   date: Date;
 };
 
@@ -339,7 +313,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   };
 
   const groupedSubRangeImages = (
-    images: Image[],
+    images: (Image & { index: number })[],
     date: Date
   ): SubRangeOfImages[] => {
     let current_hour = 0;
@@ -426,7 +400,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
     return list_of_subranges;
   };
-
+  //use memo to create the list of subranges
   //use memo to create the list of subranges
   const subranges = useMemo(() => {
     return groupedSubRangeImages(images, date);
@@ -509,16 +483,17 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 ? `${subrange.end_hour - 12}PM`
                 : `${subrange.end_hour}AM`}
             </div>
-            <div className="flex flex-wrap flex-row justify-around items-center gap-y-1">
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+              }}
+            >
               {subrange.images.map((image, i) => {
                 return (
                   <div
                     key={image.id}
-                    className={`relative flex flex-col items-center ${
-                      horizontally_tabbed
-                        ? 'w-1/3 xl:w-1/4'
-                        : 'w-1/3 lg:w-1/4 xl:w-1/6'
-                    }  bg-white rounded-lg shadow-lg border border-gray-300`}
+                    className="relative flex flex-col items-center bg-white rounded-lg shadow-lg border border-gray-300"
                     style={{
                       border:
                         selected_image_location &&
@@ -528,47 +503,42 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     }}
                   >
                     <div
-                      key={image.id}
-                      className="relative w-full flex flex-col items-center p-4 bg-white rounded-lg shadow-lg border border-gray-300"
+                      onClick={() => setSelectedImageLocation(image)}
+                      className="w-full flex items-center justify-center bg-gray-100 p-1 border"
                     >
-                      <div
-                        onClick={() => setSelectedImageLocation(image)}
-                        className="w-32  flex items-center justify-center bg-gray-100 p-1 border "
-                      >
-                        <NextImage
-                          src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-                          alt={`Image for ${image.created_at}`}
-                          width={164}
-                          height={164}
-                          className="object-contain rounded-lg"
-                          style={{
-                            cursor: 'pointer',
-                            margin: '10px',
-                          }}
-                        />
-                      </div>
-                      <div className="absolute top-1 right-1 flex ">
-                        <AiFillDelete
-                          onClick={() => deleteImage(image)}
-                          className="cursor-pointer"
-                          size={24}
-                          style={{ marginRight: '10px' }}
-                        />
-                        <HiOutlinePencil
-                          onClick={() => setEditingImage(image)}
-                          className="cursor-pointer"
-                          size={24}
-                          style={{ marginRight: '10px' }}
-                        />
-                        <HiEye
-                          onClick={() => setPreviewImage(i)}
-                          className="cursor-pointer"
-                          size={24}
-                        />
-                      </div>
-                      <div className="mt-2 text-center text-sm font-medium text-gray-700">
-                        {image.name}
-                      </div>
+                      <NextImage
+                        src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+                        alt={`Image for ${image.created_at}`}
+                        width={500}
+                        height={500}
+                        className="object-contain rounded-lg"
+                        style={{
+                          cursor: 'pointer',
+                          margin: '10px',
+                        }}
+                      />
+                    </div>
+                    <div className="absolute top-1 right-1 flex">
+                      <AiFillDelete
+                        onClick={() => deleteImage(image)}
+                        className="cursor-pointer"
+                        size={24}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <HiOutlinePencil
+                        onClick={() => setEditingImage(image)}
+                        className="cursor-pointer"
+                        size={24}
+                        style={{ marginRight: '10px' }}
+                      />
+                      <HiEye
+                        onClick={() => setPreviewImage(i)}
+                        className="cursor-pointer"
+                        size={24}
+                      />
+                    </div>
+                    <div className="mt-2 text-center text-sm font-medium text-gray-700">
+                      {image.name}
                     </div>
                   </div>
                 );
@@ -582,4 +552,4 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   );
 };
 
-export default TimeViewGallery;
+export default PlainView;

@@ -11,7 +11,7 @@ import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import TripContext from '@/components/TripContext';
@@ -50,6 +50,7 @@ import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedIm
 import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
 import { queryClient } from '../../../../components/Trip_View/Trip_View_Image_Store';
 import { useRouter } from 'next/router';
+import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
 
 const useTripContext = () => {
   return useContext(TripContext);
@@ -218,7 +219,7 @@ const Page = () => {
       case 'unlocated':
         return <UnlocatedImagesView />;
       case 'view':
-        return <div className="text-center text-xl">View Mode</div>;
+        return <PlainView />;
       default:
         return null;
     }
@@ -231,7 +232,9 @@ const Page = () => {
   }
 
   if (status === 'unauthenticated') {
-    return <div>Unauthenticated</div>;
+    //direct to login page
+    //using Keycloak
+    signIn('keycloak');
   }
 
   //go back

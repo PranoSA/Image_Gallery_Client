@@ -53,7 +53,6 @@ const CategoryView = () => {
   const imagesForDay = useMemo(() => {
     if (!images || !trip) return [];
 
-
     const date = new Date(trip?.start_date);
     date.setDate(date.getDate() + selected_date);
     //set offset
@@ -100,7 +99,6 @@ const CategoryView = () => {
   });
 
   const images_for_day_and_unassigned: Image[] = useMemo(() => {
-
     const imageUnassigned = (image: Image): boolean => {
       //make sure its in a category not '', and that the category actually exists
       return (
@@ -118,7 +116,6 @@ const CategoryView = () => {
     //set the category of the image to the folder name
     //update the image
     //update the image store
-
 
     if (!trip) return;
     if (!images) return;
@@ -147,7 +144,6 @@ const CategoryView = () => {
   };
 
   const handleDragEnd = async (id: string) => {
-
     if (!images) return;
     //find that image with id and set the category to ''
     //create '' category for the image
@@ -161,15 +157,11 @@ const CategoryView = () => {
       category: '',
     };
 
-
-
     //update the image
     const res = await editImage.mutate({
       image: new_image,
       trip,
     });
-
-
 
     setLocalImages((prevImages) =>
       prevImages.map((img) => (img.id === id ? { ...img, category: '' } : img))
@@ -277,19 +269,14 @@ const CategoryView = () => {
       </div>
       <DndProvider backend={HTML5Backend}>
         {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={() => {
-              saveState();
-            }}
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Save State and Images
-          </button>
-        </div>
 
         <Banner_Component />
-        <div className="grid grid-cols-3 gap-4">
+        <div
+          className="grid gap-4"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+          }}
+        >
           {folders.map((folder) => (
             <ImageDragFolder
               key={folder.name}
@@ -358,7 +345,7 @@ const ImageDragFolder = ({
 
   return (
     <div
-      className="w-full flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg"
+      className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
       ref={dropRef}
     >
       <FaFolder className="text-6xl text-yellow-500 mr-2" />
@@ -381,13 +368,13 @@ const ImageDragFolder = ({
             {images.slice(0, 3).map((image, index) => (
               <div
                 key={image.id}
-                className="flex relative w-1/2 h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
+                className="flex relative w-1/4 min-w-[240px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
               >
                 <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
               </div>
             ))}
             {images.length > 3 && (
-              <div className=" w-1/2  h-[128px]  flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-40">
+              <div className=" w-1/4 min-w-[240px]  h-[160px]  flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-40">
                 <span className="text-white text-lg font-bold">
                   +{images.length - 3}
                 </span>
@@ -397,9 +384,14 @@ const ImageDragFolder = ({
         </>
       ) : (
         //return list of images that makes each one accessible
-        <div className="grid grid-cols-2 gap-2">
+        <div className="relative w-full flex flex-wrap flex-row">
           {images.map((image) => (
-            <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
+            <div
+              key={image.id}
+              className="flex relative w-1/4 min-w-[240px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
+            >
+              <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
+            </div>
           ))}
         </div>
       )}
