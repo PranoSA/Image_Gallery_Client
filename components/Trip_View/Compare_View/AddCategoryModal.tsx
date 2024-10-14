@@ -1,10 +1,11 @@
 import TripContext from '@/components/TripContext';
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import '@/globals.css';
 import {
   useQueryTrip,
   useAddTripCategory,
+  useTripViewStore,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import { Image as Image, Trip, Category } from '@/definitions/Trip_View';
 //add close out icon
@@ -23,6 +24,32 @@ const AddCategoryForm = () => {
 
   const addCategory = useAddTripCategory();
   //add listener for add category
+
+  const { selected_date } = useTripViewStore();
+
+  //on mount - set the start and end date to the selected date
+  useEffect(() => {
+    const current_date = trip?.start_date || '1970-01-01';
+    const date_of = new Date(current_date);
+    //add days
+    date_of.setDate(date_of.getDate() + selected_date);
+    //fix offset
+    date_of.setMinutes(date_of.getMinutes() + date_of.getTimezoneOffset());
+
+    //format date as the "date" input type
+    const formatted_date = date_of.toISOString().split('T')[0];
+
+    //set the start and end date
+    setCategory((prevCategory) => ({
+      ...prevCategory,
+      start_date: formatted_date,
+      end_date: formatted_date,
+    }));
+
+    return () => {
+      //cleanup
+    };
+  }, [selected_date, trip]);
 
   const onAddCategory = async (category: Category) => {
     if (!trip) return;
@@ -80,8 +107,6 @@ const AddCategoryForm = () => {
     if (error_exists) return;
 
     //add the category to the trip
-
-
 
     const new_trip = await addCategory.mutate({ trip, category });
 

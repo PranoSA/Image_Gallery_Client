@@ -553,7 +553,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 return (
                   <div
                     key={image.id}
-                    className="relative flex flex-col items-center bg-white rounded-lg shadow-lg border border-gray-300"
+                    className="relative flex flex-col items-center justify-end bg-white rounded-lg shadow-lg border border-gray-300"
                     style={{
                       border:
                         selected_image_location &&
@@ -564,19 +564,20 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                   >
                     <div
                       onClick={() => setSelectedImageLocation(image)}
-                      className="w-full flex items-center justify-center bg-gray-100 p-1 border"
+                      className="w-full flex items-center justify-center bg-gray-100 p-1 min-h-[500px]" // Ensure the container has a fixed height
                     >
-                      <NextImage
-                        src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-                        alt={`Image for ${image.created_at}`}
-                        width={500}
-                        height={500}
-                        className="object-contain rounded-lg"
-                        style={{
-                          cursor: 'pointer',
-                          margin: '10px',
-                        }}
-                      />
+                      <div className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]">
+                        <NextImage
+                          src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+                          alt={`Image for ${image.created_at}`}
+                          layout="fill"
+                          className="object-contain rounded-lg"
+                          style={{
+                            cursor: 'pointer',
+                            margin: '10px',
+                          }}
+                        />
+                      </div>
                     </div>
                     <div className="absolute top-1 right-1 flex">
                       <AiFillDelete
@@ -592,7 +593,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         style={{ marginRight: '10px' }}
                       />
                       <HiEye
-                        onClick={() => setPreviewImage(i)}
+                        onClick={() => setPreviewImage(image.index)}
                         className="cursor-pointer"
                         size={24}
                       />
@@ -628,11 +629,11 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           />
                         </div>
                       ) : (
-                        <div>
+                        <div className="w-full flex flex-width justify-around">
                           {image.name}{' '}
                           <FaPencil
                             onClick={() => setEditingName(image)}
-                            className="cursor-pointer"
+                            className="cursor-pointer ml-4"
                             size={16}
                           />
                         </div>
@@ -640,7 +641,20 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     </div>
                     <div className="text-center text-sm text-gray-500">
                       <span> {image.created_at.toDateString()} </span>
-                      {image.created_at.toLocaleTimeString()}
+                      {image.created_at.getHours() > 12
+                        ? (image.created_at.getHours() - 12)
+                            .toString()
+                            .padStart(2, '0')
+                        : image.created_at
+                            .getHours()
+                            .toString()
+                            .padStart(2, '0')}
+                      :
+                      {image.created_at
+                        .getMinutes()
+                        .toLocaleString()
+                        .padStart(2, '0')}
+                      {image.created_at.getHours() > 12 ? ' PM' : ' AM'}:
                     </div>
                   </div>
                 );

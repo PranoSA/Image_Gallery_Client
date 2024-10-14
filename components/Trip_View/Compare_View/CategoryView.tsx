@@ -368,13 +368,13 @@ const ImageDragFolder = ({
             {images.slice(0, 3).map((image, index) => (
               <div
                 key={image.id}
-                className="flex relative w-1/4 min-w-[240px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
+                className="flex relative w-1/4 min-w-[180px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
               >
                 <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
               </div>
             ))}
             {images.length > 3 && (
-              <div className=" w-1/4 min-w-[240px]  h-[160px]  flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-40">
+              <div className=" w-1/4 min-w-[180px]  h-[160px]  flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-40">
                 <span className="text-white text-lg font-bold">
                   +{images.length - 3}
                 </span>
@@ -388,7 +388,7 @@ const ImageDragFolder = ({
           {images.map((image) => (
             <div
               key={image.id}
-              className="flex relative w-1/4 min-w-[240px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
+              className="flex relative w-1/4 min-w-[180px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
             >
               <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
             </div>
