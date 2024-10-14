@@ -1,67 +1,62 @@
 'use client';
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-  useContext,
-} from 'react';
-import Map from 'ol/Map';
 
-import '@/globals.css';
-
-import { TripDropdownMenu } from '@/components/Trip_View/TripDropdownOptions';
-
-import { Banner_Component } from '@/components/Trip_View/Banner_Component';
-
-import MapComponent from '@/components/Trip_View/MapComponent';
-
-import AddPathsForm from '@/components/Trip_View/AddPathsForm';
-import axios from 'axios';
-import NextImage from 'next/image';
-import Modal from '@/components/PathModal';
-
-import { KML } from 'ol/format';
-import { HiOutlinePencil } from 'react-icons/hi';
-
-import type { Image, Path, Trip } from '@/definitions/Trip_View';
+import { Image as Image, Trip, Category } from '@/definitions/Trip_View';
 
 import {
-  useQueryTripPaths,
-  useQueryTrip,
-  useQueryTripImages,
-} from '@/components/Trip_View/Trip_View_Image_Store';
+  CompareViewStore,
+  useCompareViewStore,
+} from '@/components/Trip_View/Compare_View/CompareStore';
 
-import PathMapModal from '@/components/PathMapModal';
+import AddImagesForm from '@/components/Trip_View/AddImagesForm';
 
-import {
-  useTripViewStore,
-  tripViewStore,
-  queryClient,
-} from '@/components/Trip_View/Trip_View_Image_Store';
-import Image_View_ByDate from '@/components/Trip_View/Date_View/Image_View_ByDate';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+
+import { signIn, useSession } from 'next-auth/react';
 
 import { QueryClientProvider } from '@tanstack/react-query';
-
 import TripContext from '@/components/TripContext';
-import SelectionComponentGallery from '@/components/Trip_View/SelectionComponentGallery';
-import { Resizable } from 're-resizable';
+
+//back arrow icon
+import { FaArrowLeft, FaPlus } from 'react-icons/fa';
+
+import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
+
+//Map Icon
+import { FaMap } from 'react-icons/fa';
 
 import {
-  useSession,
-  UseSessionOptions,
-  SessionProvider,
-} from 'next-auth/react';
-//process.env.NEXT_PUBLIC_API_URL
+  useQueryTrip,
+  useQueryTripImages,
+  useQueryTripPaths,
+  useTripViewStore,
+  tripViewStore,
+} from '@/components/Trip_View/Trip_View_Image_Store';
+import { dateFromString } from '@/components/Trip_View/Time_Functions';
 
-//create provider next-auth
-//
-const NextAuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  return <SessionProvider>{children}</SessionProvider>;
-};
+import { Banner_Component } from '@/components/Trip_View/Banner_Component';
+import NextImage from 'next/image';
+
+//import folder icon from FaIcons
+import { FaChevronUp, FaFolder } from 'react-icons/fa';
+
+import AddCategoryForm from '@/components/Trip_View/Compare_View/AddCategoryModal';
+
+//import trash icon from FaIcons
+import { FaTrash } from 'react-icons/fa';
+
+//import icon that intuitively looks like "open up"
+import { FaChevronDown } from 'react-icons/fa';
+import axios from 'axios';
+
+import UntimedImagesView from '@/components/Trip_View/Compare_View/UntimedImagesView';
+import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedImages';
+import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
+import { queryClient } from '../../../components/Trip_View/Trip_View_Image_Store';
+import { useRouter } from 'next/router';
+import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
+import { FaPencil } from 'react-icons/fa6';
 
 const useTripContext = () => {
   return useContext(TripContext);
@@ -70,32 +65,52 @@ const useTripContext = () => {
 interface TripProviderProps {
   children: React.ReactNode;
   id: string;
-  bearer_token: string | null;
-  setBearerToken: (token: string) => void;
 }
 
-const TripProvider = ({ children, id, setBearerToken }: TripProviderProps) => {
+const TripProvider = ({ children, id }: TripProviderProps) => {
+  const [bearer_token, setBearerToken] = useState<string | null>(null);
+
+  const setBearerTokenFunction = (token: string) => {
+    setBearerToken(token);
+  };
+
   return (
-    <TripContext.Provider value={{ id, bearer_token: null, setBearerToken }}>
+    <TripContext.Provider
+      value={{ id, bearer_token, setBearerToken: setBearerTokenFunction }}
+    >
       {children}
     </TripContext.Provider>
   );
 };
 
+const ItemTypes = {
+  IMAGE: 'image',
+};
+
+//save categorized trip
+const saveCategorizedTrip = async (trip: Trip) => {
+  const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trips/${trip.id}`;
+
+  const res = await axios.put(api_url, trip);
+
+  return res.data;
+
+  fetch(api_url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(trip),
+  })
+    .then((res) => res.json())
+    .catch((err) => console.error(err));
+};
+
 const PageWithProvider: React.FC<{ params: { id: string } }> = ({
   params: { id },
 }) => {
-  const [bearerToken, setBearerToken] = useState<string | null>(null);
-  const setBearerTokenCallback = (toke: string) => {
-    setBearerToken(toke);
-  };
-
   return (
-    <TripProvider
-      id={id || '0'}
-      bearer_token={bearerToken}
-      setBearerToken={setBearerToken}
-    >
+    <TripProvider id={id || '0'}>
       <QueryClientProvider client={queryClient}>
         <Page />
       </QueryClientProvider>
@@ -103,370 +118,171 @@ const PageWithProvider: React.FC<{ params: { id: string } }> = ({
   );
 };
 
-//wrap PageWithProvider with QueryClientProvider
+const Page = () => {
+  const { id } = useTripContext();
 
-export default PageWithProvider;
+  const {
+    mode,
+    compare_or_filter_stage,
+    compared_image_indexes,
+    filtered_image_indexes,
+  } = useCompareViewStore();
 
-//function Page({ params: { id } }: { params: { id: string } }) {
-function Page() {
-  const { id, bearer_token, setBearerToken } = useTripContext();
+  const { update, data, status } = useSession();
 
-  const [galleryHeight, setGalleryHeight] = useState(400); // Initial height of the gallery
-  const prevGalleryHeight = useRef<number>(galleryHeight);
-
-  //width of the gallery
-
-  //make a media query for 1/2 the screen width
-  const screen_width = window.innerWidth;
-
-  const [galleryWidth, setGalleryWidth] = useState(screen_width / 2); // Initial width of the gallery
-  const prevGalleryWidth = useRef<number>(galleryWidth);
-
-  const { data: session, update, status } = useSession();
-
-  //set timeout that reads session.accessToken every 140 seconds
-  //if it changes, then update the bearer token
-  useEffect(() => {
-    const interval = setInterval(() => {
-      //store the access token in local storage
-      if (session?.accessToken) {
-        localStorage.removeItem('accessToken');
-        localStorage.setItem('accessToken', session.accessToken);
-      }
-      setBearerToken(session?.accessToken || '');
-      //set tripContext bearer token
-    }, 140000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const [addImagesOpen, setAddImagesOpen] = useState(false);
 
   useEffect(() => {
+    const session = data;
+
     //store the access token in local storage
     if (session?.accessToken) {
       localStorage.removeItem('accessToken');
       localStorage.setItem('accessToken', session.accessToken);
     }
-    setBearerToken(session?.accessToken || '');
+    //setBearerToken(session?.accessToken || '');
     //set tripContext bearer token
-  }, [session, setBearerToken]);
+  }, [data]);
 
-  const {
-    data: trip,
-    isLoading: tripLoading,
-    error: tripError,
-  } = useQueryTrip(id);
-
-  // with trip paths
-  const {
-    data: paths,
-    isLoading: pathsLoading,
-    error: pathsError,
-  } = useQueryTripPaths(id);
-
-  const {
-    data: images,
-    isLoading: imagesLoading,
-    error: imagesError,
-  } = useQueryTripImages(id);
-
-  const {
-    selected_date,
-    get_images_for_day,
-    selected_image_location,
-    day_by_day_banners,
-    horizontally_tabbed,
-  } = useTripViewStore();
-
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<Map | null>(null);
-
-  //populated on loading
-  //const [trip, setTrip] = useState<Trip | null>(null);
-
-  const [pathModalOpen, setPathModalOpen] = useState(false);
-
-  const currentDay = () => {
-    if (!trip) return '1970-01-01';
-    const startDate = new Date(trip.start_date);
-    const selectedDate = new Date(startDate);
-    selectedDate.setDate(startDate.getDate() + selected_date);
-
-    return selectedDate.toISOString().split('T')[0];
+  const setMode = (
+    mode: 'sort' | 'undated' | 'unlocated' | 'view' | 'compare'
+  ) => {
+    CompareViewStore.setState((state) => ({
+      ...state,
+      mode,
+    }));
   };
-
-  const [comparingPhotos, setComparingPhotos] = useState<boolean>(false);
-
-  const [menu, showMenu] = useState<boolean>(false);
-
-  // map to find the path id from the feature
-  const pathFromFeature = useRef<Map>(new Map());
-
-  const imagesForDay: Image[] = useMemo(() => {
-    return get_images_for_day(
-      selected_date,
-      trip?.start_date || '1970-01-01',
-      images || []
-    );
-  }, [selected_date, trip, images]);
-
-  //add interactivity to the map
-
-  const [pathModalSelected, setPathModalSelected] = useState<Path | null>(null);
-  const [pathModalPosition, setPathModalPosition] = useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
-
-  //store computed Banner Component
-  const bannerComponent = useMemo(() => {
-    return <Banner_Component />;
-  }, []);
-
-  // if selecting the path, then it shows a pop up modal
-
-  mapInstanceRef.current?.on('click', (event) => {
-    //get the feature at the clicked location
-    const feature = mapInstanceRef.current?.forEachFeatureAtPixel(
-      event.pixel,
-      (feature) => feature
-    );
-
-    if (feature) {
-      //show the modal
-      //set the path to the selected path
-      //set the modal to open
-
-      //@ts-ignore
-      const featureId = feature.ol_uid || feature.getId();
-
-      //get the path id from the feature
-      const pathId = pathFromFeature.current.get(featureId);
-
-      //find it in the trip.paths
-      if (!paths) return;
-      const path = paths.find((p) => p.id === pathId);
-
-      if (!path) {
-        console.error('Path not found');
-        return;
-      }
-      setPathModalSelected(path);
-      setPathModalPosition({
-        x: event.pixel[0],
-        y: event.pixel[1],
-      });
-    }
-  });
-
-  const [selectedImages, setSelectedImages] = useState<Image[]>([]);
-
-  const [doneSelectedImages, setDoneSelectedImages] = useState<boolean>(false);
 
   /**
-   *
-  This is for fields like name, description, created_at
-
+   * Create a Navarbar that helps you select a mode
+   * If Mode is sort -> Then use CategoryView Component
+   * If Mode is undated -> Then use UntimedImagesView Component
+   * If Mode is unlocated -> Then use UnlocatedImagesView Component
+   * If Mode is view -> Then for now -> Just say "view" -> not sure what to do here
    */
-  const handleComparePhotosSelection = (image: Image) => {
-    // Add Image to Selected Images
-    // unless, it is already in the selected images
 
-    const new_images = selectedImages.includes(image)
-      ? selectedImages.filter((i) => i !== image)
-      : [...selectedImages, image];
-
-    setSelectedImages(new_images);
+  const renderContent = () => {
+    switch (mode) {
+      case 'sort':
+        return <CategoryView />;
+      case 'undated':
+        return <UntimedImagesView />;
+      case 'unlocated':
+        return <UnlocatedImagesView />;
+      case 'view':
+        return <PlainView />;
+      default:
+        return null;
+    }
   };
+  //const router = useRouter();
 
-  if (doneSelectedImages) {
-    //This will show all the images in a larger gallery [say, the width of the screen]
-    //Then show an X button above each image
-    //when you click -> remove the image from the selected images
-    // Send DELETE request to the API
-    // /trip/:tripid/images/:id
-
-    const handleDeleteImage = async (image: Image) => {
-      try {
-        await axios.delete(
-          `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/${image.id}`
-        );
-        setSelectedImages(selectedImages.filter((i) => i !== image));
-
-        //also delete from trip.images
-
-        if (!trip) return;
-      } catch (err) {
-        console.error('Error deleting image:', err);
-      }
-    };
-
-    return (
-      <div className="flex flex-wrap space-around">
-        {selectedImages.map((image) => (
-          <div key={image.id} className="relative">
-            <NextImage
-              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-              alt={`Image for ${image.created_at}`}
-              width={500}
-              height={500}
-            />
-            <button className="" onClick={() => handleDeleteImage(image)}>
-              X
-            </button>
-          </div>
-        ))}
-        <button
-          onClick={() => setDoneSelectedImages(false)}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            fontSize: '16px',
-            cursor: 'pointer',
-          }}
-        >
-          Done Selecting Images
-        </button>
-      </div>
-    );
+  //check if authenticated
+  if (status === 'loading') {
+    return <div>Loading...</div>;
   }
 
-  if (comparingPhotos) {
-    // Have the Image Gallery for that day instead of the map
-    // select the images to compare
-    // then click a "done button"
-    // this sets doneSelectedImages to true
-    return (
-      <div className="">
-        <div className="gallery mt-4">
-          {imagesForDay.map((image: Image) => (
-            <div key={image.id}>
-              <HiOutlinePencil />
-              <NextImage
-                src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-                alt={`Image for ${image.created_at}`}
-                width={100}
-                height={100}
-                onClick={() => {
-                  handleComparePhotosSelection(image);
-                }}
-                style={{
-                  cursor: 'pointer',
-                  margin: '10px',
-                  width: '100px',
-                  height: '100px',
-                  border: selectedImages.includes(image)
-                    ? '5px solid blue'
-                    : 'none',
-                }}
-              />
+  if (status === 'unauthenticated') {
+    //direct to login page
+    //using Keycloak
+    signIn('keycloak');
+  }
+
+  //go back
+  const goBack = () => {
+    //go to /trip/${id}
+    //window.location.href = `/trip/${id}`;
+    //load the page /trip/${id} --> not using window.history
+    //use router to go back
+    // router.push(`/trip/${id}`);
+    window.location.href = ''; //`/trip/${id}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <nav className="bg-blue-500 p-4 shadow-md">
+        <div className="container mx-auto flex justify-around">
+          {/* back button */}
+          <FaArrowLeft
+            className="text-white text-2xl cursor-pointer"
+            onClick={goBack}
+          >
+            Back
+          </FaArrowLeft>
+
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'sort' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('sort')}
+          >
+            Sort
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'undated'
+                ? 'bg-blue-700'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('undated')}
+          >
+            Undated
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'unlocated'
+                ? 'bg-blue-700'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('unlocated')}
+          >
+            Unlocated
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg text-white ${
+              mode === 'view' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+            onClick={() => setMode('view')}
+          >
+            View
+          </button>
+          {/* Map Icon + View Map*/}
+          <div className="">
+            <FaMap
+              className={`'bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg`}
+              onClick={() => {
+                window.location.href = `/trip/${id}/map`;
+              }}
+              size={30}
+            >
+              View Map
+            </FaMap>
+          </div>
+        </div>
+      </nav>
+      <div className="w-1/4 flex flex-col items-center justify-center">
+        {/* Modal to Add New Images */}
+        <AddImagesForm />
+        {/* Plus Icon To Add New Image */}
+        <div className="flex justify-center">
+          <button
+            onClick={() => {
+              tripViewStore.setState((state) => {
+                return { ...state, adding_images: true };
+              });
+            }}
+            className=" hover:text-blue-700 transition-colors duration-200"
+          >
+            <div className="flex flex-row items-center justify-center gap-1">
+              <span className="text-lg">Add Images</span>
+              <FaPlus />
             </div>
-          ))}
-        </div>
-        <div className="flex justify-center items-center">
-          <button onClick={() => setComparingPhotos(false)}>Cancel</button>
-        </div>
-        <div className="flex justify-center items-center">
-          <button onClick={() => setDoneSelectedImages(true)}>
-            Finish Selecting Images
           </button>
         </div>
       </div>
-    );
-  }
-
-  const toggleMenu = () => {
-    showMenu(!menu);
-  };
-
-  //if horizontally tabbed, then return a different component
-  //The Resizable will be done left to right
-  if (horizontally_tabbed) {
-    return (
-      <div className="page-container">
-        <div
-          className="z-100 absolute top-0 left-0"
-          style={{ zIndex: 214748364 }}
-        >
-          <TripDropdownMenu />
-        </div>
-
-        <div className="content-container-horizontal h-screen flex ">
-          <div className="MapComponent flex-grow">
-            <MapComponent height={`calc(100vh)`} />
-          </div>
-
-          <Resizable
-            size={{ width: galleryWidth }}
-            onResizeStop={(e, direction, ref, d) => {
-              //set minmum size 50px
-
-              setGalleryWidth(
-                Math.max(150, prevGalleryWidth.current + d.width)
-              );
-              prevGalleryWidth.current = Math.max(
-                150,
-                prevGalleryWidth.current + d.width
-              );
-            }}
-            onResize={(e, direction, ref, d) => {
-              setGalleryWidth(prevGalleryWidth.current + d.width);
-            }}
-            style={{
-              cursor: 'col-resize',
-              height: '100vh',
-            }}
-          >
-            <SelectionComponentGallery />
-          </Resizable>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-container">
-      {/** Make Trip Dropdown Menu not take up any "space" - position absolutely on the page */}
-
-      <div
-        className="z-100 absolute top-0 left-0"
-        style={{ zIndex: 214748364 }}
-      >
-        <TripDropdownMenu />
-      </div>
-
-      <div className="content-container">
-        <div
-          className="MapComponent"
-          style={{ height: `calc(100vh - ${galleryHeight}px)` }}
-        >
-          <MapComponent height={`calc(100vh - ${galleryHeight}px)`} />
-        </div>
-
-        <Resizable
-          size={{ height: galleryHeight }}
-          onResizeStop={(e, direction, ref, d) => {
-            //set minmum size 50px
-
-            setGalleryHeight(
-              Math.max(150, prevGalleryHeight.current + d.height)
-            );
-            prevGalleryHeight.current = Math.max(
-              150,
-              prevGalleryHeight.current + d.height
-            );
-          }}
-          onResize={(e, direction, ref, d) => {
-            setGalleryHeight(prevGalleryHeight.current + d.height);
-          }}
-          style={{
-            borderTop: '', // Add a top border
-            cursor: 'row-resize',
-          }}
-        >
-          <SelectionComponentGallery />
-        </Resizable>
-      </div>
-      {/*<AddPathsForm /> */}
+      <div className="container mx-auto p-4">{renderContent()}</div>
     </div>
   );
-}
+};
+
+export default PageWithProvider;

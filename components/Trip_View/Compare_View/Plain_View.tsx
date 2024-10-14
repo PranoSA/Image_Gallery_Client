@@ -13,6 +13,7 @@ import {
   useQueryTripImages,
   useQueryTrip,
   useDeleteImage,
+  UpdateImage,
 } from '../Trip_View_Image_Store';
 import TripContext from '@/components/TripContext';
 import { useTripViewStore, tripViewStore } from '../Trip_View_Image_Store';
@@ -24,6 +25,9 @@ import { AiFillDelete } from 'react-icons/ai';
 
 import { HiEye, HiOutlinePencil } from 'react-icons/hi';
 import ImagePreview from '../ImagePreview';
+import { FaPencil } from 'react-icons/fa6';
+
+import { FaCheck, FaTimes } from 'react-icons/fa';
 
 const PlainView = () => {
   const [mode, setMode] = useState<
@@ -307,6 +311,36 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   const deleteImageMutation = useDeleteImage();
 
+  const editImage = UpdateImage();
+
+  const [editingName, setEditingName] = useState<Image | null>(null);
+  const [editedName, setEditedName] = useState('');
+
+  const id = useContext(TripContext).id;
+
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    isError: tripError,
+  } = useQueryTrip(id);
+
+  const submitNewName = async () => {
+    if (!editingName) return;
+
+    if (!editedName) return; //this should
+    if (!trip) return;
+    const new_image = {
+      ...editingName,
+      name: editedName,
+    };
+
+    const res = await editImage.mutate({ image: new_image, trip });
+
+    setEditingName(null);
+
+    setEditedName('');
+  };
+
   const deleteImage = async (image: Image) => {
     //use mutation to delete image
     const rizzed = await deleteImageMutation.mutate(image);
@@ -458,6 +492,32 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  const inputRef = useRef(null);
+
+  /*  useEffect(() => {
+     if (editingName=== image.id) {
+      inputRef.current.focus();
+    }
+  }, [editedImage, image.id]);
+*/
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setEditedName('');
+      setEditingName(null);
+    } else if (e.key === 'Enter') {
+      await submitNewName();
+
+      setEditedName('');
+      setEditingName(null);
+    }
+  };
+
+  const handleBlur = () => {
+    submitNewName();
+    setEditedName('');
+    setEditingName(null);
+  };
+
   //return gallery based on subranges
   return (
     <div className="p-4">
@@ -537,8 +597,50 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         size={24}
                       />
                     </div>
-                    <div className="mt-2 text-center text-sm font-medium text-gray-700">
-                      {image.name}
+                    <div className="mt-2 text-center text-sm font-bold text-gray-700">
+                      {editingName && editingName.id === image.id ? (
+                        <div className="flex items-center justify-center">
+                          <input
+                            ref={inputRef}
+                            type="text"
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onBlur={handleBlur}
+                            className="border border-gray-300 rounded p-1"
+                          />
+                          <FaCheck
+                            onClick={() => {
+                              //saveName(image.id, editedName);
+                              //setEditedImage(null);
+                              submitNewName();
+                            }}
+                            className="cursor-pointer ml-2"
+                            size={16}
+                          />
+                          <FaTimes
+                            onClick={() => {
+                              setEditingName(null);
+                              setEditedName('');
+                            }}
+                            className="cursor-pointer ml-2"
+                            size={16}
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          {image.name}{' '}
+                          <FaPencil
+                            onClick={() => setEditingName(image)}
+                            className="cursor-pointer"
+                            size={16}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center text-sm text-gray-500">
+                      <span> {image.created_at.toDateString()} </span>
+                      {image.created_at.toLocaleTimeString()}
                     </div>
                   </div>
                 );

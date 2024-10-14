@@ -33,6 +33,8 @@ import Modal from '@/components/PathModal';
 
 //import Link Icon from react-icons/fa
 import { FaExternalLinkAlt } from 'react-icons/fa';
+//Home Icon
+import { FaHome } from 'react-icons/fa';
 
 import Link from 'next/link';
 
