@@ -23,6 +23,9 @@ import { FaArrowLeft, FaDownload, FaPlus } from 'react-icons/fa';
 
 import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
 
+//comparison or swap icon
+import { FaExchangeAlt } from 'react-icons/fa';
+
 //Map Icon
 import { FaMap } from 'react-icons/fa';
 
@@ -250,6 +253,18 @@ const Page = () => {
           >
             View
           </button>
+          {/* Compare Button */}
+          <div className="">
+            <FaExchangeAlt
+              className={`'bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg`}
+              onClick={() => {
+                setMode('compare');
+              }}
+              size={30}
+            >
+              Compare
+            </FaExchangeAlt>
+          </div>
           {/* Map Icon + View Map*/}
           <div className="">
             <FaMap

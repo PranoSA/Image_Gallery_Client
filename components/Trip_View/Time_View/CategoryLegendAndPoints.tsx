@@ -32,6 +32,7 @@ import VectorSource from 'ol/source/Vector';
 
 //magnifying glass
 import { FaSearchPlus } from 'react-icons/fa';
+import CircleStyle from 'ol/style/Circle';
 
 type CategoryLegendProps = {
   map: Map;
@@ -40,29 +41,29 @@ type CategoryLegendProps = {
 };
 
 const colored_index: string[] = [
-  `rgb(255,0,0)`,
-  `rgb(0,255,0)`,
-  `rgb(0,0,255)`,
-  `rgb(255,255,0)`,
-  `rgb(0,255,255)`,
-  `rgb(255,0,255)`,
-  `rgb(255,255,255)`,
-  `rgb(0,0,0)`,
-  `rgb(128,128,128)`,
-  `rgb(128,0,0)`,
-  `rgb(128,128,0)`,
-  `rgb(0,128,0)`,
-  `rgb(128,0,128)`,
-  `rgb(0,128,128)`,
-  `rgb(0,0,128)`,
-  `rgb(192,192,192)`,
-  `rgb(128,128,128)`,
-  `rgb(128,0,0)`,
-  `rgb(128,128,0)`,
-  `rgb(0,128,0)`,
-  `rgb(128,0,128)`,
-  `rgb(0,128,128)`,
-  `rgb(0,0,128)`,
+  `rgb(128,0,128)`, // Purple
+  `rgb(0,0,139)`, // Deep Blue
+  `rgb(139,69,19)`, // Saddle Brown
+  `rgb(75,0,130)`, // Indigo
+  `rgb(255,69,0)`, // Red-Orange
+  `rgb(85,107,47)`, // Dark Olive Green
+  `rgb(139,0,0)`, // Dark Red
+  `rgb(0,100,0)`, // Dark Green
+  `rgb(72,61,139)`, // Dark Slate Blue
+  `rgb(128,0,0)`, // Maroon
+  `rgb(0,0,128)`, // Navy
+  `rgb(139,0,139)`, // Dark Magenta
+  `rgb(0,139,139)`, // Dark Cyan
+  `rgb(184,134,11)`, // Dark Goldenrod
+  `rgb(85,107,47)`, // Dark Olive Green
+  `rgb(128,0,0)`, // Maroon
+  `rgb(0,100,0)`, // Dark Green
+  `rgb(72,61,139)`, // Dark Slate Blue
+  `rgb(139,0,139)`, // Dark Magenta
+  `rgb(0,139,139)`, // Dark Cyan
+  `rgb(0,0,128)`, // Navy
+  `rgb(255,140,0)`, // Dark Orange
+  `rgb(165,42,42)`, // Brown
 ];
 
 const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
@@ -102,7 +103,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
   // get the categories relevant to the day and filter o
   const categories: string[] = useMemo(() => {
-    return [];
+    //return [];
     const categoryies = tripsState.data?.categories || [];
 
     const relevant_categories = categoryies
@@ -181,8 +182,57 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
           return point[0] != 0 || point[1] != 0;
         });
 
+      //get extent of the map
+      const extent = map.getView().calculateExtent(map.getSize());
+
+      //calculate if the [max(w)-min(w), max(h)-min(h)] of the points is less than 10% of the extent
+
+      const transformed_points = points.map((point) => {
+        return fromLonLat(point);
+      });
+
+      const max_lon = Math.max(
+        ...transformed_points.map((point) => {
+          return point[0];
+        })
+      );
+
+      const min_lon = Math.min(
+        ...transformed_points.map((point) => {
+          return point[0];
+        })
+      );
+
+      const max_lat = Math.max(
+        ...transformed_points.map((point) => {
+          return point[1];
+        })
+      );
+
+      const min_lat = Math.min(
+        ...transformed_points.map((point) => {
+          return point[1];
+        })
+      );
+
+      const max_diff = Math.max(max_lon - min_lon, max_lat - min_lat);
+
+      const max_extent = Math.max(extent[2] - extent[0], extent[3] - extent[1]);
+
+      let too_small = false;
+
+      console.log('category', category.category);
+      console.log('max_diff', max_diff);
+      console.log('max_extent', max_extent);
+      console.log('#points', points.length);
+
+      //if the max_diff is less than 10% of the extent, then don't draw the convex hull
+      if (max_diff < 0.1 * max_extent) {
+        too_small = true;
+      }
+
       //if length is less than 2 - draw a circle
-      if (points.length == 1) {
+      if (points.length == 1 || too_small) {
         //draw a circle around point with the color of the category
 
         const new_feature = new Feature({
@@ -205,12 +255,65 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
       // draw convex hull with margin and color for each category
       if (points.length == 2) {
+        //just draw 2 circles
+        console.log('drawing 2 circles');
+
+        const point1 = fromLonLat(points[0]);
+
+        const point2 = fromLonLat(points[1]);
+
+        const feature1 = new Feature({
+          geometry: new Point(point1),
+        });
+
+        feature1.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 8,
+              fill: new Fill({
+                color: category.color,
+              }),
+              stroke: new Stroke({
+                color: category.color,
+                width: 2,
+              }),
+            }),
+          })
+        );
+
+        // Draw the second point
+        const feature2 = new Feature({
+          geometry: new Point(point2),
+        });
+
+        feature2.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 8,
+              fill: new Fill({
+                color: category.color,
+              }),
+              stroke: new Stroke({
+                color: category.color,
+                width: 2,
+              }),
+            }),
+          })
+        );
+
+        //add the features to the source
+        convexHullSource.current.addFeature(feature1);
+
+        convexHullSource.current.addFeature(feature2);
+
         //draw a turf circle around the two points
-        const center = turf.center(turf.points(points));
+        /*const center = turf.center(turf.points(points));
 
         if (!center) return;
 
-        const buffered = turf.buffer(center, 0.01, {
+        const radius_in_km = max_diff / 2 / 1000;
+
+        const buffered = turf.buffer(center, radius_in_km, {
           units: 'kilometers',
         });
 
@@ -226,7 +329,8 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
         const polygonFeature = new Feature({
           geometry: new Polygon([
-            buffered.geometry.coordinates[0] as Coordinate[],
+            transformed_coordinates,
+            //buffered.geometry.coordinates[0] as Coordinate[],
           ]),
         });
 
@@ -236,8 +340,16 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
             fill: new Fill({
               color: category.color,
             }),
+            stroke: new Stroke({
+              color: category.color,
+              width: 8,
+            }),
           })
         );
+        */
+
+        //add the feature to the source
+        //convexHullSource.current.addFeature(polygonFeature);
       }
 
       if (points.length > 2) {
@@ -288,6 +400,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
     //draw convex hull
   }, [
+    addSource,
     coloredCategories.categories,
     filtered_categories,
     filtering_images,

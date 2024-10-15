@@ -41,6 +41,10 @@ import { AiFillDelete } from 'react-icons/ai';
 import { HiOutlinePencil, HiEye } from 'react-icons/hi';
 import { FaDownload } from 'react-icons/fa';
 import EditImageModal from '@/components/Trip_View/EditImageForm';
+import ImagePreview from '../ImagePreview';
+
+//check mark icon
+import { FaCheck } from 'react-icons/fa';
 
 const SelectAndCompare = () => {
   const [selectionOrCompare, setSelectionOrCompare] = useState<
@@ -71,10 +75,19 @@ const SelectAndCompare = () => {
     selected_images,
     selected_date,
     selected_image_preview,
+    viewed_image_index,
     editingImage,
   } = useTripViewStore();
 
+  //if number of selected images is 0, then set to select
+  useEffect(() => {
+    if (selected_images.length === 0) {
+      setSelectionOrCompare('Select');
+    }
+  }, [selected_images]);
+
   const handleCompareClick = () => {
+    if (selected_images.length === 0) return;
     setSelectionOrCompare('Compare');
   };
 
@@ -102,7 +115,12 @@ const SelectAndCompare = () => {
       <div className="flex flex-col items-center space-y-4">
         <button
           onClick={handleCompareClick}
-          className="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-700"
+          className={`px-4 py-2 font-bold rounded-lg shadow-md ${
+            selected_images.length === 0
+              ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+              : 'bg-blue-500 text-white hover:bg-blue-700'
+          }`}
+          disabled={selected_images.length === 0}
         >
           Compare
         </button>
@@ -113,47 +131,53 @@ const SelectAndCompare = () => {
   if (selectionOrCompare === 'Compare') {
     return (
       <div className="flex flex-col items-center space-y-4">
+        {viewed_image_index && <ImagePreview />}
         {editingImage && <EditImageModal />}
         <button
           onClick={() => setSelectionOrCompare('Select')}
-          className="px-4 py-2 bg-red-500 text-white font-bold rounded-lg shadow-md hover:bg-red-700"
+          className="px-4 py-2 bg-red-500 text-white font-bold rounded-lg shadow-md hover:bg-red-700 "
         >
           Finish Comparing
         </button>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="flex flex-row w-full flex-wrap ">
           {selected_images.map((image, index) => (
             <div
               key={index}
-              className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]"
+              className="relative w-1/2  flex items-center justify-end bg-grey  mt-20 min-h-[550px]"
             >
-              <NextImage
-                src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-                alt={`Image for ${image.created_at}`}
-                layout="fill"
-                className="object-contain rounded-lg"
-                style={{
-                  cursor: 'pointer',
-                  margin: '10px',
-                }}
-              />
-              <div className="absolute top-1 right-1 flex">
+              <div className="absolute top-1 right-1 flex z-5000">
                 <AiFillDelete
                   onClick={() => deleteImage(image)}
-                  className="cursor-pointer"
+                  className="cursor-pointer z-50"
                   size={24}
                   style={{ marginRight: '10px' }}
                 />
                 <HiOutlinePencil
                   onClick={() => setEditingImage(image)}
-                  className="cursor-pointer"
+                  className="cursor-pointer z-50"
                   size={24}
                   style={{ marginRight: '10px' }}
                 />
                 <HiEye
                   onClick={() => setPreviewImage(image)}
-                  className="cursor-pointer"
+                  className="cursor-pointer z-50"
                   size={24}
                 />
+                <FaCheck
+                  className="cursor-pointer z-50 ml-3 text-black hover:text-black hover:scale-110 transition-transform"
+                  onClick={() => {
+                    //remove from selected images
+                    tripViewStore.setState((state) => {
+                      return {
+                        ...state,
+                        selected_images: state.selected_images.filter(
+                          (img) => img.id !== image.id
+                        ),
+                      };
+                    });
+                  }}
+                  size={24}
+                ></FaCheck>
                 <FaDownload
                   onClick={async () => {
                     window.open(
@@ -163,6 +187,21 @@ const SelectAndCompare = () => {
                   className="cursor-pointer"
                   size={24}
                   style={{ marginLeft: '10px' }}
+                />
+              </div>
+              <div
+                key={index}
+                className="mt-10 relative min-w-[500px] flex bg-grey max-h-[500px] min-h-[500px]"
+              >
+                <NextImage
+                  src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+                  alt={`Image for ${image.created_at}`}
+                  layout="fill"
+                  className="object-contain rounded-lg"
+                  style={{
+                    cursor: 'pointer',
+                    margin: '10px',
+                  }}
                 />
               </div>
             </div>

@@ -319,7 +319,8 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   show_selection = false,
 }) => {
   // group images into SubRangeOfImages
-  const { selected_image_location, horizontally_tabbed } = useTripViewStore();
+  const { selected_image_location, horizontally_tabbed, selected_images } =
+    useTripViewStore();
 
   const deleteImageMutation = useDeleteImage();
 
@@ -553,15 +554,50 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
               }}
             >
               {subrange.images.map((image, i) => {
+                const isSelected =
+                  show_selection && selected_images.includes(image);
+                const borderClass = isSelected
+                  ? 'border-4 border-blue-500'
+                  : 'border border-gray-300';
                 return (
                   <div
                     key={image.id}
                     className="relative flex flex-col items-center justify-end bg-white rounded-lg shadow-lg border border-gray-300"
                   >
                     <div
-                      onClick={() => setPreviewImage(image.index)}
-                      className="w-full flex items-center justify-center bg-gray-100 p-1 min-h-[500px]" // Ensure the container has a fixed height
+                      onClick={() => {
+                        if (show_selection) {
+                          const currently_select: boolean =
+                            selected_images.includes(image);
+
+                          if (currently_select) {
+                            tripViewStore.setState((state) => {
+                              return {
+                                ...state,
+                                selected_images: state.selected_images.filter(
+                                  (selected_image) =>
+                                    selected_image.id !== image.id
+                                ),
+                              };
+                            });
+                          } else {
+                            tripViewStore.setState((state) => {
+                              return {
+                                ...state,
+                                selected_images: [
+                                  ...state.selected_images,
+                                  image,
+                                ],
+                              };
+                            });
+                          }
+                        } else {
+                          setPreviewImage(image.index);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-center bg-gray-100 p-1 min-h-[500px] ${borderClass}`}
                     >
+                      {' '}
                       <div className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]">
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
