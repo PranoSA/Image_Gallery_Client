@@ -216,7 +216,24 @@ const Page = () => {
           >
             Back
           </FaArrowLeft>
-
+          {/* Modal to Add New Images */}
+          <AddImagesForm />
+          {/* Plus Icon To Add New Image */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => {
+                tripViewStore.setState((state) => {
+                  return { ...state, adding_images: true };
+                });
+              }}
+              className="hover:text-blue-700 transition-colors duration-50"
+              title="Add Images"
+            >
+              <div className="flex flex-row items-center justify-center gap-1">
+                <FaPlus />
+              </div>
+            </button>
+          </div>
           <button
             className={`px-4 py-2 rounded-lg text-white ${
               mode === 'sort' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
@@ -334,26 +351,7 @@ const Page = () => {
           </div>
         </div>
       </nav>
-      <div className="w-1/4 flex flex-col items-center justify-center">
-        {/* Modal to Add New Images */}
-        <AddImagesForm />
-        {/* Plus Icon To Add New Image */}
-        <div className="flex justify-center">
-          <button
-            onClick={() => {
-              tripViewStore.setState((state) => {
-                return { ...state, adding_images: true };
-              });
-            }}
-            className=" hover:text-blue-700 transition-colors duration-200"
-          >
-            <div className="flex flex-row items-center justify-center gap-1">
-              <span className="text-lg">Add Images</span>
-              <FaPlus />
-            </div>
-          </button>
-        </div>
-      </div>
+
       <div className="container mx-auto p-4">{renderContent()}</div>
     </div>
   );
