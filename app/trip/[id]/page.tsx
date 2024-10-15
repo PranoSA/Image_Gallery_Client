@@ -62,6 +62,7 @@ import { queryClient } from '../../../components/Trip_View/Trip_View_Image_Store
 import { useRouter } from 'next/router';
 import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
 import { FaPencil } from 'react-icons/fa6';
+import { init } from 'next/dist/compiled/webpack/webpack';
 
 const useTripContext = () => {
   return useContext(TripContext);
@@ -182,10 +183,16 @@ const Page = () => {
     if (!initialized.current) return;
 
     //return if its obvious selected_date and mode has not been set yet
-    if (initialized.current < 3 && selected_date === 0 && mode === 'sort')
+    const initial_selection = selected_date === 0 && mode === 'sort';
+
+    if (initialized.current < 3 && initial_selection) {
+      console.log('returning');
       return;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('date', selected_date.toString());
+    urlParams.set('mode', mode);
 
     window.history.replaceState(
       {},
@@ -193,7 +200,7 @@ const Page = () => {
       `${window.location.pathname}?${urlParams}`
     );
 
-    initialized.current += 1;
+    initialized.current = initialized.current + 1;
   }, [selected_date, mode]);
 
   const setMode = (
