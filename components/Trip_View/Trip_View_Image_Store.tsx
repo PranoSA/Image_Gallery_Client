@@ -427,6 +427,29 @@ export const useUpdateDaySummary = () => {
   });
 };
 
+export const QueryDaySummaries = async (trip_id: string) => {
+  //promises.all
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/day_summaries`,
+      {
+        headers: createRequestHeaders(),
+      }
+    );
+  } catch (e) {}
+};
+
+export const useQueryDaySummaries = (trip_id: string) => {
+  return useQuery({
+    queryKey: ['day_summaries', trip_id],
+    queryFn: async () => {
+      const response = await QueryDaySummaries(trip_id);
+
+      return response;
+    },
+  });
+};
+
 export const useQueryDaySummary = (trip_id: string, date: string) => {
   return useQuery({
     queryKey: ['trip', trip_id, 'day_summary', date],

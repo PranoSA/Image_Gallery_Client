@@ -43,26 +43,25 @@ type CategoryLegendProps = {
 
 const colored_index: string[] = [
   `rgb(128,0,128)`, // Purple
-  `rgb(0,0,139)`, // Deep Blue
-  `rgb(139,69,19)`, // Saddle Brown
+  `rgb(0,0,255)`, // Blue
+  `rgb(210,105,30)`, // Chocolate
   `rgb(75,0,130)`, // Indigo
   `rgb(255,69,0)`, // Red-Orange
-  `rgb(85,107,47)`, // Dark Olive Green
-  `rgb(139,0,0)`, // Dark Red
-  `rgb(0,100,0)`, // Dark Green
-  `rgb(72,61,139)`, // Dark Slate Blue
+  `rgb(34,139,34)`, // Forest Green
+  `rgb(255,0,0)`, // Red
+  `rgb(0,128,0)`, // Green
+  `rgb(106,90,205)`, // Slate Blue
   `rgb(128,0,0)`, // Maroon
   `rgb(0,0,128)`, // Navy
-  `rgb(139,0,139)`, // Dark Magenta
-  `rgb(0,139,139)`, // Dark Cyan
-  `rgb(184,134,11)`, // Dark Goldenrod
+  `rgb(255,0,255)`, // Magenta
+  `rgb(0,255,255)`, // Cyan
+  `rgb(218,165,32)`, // Goldenrod
   `rgb(85,107,47)`, // Dark Olive Green
-  `rgb(128,0,0)`, // Maroon
-  `rgb(0,100,0)`, // Dark Green
-  `rgb(72,61,139)`, // Dark Slate Blue
-  `rgb(139,0,139)`, // Dark Magenta
-  `rgb(0,139,139)`, // Dark Cyan
-  `rgb(0,0,128)`, // Navy
+  `rgb(255,165,0)`, // Orange
+  `rgb(255,20,147)`, // Deep Pink
+  `rgb(0,255,0)`, // Lime
+  `rgb(255,215,0)`, // Gold
+  `rgb(0,191,255)`, // Deep Sky Blue
   `rgb(255,140,0)`, // Dark Orange
   `rgb(165,42,42)`, // Brown
 ];
@@ -497,12 +496,34 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
     // and center the map on the center of the coordinates
     const zoom = 9 - Math.log2(Math.abs(max_diff));
 
+    map.getView().setZoom(10);
+
     //zoom to the center
     map.getView().animate({
       center: fromLonLat(center.geometry.coordinates as Coordinate),
-      zoom,
+      zoom: 10,
       duration: 2000,
     });
+
+    console.log('zoom', zoom);
+
+    setTimeout(() => {
+      map.getView().animate({
+        center: fromLonLat(center.geometry.coordinates as Coordinate),
+        zoom: Math.min(zoom, 17),
+        duration: 2000,
+      });
+    }, 2000);
+
+    //zoom to the center
+    /*map.getView().animate({
+      center: fromLonLat(center.geometry.coordinates as Coordinate),
+      zoom,
+      duration: 2000,
+    });*/
+
+    //set the zoom level
+    setZoom(zoom);
   };
 
   //add the category legend component to the map

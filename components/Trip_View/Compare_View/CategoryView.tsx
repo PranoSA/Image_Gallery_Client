@@ -11,7 +11,7 @@ import {
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { FaChevronUp, FaFolder } from 'react-icons/fa';
+import { FaArchway, FaChevronUp, FaFolder } from 'react-icons/fa';
 
 import { Image } from '@/definitions/Trip_View';
 import React from 'react';
@@ -19,6 +19,9 @@ import NextImage from 'next/image';
 import { FaChevronDown } from 'react-icons/fa';
 import { Banner_Component } from '../Banner_Component';
 import { useCompareViewStore, CompareViewStore } from './CompareStore';
+
+// discard/pass image icon (not trash, like a arrow pointing up and down)
+import { FaArrowAltCircleDown } from 'react-icons/fa';
 
 const ItemTypes = {
   IMAGE: 'image',
@@ -271,12 +274,7 @@ const CategoryView = () => {
         {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
 
         <Banner_Component />
-        <div
-          className="grid gap-4"
-          style={{
-            gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-          }}
-        >
+        <div className="flex flex-wrap w-full flex-row">
           {folders.map((folder) => (
             <ImageDragFolder
               key={folder.name}
@@ -347,9 +345,102 @@ const ImageDragFolder = ({
   const dropRef = React.useRef<HTMLDivElement>(null);
   drop(dropRef);
 
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
+
+  const id = useContext(TripContext).id;
+
+  const editImage = UpdateImage();
+
+  const {
+    data: trip,
+    isLoading: tripIsLoading,
+    isError: tripIsError,
+  } = useQueryTrip(id);
+
+  const removeImageFromCategory = async (image: Image) => {
+    const new_image = {
+      ...image,
+      category: '',
+    };
+    if (!trip) return;
+    //update the image
+    const res = await editImage.mutate({
+      image: new_image,
+      trip,
+    });
+
+    //set the local images
+  };
+
+  const OpenFolder = () => {
+    return (
+      <div
+        className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+        ref={dropRef}
+      >
+        <div className="w-full flex flex-row ">
+          <FaFolder className="text-6xl text-yellow-500 mr-2" />
+          <FaChevronUp
+            className="text-2xl cursor-pointer"
+            onClick={() => setOpen(null)}
+          />
+          <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
+        </div>
+        {/* Mow -> The Open Folder Contains List of images*/}
+        <div className="w-full flex flex-row">
+          <div className="w-1/4 w-min-[150px] flex flex-wrap flex-row items-top items-start">
+            <div className="w-full flex flex-col items-left">
+              {images.map((image) => (
+                <div
+                  onClick={() => {
+                    if (selectedImage === image) {
+                      setSelectedImage(null);
+                    } else {
+                      setSelectedImage(image);
+                    }
+                  }}
+                  key={image.id}
+                  className="flex w-full justify-between items-center border rounded p-2"
+                >
+                  <h3 className="text-black font-bold h-12">{image.name}</h3>
+                  <div className="flex-shrink-0">
+                    <ImageItemClosed image={image} onDragEnd={onDragEnd} />
+                  </div>
+                  <div>
+                    <FaArrowAltCircleDown
+                      onClick={() => removeImageFromCategory(image)}
+                      className="text-2xl cursor-pointer"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Image Preview Taking Up Rest of the Space */}
+          <div className="relative w-3/5 flex flex-wrap flex-row min-h-[400px]">
+            {selectedImage && (
+              <div className="w-full h-full">
+                <NextImage
+                  src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${selectedImage.file_path}`}
+                  alt={`Image for ${selectedImage.created_at}`}
+                  layout="fill"
+                  objectFit="contain"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (opened) {
+    return <OpenFolder />;
+  }
+
   return (
     <div
-      className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+      className="w-1/3 grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
       ref={dropRef}
     >
       <FaFolder className="text-6xl text-yellow-500 mr-2" />
@@ -364,26 +455,12 @@ const ImageDragFolder = ({
           onClick={() => setOpen(null)}
         />
       )}
-      <h2 className="text-xl w-full font-semibold">{folder.name}</h2>
+      <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
       {!opened ? (
         //return the "stack" of images that compresses them
         <>
           <div className="relative w-full flex flex-wrap flex-row">
-            {images.slice(0, 3).map((image, index) => (
-              <div
-                key={image.id}
-                className="flex relative w-1/4 min-w-[180px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
-              >
-                <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
-              </div>
-            ))}
-            {images.length > 3 && (
-              <div className=" w-1/4 min-w-[180px]  h-[160px]  flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-40">
-                <span className="text-white text-lg font-bold">
-                  +{images.length - 3}
-                </span>
-              </div>
-            )}
+            <h2> Images : {images.length}</h2>
           </div>
         </>
       ) : (
@@ -399,6 +476,48 @@ const ImageDragFolder = ({
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+const ImageItemClosed = ({
+  image,
+  onDropImage,
+  onDragEnd,
+}: {
+  image: Image;
+  onDropImage?: (id: number, folderName: string) => void;
+  onDragEnd: (id: string) => void;
+}) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: ItemTypes.IMAGE,
+    item: { id: image.id },
+    collect: (monitor) => ({
+      isDragging: !!monitor.isDragging(),
+    }),
+    end: (item, monitor) => {
+      if (!monitor.didDrop()) {
+        onDragEnd(item.id);
+      }
+    },
+  }));
+
+  const dragRef = React.useRef<HTMLDivElement>(null);
+  drag(dragRef);
+
+  return (
+    <div
+      ref={dragRef}
+      className={` relative p-2 border rounded w-full  h-[64px]${
+        isDragging ? 'opacity-50' : 'opacity-100'
+      }`}
+    >
+      <NextImage
+        src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+        alt={`Image for ${image.created_at}`}
+        layout="fill"
+        objectFit="contain"
+      />
     </div>
   );
 };
