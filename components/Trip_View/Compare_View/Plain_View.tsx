@@ -28,8 +28,14 @@ import ImagePreview from '../ImagePreview';
 import { FaPencil } from 'react-icons/fa6';
 
 import { FaCheck, FaTimes } from 'react-icons/fa';
+//Download Icon
+import { FaDownload } from 'react-icons/fa';
 
-const PlainView = () => {
+type PlainViewProps = {
+  show_selection?: boolean;
+};
+
+const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   const [mode, setMode] = useState<
     'no_categories' | 'only_categories' | 'categories_and_uncategorised'
   >('no_categories');
@@ -48,7 +54,7 @@ const PlainView = () => {
     isError: tripError,
   } = useQueryTrip(id);
 
-  const { selected_date } = useTripViewStore();
+  const { selected_date, selected_images } = useTripViewStore();
 
   //Create a LARGE Immage Gallery With All Images
   //It will be separated by day and by time like before
@@ -282,7 +288,11 @@ const PlainView = () => {
               }}
               className="mb-4"
             >
-              <GroupImagesByTime images={group.images} date={group.date} />
+              <GroupImagesByTime
+                images={group.images}
+                date={group.date}
+                show_selection={show_selection}
+              />
             </div>
           );
         })}
@@ -300,11 +310,13 @@ type SubRangeOfImages = {
 type groupImagesByTimeProps = {
   images: (Image & { index: number })[];
   date: Date;
+  show_selection?: boolean;
 };
 
 export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   images,
   date,
+  show_selection = false,
 }) => {
   // group images into SubRangeOfImages
   const { selected_image_location, horizontally_tabbed } = useTripViewStore();
@@ -443,15 +455,6 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   //use store to set the selected image preview and editing image
   const store = tripViewStore;
 
-  const setSelectedImagePreview = (image: Image) => {
-    store.setState((state) => {
-      return {
-        ...state,
-        selected_image_preview: image,
-      };
-    });
-  };
-
   //set editing image
   const setEditingImage = (image: Image) => {
     store.setState((state) => {
@@ -554,16 +557,9 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                   <div
                     key={image.id}
                     className="relative flex flex-col items-center justify-end bg-white rounded-lg shadow-lg border border-gray-300"
-                    style={{
-                      border:
-                        selected_image_location &&
-                        selected_image_location.id === image.id
-                          ? '5px solid blue'
-                          : 'none',
-                    }}
                   >
                     <div
-                      onClick={() => setSelectedImageLocation(image)}
+                      onClick={() => setPreviewImage(image.index)}
                       className="w-full flex items-center justify-center bg-gray-100 p-1 min-h-[500px]" // Ensure the container has a fixed height
                     >
                       <div className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]">
@@ -596,6 +592,16 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         onClick={() => setPreviewImage(image.index)}
                         className="cursor-pointer"
                         size={24}
+                      />
+                      <FaDownload
+                        onClick={async () => {
+                          window.open(
+                            `${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}?download=true`
+                          );
+                        }}
+                        className="cursor-pointer"
+                        size={24}
+                        style={{ marginLeft: '10px' }}
                       />
                     </div>
                     <div className="mt-2 text-center text-sm font-bold text-gray-700">

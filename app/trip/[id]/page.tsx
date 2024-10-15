@@ -19,7 +19,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import TripContext from '@/components/TripContext';
 
 //back arrow icon
-import { FaArrowLeft, FaPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaDownload, FaPlus } from 'react-icons/fa';
 
 import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
 
@@ -53,6 +53,8 @@ import axios from 'axios';
 import UntimedImagesView from '@/components/Trip_View/Compare_View/UntimedImagesView';
 import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedImages';
 import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
+import SelectionCompare from '@/components/Trip_View/Compare_View/SelectionCompare';
+
 import { queryClient } from '../../../components/Trip_View/Trip_View_Image_Store';
 import { useRouter } from 'next/router';
 import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
@@ -171,6 +173,8 @@ const Page = () => {
         return <UnlocatedImagesView />;
       case 'view':
         return <PlainView />;
+      case 'compare':
+        return <SelectionCompare />;
       default:
         return null;
     }
@@ -257,6 +261,61 @@ const Page = () => {
             >
               View Map
             </FaMap>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <FaDownload
+              className="text-white text-2xl cursor-pointer"
+              onClick={async () => {
+                //make a request to download_begin to create a temp link
+                const res = await fetch(
+                  `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/download_begin`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem(
+                        'accessToken'
+                      )}`,
+                    },
+                  }
+                );
+
+                if (!res.ok) {
+                  console.error('Error creating temp link');
+                  return;
+                }
+
+                const responseData = await res.json();
+                const code = responseData[0].id;
+
+                const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/trip/${code}/download`;
+
+                // Fetch the file and create a blob
+                const downloadRes = await fetch(downloadUrl);
+                if (!downloadRes.ok) {
+                  console.error('Error downloading file');
+                  return;
+                }
+
+                const blob = await downloadRes.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                // Create a temporary anchor element to trigger the download
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = `trip_${code}.zip`;
+                document.body.appendChild(anchor);
+                anchor.click();
+                document.body.removeChild(anchor);
+
+                // Revoke the object URL to free up memory
+                window.URL.revokeObjectURL(url);
+                /*window.open(
+                  `${process.env.NEXT_PUBLIC_API_URL}/trip/${code}/download`
+                );*/
+              }}
+            >
+              Download Trip
+            </FaDownload>
           </div>
         </div>
       </nav>

@@ -31,6 +31,9 @@ import { FaPlus } from 'react-icons/fa';
 //image upload icon
 import { FaImage } from 'react-icons/fa';
 
+//Download Icon
+import { FaDownload } from 'react-icons/fa';
+
 import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';
 
 // get server session
@@ -67,8 +70,6 @@ function Home() {
   const [editTrip, setEditTrip] = useState<boolean>(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
-
-
 
   //id of trip to invite user to
   // if null, then no form is shown
@@ -325,7 +326,6 @@ const TripListCompontent = () => {
   //you don't need authetnication context - it will be conditionally rendered
 
   const { data: trips, status, error } = useFetchMyTrips();
-
 
   // when done loading, load the images
 
