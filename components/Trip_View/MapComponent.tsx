@@ -62,6 +62,8 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
 
   const convexHullLayer = useRef<VectorLayer>(new VectorLayer());
 
+  const [zoom, setZoom] = useState<number>(0);
+
   //get information about the day, the image_location
   // for the purpose of filtering paths and stuff and mapopen
   const {
@@ -143,6 +145,8 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       });
     }
   }, [mapRef.current]);
+
+  //use Effect that runs every 3 seconds and resets the zoom if the zoom has been changed
 
   //add marker for when selected_image_location changes
   // This places the marker on the map

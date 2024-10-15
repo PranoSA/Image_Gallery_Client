@@ -20,6 +20,7 @@ import {
   use,
   useEffect,
   MutableRefObject,
+  useState,
 } from 'react';
 
 import TripContext from '@/components/TripContext';
@@ -77,6 +78,8 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
 
   const { id } = useContext(TripContext);
 
+  const [zoom, setZoom] = useState<number>(0);
+
   //ref to vector Layer for convex hull
   //const convexHullLayer = useRef<VectorLayer | null>(null);
 
@@ -85,6 +88,18 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
   const tripsState = useQueryTrip(id);
 
   const imagesState = useQueryTripImages(id);
+
+  //every 3 seconds, set zoom if it has changed
+  useEffect(() => {
+    const previous_zoom = map?.getView().getZoom();
+
+    setInterval(() => {
+      const current_zoom = map?.getView().getZoom();
+      if (previous_zoom !== current_zoom) {
+        setZoom(current_zoom || 0);
+      }
+    }, 3000);
+  }, [map]);
 
   const currentDay = useMemo<string>(() => {
     //selected_date is a number after the start date
@@ -249,12 +264,20 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
               color: category.color,
               width: 5,
             }),
+            image: new CircleStyle({
+              radius: 10,
+              fill: new Fill({
+                color: category.color,
+              }),
+            }),
           })
         );
+
+        convexHullSource.current.addFeature(new_feature);
       }
 
       // draw convex hull with margin and color for each category
-      if (points.length == 2) {
+      if (points.length == 2 && !too_small) {
         //just draw 2 circles
         console.log('drawing 2 circles');
 
@@ -269,7 +292,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
         feature1.setStyle(
           new Style({
             image: new CircleStyle({
-              radius: 8,
+              radius: 10,
               fill: new Fill({
                 color: category.color,
               }),
@@ -352,7 +375,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
         //convexHullSource.current.addFeature(polygonFeature);
       }
 
-      if (points.length > 2) {
+      if (points.length > 2 && !too_small) {
         //draw convex hull
         const hull = turf.convex(turf.points(points));
 
@@ -407,6 +430,7 @@ const CategoryLegendAndPoints: React.FC<CategoryLegendProps> = ({
     imagesState.data,
     map,
     selected_date,
+    zoom,
   ]);
 
   if (!filtering_images) {
