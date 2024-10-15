@@ -147,7 +147,14 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   //add marker for when selected_image_location changes
   // This places the marker on the map
   useEffect(() => {
-    if (!selected_image_location) return;
+    if (!selected_image_location) {
+      //remove the marker
+      if (selectedFeature.current) {
+        imageVectorSource.current.removeFeature(selectedFeature.current);
+        selectedFeature.current = null;
+      }
+      return;
+    }
 
     if (selectedFeature.current?.get('id') === selected_image_location.id) {
       imageVectorSource.current.removeFeature(selectedFeature.current);
