@@ -9,7 +9,7 @@ const RootLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const metadata = {
-  title: 'Walking Paths',
+  title: 'Trips',
   description: 'Explore walking paths from around the world.',
   image: 'https://example.com/image.jpg',
 };

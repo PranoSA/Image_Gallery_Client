@@ -9,7 +9,7 @@ import {
 
 import AddImagesForm from '@/components/Trip_View/AddImagesForm';
 
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
@@ -133,6 +133,8 @@ const Page = () => {
     filtered_image_indexes,
   } = useCompareViewStore();
 
+  const { selected_date } = useTripViewStore();
+
   const { update, data, status } = useSession();
 
   const [addImagesOpen, setAddImagesOpen] = useState(false);
@@ -148,6 +150,51 @@ const Page = () => {
     //setBearerToken(session?.accessToken || '');
     //set tripContext bearer token
   }, [data]);
+
+  const initialized = useRef(0);
+
+  //on-mount -> Use query parameters to set the selected date and selected mode
+  useEffect(() => {
+    initialized.current = 0;
+    const urlParams = new URLSearchParams(window.location.search);
+    const date = urlParams.get('date');
+    const mode = urlParams.get('mode');
+
+    if (date) {
+      tripViewStore.setState((state) => ({
+        ...state,
+        selected_date: parseInt(date),
+      }));
+    }
+
+    if (mode) {
+      CompareViewStore.setState((state) => ({
+        ...state,
+        mode: mode as 'sort' | 'undated' | 'unlocated' | 'view' | 'compare',
+      }));
+    }
+
+    initialized.current = 1;
+  }, []);
+
+  //set the query parameters when the selected date or mode changes
+  useEffect(() => {
+    if (!initialized.current) return;
+
+    //return if its obvious selected_date and mode has not been set yet
+    if (initialized.current < 3 && selected_date === 0 && mode === 'sort')
+      return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    window.history.replaceState(
+      {},
+      '',
+      `${window.location.pathname}?${urlParams}`
+    );
+
+    initialized.current += 1;
+  }, [selected_date, mode]);
 
   const setMode = (
     mode: 'sort' | 'undated' | 'unlocated' | 'view' | 'compare'
@@ -213,6 +260,7 @@ const Page = () => {
           <FaArrowLeft
             className="text-white text-2xl cursor-pointer"
             onClick={goBack}
+            title="Back To Home"
           >
             Back
           </FaArrowLeft>
@@ -239,6 +287,7 @@ const Page = () => {
               mode === 'sort' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
             }`}
             onClick={() => setMode('sort')}
+            title="Categorize Images"
           >
             Sort
           </button>
@@ -249,6 +298,7 @@ const Page = () => {
                 : 'bg-blue-500 hover:bg-blue-600'
             }`}
             onClick={() => setMode('undated')}
+            title="View Images Without Date"
           >
             Undated
           </button>
@@ -259,6 +309,7 @@ const Page = () => {
                 : 'bg-blue-500 hover:bg-blue-600'
             }`}
             onClick={() => setMode('unlocated')}
+            title="View Images Without Location"
           >
             Unlocated
           </button>
@@ -267,6 +318,7 @@ const Page = () => {
               mode === 'view' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
             }`}
             onClick={() => setMode('view')}
+            title="View All Sorted By Time"
           >
             View
           </button>
@@ -277,6 +329,7 @@ const Page = () => {
               onClick={() => {
                 setMode('compare');
               }}
+              title="Compare and Pick"
               size={30}
             >
               Compare
@@ -289,6 +342,7 @@ const Page = () => {
               onClick={() => {
                 window.location.href = `/trip/${id}/map`;
               }}
+              title="Map View"
               size={30}
             >
               View Map

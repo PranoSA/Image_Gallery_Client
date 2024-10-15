@@ -291,7 +291,11 @@ const CategoryView = () => {
             />
           ))}
         </div>
-
+        {images_for_day_and_unassigned.length == 0 && (
+          <div className="flex justify-center items-center w-full h-96">
+            <h1 className="text-2xl text-gray-500">No images for date</h1>
+          </div>
+        )}
         <ImageGallery
           images={images_for_day_and_unassigned}
           onDragEnd={handleDragEnd}
