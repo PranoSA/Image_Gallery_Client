@@ -57,6 +57,8 @@ const authOptions: AuthOptions = {
   },
 
   callbacks: {
+    //add back redirect
+
     async session({ session, token, user }) {
       //      session.user = user;
       //     session.user.sub = token.sub;
