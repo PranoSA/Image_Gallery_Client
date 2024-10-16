@@ -34,7 +34,6 @@ import { FaPencil } from 'react-icons/fa6';
 import { FaCheck, FaPen, FaTimes } from 'react-icons/fa';
 //Download Icon
 import { FaDownload } from 'react-icons/fa';
-import { getDaySummaries } from '../../../../server/src/routes/summaries';
 
 type PlainViewProps = {
   show_selection?: boolean;

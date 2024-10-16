@@ -9,8 +9,6 @@ import {
   useQuery,
 } from '@tanstack/react-query';
 import { MdImagesearchRoller } from 'react-icons/md';
-import { updateDaySummary } from '../../../server/src/routes/summaries';
-
 import { dateFromString, timeFromString } from './Time_Functions';
 
 import {

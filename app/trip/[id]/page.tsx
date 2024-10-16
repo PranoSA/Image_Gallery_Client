@@ -58,7 +58,7 @@ import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedIm
 import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
 import SelectionCompare from '@/components/Trip_View/Compare_View/SelectionCompare';
 
-import { queryClient } from '../../../components/Trip_View/Trip_View_Image_Store';
+import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';
 import { useRouter } from 'next/router';
 import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
 import { FaPencil } from 'react-icons/fa6';
