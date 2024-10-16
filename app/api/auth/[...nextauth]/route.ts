@@ -43,7 +43,7 @@ const refreshAccessToken = async (token: JWT) => {
   }
 };
 
-export const authOptions: AuthOptions = {
+const authOptions: AuthOptions = {
   providers: [
     KeycloakProvider({
       clientId: process.env.KEYCLOAK_CLIENT_ID as string,
@@ -101,7 +101,6 @@ export const authOptions: AuthOptions = {
       if (Date.now() < token.accessTokenExpires) {
         return token;
       }
-
 
       //if refresh token is expires, log out
 
