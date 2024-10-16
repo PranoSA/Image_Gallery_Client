@@ -57,6 +57,13 @@ const authOptions: AuthOptions = {
   },
 
   callbacks: {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      console.log('url', url);
+      console.log('baseUrl', baseUrl);
+      return 'https://compressibleflowcalculator.com' + url;
+      return baseUrl;
+    },
+
     async session({ session, token, user }) {
       //      session.user = user;
       //     session.user.sub = token.sub;
