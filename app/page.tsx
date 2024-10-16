@@ -98,7 +98,7 @@ function Home() {
 
   useEffect(() => {
     //set local storage bearer token
-    if (session) {
+    if (typeof window !== 'undefined' && session) {
       localStorage.setItem('accessToken', session.accessToken as string);
     }
   }, [session]);
@@ -372,6 +372,8 @@ const TripListCompontent = () => {
   };
 
   const submitForm = async (e: React.FormEvent) => {
+    if (typeof window === 'undefined') return;
+
     //check fields and format
     e.preventDefault();
 

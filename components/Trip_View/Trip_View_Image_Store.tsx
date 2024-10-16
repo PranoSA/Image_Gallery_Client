@@ -22,6 +22,10 @@ import {
 import axios from 'axios';
 
 const getBearerFromLocalStorage = () => {
+  if (typeof localStorage === 'undefined') {
+    return null;
+  }
+
   return localStorage.getItem('accessToken');
 };
 
@@ -707,10 +711,10 @@ type StoreState = {
 };
 
 //fetch initial state from local storage
-const init_state: PersistedSettings = JSON.parse(
-  localStorage.getItem('trip_view_settings') || '{}'
-);
-
+const init_state: PersistedSettings =
+  typeof localStorage !== 'undefined'
+    ? JSON.parse(localStorage.getItem('trip_view_settings') || '{}')
+    : {};
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
   filtering_images: init_state.filtering_images || false,
