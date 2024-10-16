@@ -14,22 +14,27 @@ import {
   useQueryTrip,
   useDeleteImage,
   UpdateImage,
+  useQueryDaySummaries,
+  useQueryDaySummary,
+  useUpdateDaySummary,
+  updateDaySummaryMutation,
 } from '../Trip_View_Image_Store';
 import TripContext from '@/components/TripContext';
 import { useTripViewStore, tripViewStore } from '../Trip_View_Image_Store';
 import { Banner_Component } from '../Banner_Component';
 import EditImageForm from '../EditImageForm';
 import NextImage from 'next/image';
-import { Image, Trip } from '@/definitions/Trip_View';
+import { Image, Trip, DaySummary } from '@/definitions/Trip_View';
 import { AiFillDelete } from 'react-icons/ai';
 
 import { HiEye, HiOutlinePencil } from 'react-icons/hi';
 import ImagePreview from '../ImagePreview';
 import { FaPencil } from 'react-icons/fa6';
 
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import { FaCheck, FaPen, FaTimes } from 'react-icons/fa';
 //Download Icon
 import { FaDownload } from 'react-icons/fa';
+import { getDaySummaries } from '../../../../server/src/routes/summaries';
 
 type PlainViewProps = {
   show_selection?: boolean;
@@ -61,6 +66,45 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   //but do not include days without images
 
   type IndexedImage = Image & { index: number };
+
+  const {
+    data: getDaySummaries,
+    isLoading: getDaySummariesLoading,
+    isError: getDaySummariesError,
+  } = useQueryDaySummaries(id);
+
+  const updateDaySummary = useUpdateDaySummary();
+
+  const modifyDaySummary = async (summary: string, date: Date) => {
+    //convert to date string YYYY-MM-DD
+    const date_string = date.toISOString().split('T')[0];
+
+    if (!trip) return;
+
+    const days_from_beggining =
+      new Date(trip?.start_date).getTime() - date.getTime();
+
+    const days_elapsed = days_from_beggining / (1000 * 3600 * 24);
+
+    if (!getDaySummaries) return;
+
+    //get the day summary for the date
+    const day_summary = getDaySummaries?.find((day_summary) => {
+      return day_summary.day === date_string;
+    });
+
+    if (!day_summary) return;
+
+    const new_day_summary: DaySummary = {
+      ...day_summary,
+      summary,
+    };
+
+    updateDaySummary.mutate({
+      summary: new_day_summary,
+      new_text: summary,
+    });
+  };
 
   type ImagesByDay = {
     date: Date;
@@ -329,6 +373,9 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   const [editingName, setEditingName] = useState<Image | null>(null);
   const [editedName, setEditedName] = useState('');
 
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editedDateSummary, setEditedDateSummary] = useState('');
+
   const id = useContext(TripContext).id;
 
   const {
@@ -336,6 +383,12 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     isLoading: tripLoading,
     isError: tripError,
   } = useQueryTrip(id);
+
+  const {
+    data: daySummaries,
+    isLoading: daySummariesLoading,
+    isError: daySummariesError,
+  } = useQueryDaySummaries(id);
 
   const submitNewName = async () => {
     if (!editingName) return;
@@ -352,6 +405,39 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     setEditingName(null);
 
     setEditedName('');
+  };
+
+  const updateDaySummary = useUpdateDaySummary();
+
+  const submitNewDaySummary = async (summary: string) => {
+    if (!editingDate) return;
+
+    if (!trip) return;
+
+    //ensure that the date is in the correct format
+    //YYYY-MM-DD
+    const regex = /\d{4}-\d{2}-\d{2}/;
+
+    console.log('Editing Date', editingDate);
+
+    if (!regex.test(editingDate)) {
+      console.log('SSSSSSSSSSSSSSSSSSSSSSSS INCORRECT FORMAT');
+      return;
+    }
+
+    const new_summary: DaySummary = {
+      day: editingDate,
+      summary: editedDateSummary,
+      tripid: id,
+    };
+
+    const res = await updateDaySummary.mutate({
+      summary: new_summary,
+      new_text: summary,
+    });
+
+    setEditingDate(null);
+    setEditedDateSummary('');
   };
 
   const deleteImage = async (image: Image) => {
@@ -504,15 +590,26 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     }
   }, [editedImage, image.id]);
 */
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     if (e.key === 'Escape') {
       setEditedName('');
       setEditingName(null);
+      setEditedDateSummary('');
+      setEditingDate(null);
     } else if (e.key === 'Enter') {
-      await submitNewName();
+      if (editingName) {
+        await submitNewName();
 
-      setEditedName('');
-      setEditingName(null);
+        setEditedName('');
+        setEditingName(null);
+      }
+      if (editingDate) {
+        await submitNewDaySummary(editedDateSummary);
+        setEditedDateSummary('');
+        setEditingDate(null);
+      }
     }
   };
 
@@ -522,10 +619,72 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     setEditingName(null);
   };
 
+  const handleBlurDaySummary = () => {
+    submitNewDaySummary(editedDateSummary);
+    setEditedDateSummary('');
+    setEditingDate(null);
+  };
+
+  const find_day_summary_by_date = (date: Date) => {
+    const day_summary = daySummaries?.find((day_summary) => {
+      //YYYY-MM-DD
+      const date_string = `${date.getFullYear()}-${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}-${date.getDate()}`;
+
+      return day_summary.day.split('T')[0] === date_string;
+    });
+    if (day_summary) {
+      return day_summary.summary;
+    }
+    return '';
+  };
+
+  const date_string_today = `${date.getFullYear()}-${(date.getMonth() + 1)
+    .toString()
+    .padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
   //return gallery based on subranges
   return (
     <div className="p-4">
-      <div className="text-2xl font-bold mb-4">{date.toDateString()}</div>
+      <div className="text-2xl font-bold mb-4">
+        {date.toDateString()}
+        <div className="text-2xl font-bold mb-4">
+          {editingDate === date_string_today ? (
+            <div>
+              <textarea
+                value={editedDateSummary}
+                onChange={(e) => setEditedDateSummary(e.target.value)}
+                className="w-full h-40 p-4 max-w-2xl"
+                onBlur={handleBlurDaySummary}
+                onKeyDown={handleKeyDown}
+              ></textarea>
+            </div>
+          ) : (
+            <>
+              {find_day_summary_by_date(date)}
+              <FaPencil
+                onClick={() => {
+                  setEditedDateSummary(find_day_summary_by_date(date));
+                  console.log('Date Editing', date);
+                  console.log('Date Editing', date.toISOString());
+                  const date_Event = `${date.getFullYear()}-${(
+                    date.getMonth() + 1
+                  )
+                    .toString()
+                    .padStart(2, '0')}-${date
+                    .getDate()
+                    .toString()
+                    .padStart(2, '0')}`;
+
+                  console.log('Date Editingsss', date_Event);
+                  setEditingDate(date_Event);
+                }}
+                className="cursor-pointer"
+              />
+            </>
+          )}
+        </div>
+      </div>
       {subranges.map((subrange) => {
         const startHour = new Date(subrange.start_hour).toLocaleTimeString([], {
           hour: '2-digit',

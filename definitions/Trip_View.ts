@@ -18,6 +18,12 @@ type Category = {
   child_categories: Category[];
 };
 
+type DaySummary = {
+  day: string;
+  summary: string;
+  tripid: string;
+};
+
 interface Trip {
   id: string;
   name: string;
@@ -44,4 +50,4 @@ interface Path {
   tripid: number;
 }
 
-export type { Image, Trip, Path, Category };
+export type { Image, Trip, Path, Category, DaySummary };

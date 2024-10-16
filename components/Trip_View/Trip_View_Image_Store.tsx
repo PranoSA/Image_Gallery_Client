@@ -13,7 +13,13 @@ import { updateDaySummary } from '../../../server/src/routes/summaries';
 
 import { dateFromString, timeFromString } from './Time_Functions';
 
-import { Category, Image, Path, Trip } from '@/definitions/Trip_View';
+import {
+  Category,
+  Image,
+  Path,
+  Trip,
+  DaySummary,
+} from '@/definitions/Trip_View';
 
 import axios from 'axios';
 
@@ -379,12 +385,6 @@ const fetchTrip = async (trip_id: string) => {
   return data[0];
 };
 
-type DaySummary = {
-  day: string;
-  summary: string;
-  tripid: string;
-};
-
 const fetchDaySummary = async (
   trip_id: string,
   date: string
@@ -419,11 +419,66 @@ export const updateDaySummaryMutation = async (
 };
 
 //update the day summary
+interface UpdateSummaryArgs {
+  summary: DaySummary;
+  new_text: string;
+}
+//['trip', trip_id, 'day_summary', date],
+//['day_summaries', trip_id]
 export const useUpdateDaySummary = () => {
-  return useQuery({
-    queryKey: ['update_day_summary'],
-    queryFn: ({ trip_id, date, summary }: any) =>
-      updateDaySummaryMutation(trip_id, date, summary),
+  const mutationFn = async ({ summary, new_text }: UpdateSummaryArgs) => {
+    const { tripid, day } = summary;
+    const res = await updateDaySummaryMutation(tripid, day, new_text);
+    return {
+      tripid: tripid,
+      day: day,
+      summary: new_text,
+    };
+  };
+
+  return useMutation({
+    onSuccess: (data) => {
+      //invalidate the query cache
+      queryClient.setQueryData(['trip', data.tripid, 'day_summary', data.day], {
+        summary: data.summary,
+      });
+
+      console.log('On Success', data);
+
+      //new day summaries
+      const current_day_summaries = queryClient.getQueryData<DaySummary[]>([
+        'day_summaries',
+        data.tripid,
+      ]);
+
+      console.log('current_day_summaries', current_day_summaries);
+
+      if (!current_day_summaries) {
+        return;
+      }
+
+      //filter day summaries, returning the same if the day is not the same, and the new summary if it is
+      const new_day_summaries = current_day_summaries.map((day_summary) => {
+        const day_of_summary = day_summary.day.split('T')[0];
+
+        if (day_of_summary === data.day) {
+          return {
+            ...day_summary,
+            summary: data.summary,
+          };
+        }
+        return day_summary;
+      });
+
+      console.log('new_day_summaries', new_day_summaries);
+
+      //set the new day summaries
+      queryClient.setQueryData(
+        ['day_summaries', data.tripid],
+        new_day_summaries
+      );
+    },
+    mutationFn: mutationFn,
   });
 };
 
@@ -436,6 +491,11 @@ export const QueryDaySummaries = async (trip_id: string) => {
         headers: createRequestHeaders(),
       }
     );
+    if (!res.ok) {
+      throw new Error('Error fetching day summaries');
+    }
+    const data = await res.json();
+    return data;
   } catch (e) {}
 };
 
@@ -443,8 +503,9 @@ export const useQueryDaySummaries = (trip_id: string) => {
   return useQuery({
     queryKey: ['day_summaries', trip_id],
     queryFn: async () => {
-      const response = await QueryDaySummaries(trip_id);
+      const response: DaySummary[] = await QueryDaySummaries(trip_id);
 
+      console.log('Day Summaries', response);
       return response;
     },
   });

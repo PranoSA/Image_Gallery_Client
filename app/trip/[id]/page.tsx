@@ -82,34 +82,16 @@ const TripProvider = ({ children, id }: TripProviderProps) => {
 
   return (
     <TripContext.Provider
-      value={{ id, bearer_token, setBearerToken: setBearerTokenFunction }}
+      value={{
+        id,
+        bearer_token,
+        setBearerToken: setBearerTokenFunction,
+        scrollToImage(image) {},
+      }}
     >
       {children}
     </TripContext.Provider>
   );
-};
-
-const ItemTypes = {
-  IMAGE: 'image',
-};
-
-//save categorized trip
-const saveCategorizedTrip = async (trip: Trip) => {
-  const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trips/${trip.id}`;
-
-  const res = await axios.put(api_url, trip);
-
-  return res.data;
-
-  fetch(api_url, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(trip),
-  })
-    .then((res) => res.json())
-    .catch((err) => console.error(err));
 };
 
 const PageWithProvider: React.FC<{ params: { id: string } }> = ({
