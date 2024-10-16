@@ -2,7 +2,7 @@ import NextAuth, { Account, AuthOptions, User } from 'next-auth';
 import { JWT } from 'next-auth/jwt';
 import KeycloakProvider from 'next-auth/providers/keycloak';
 import { NextResponse } from 'next/server';
-import PostgresAdapter from '@auth/pg-adapter';
+
 import { Pool } from 'pg';
 
 const refreshAccessToken = async (token: JWT) => {

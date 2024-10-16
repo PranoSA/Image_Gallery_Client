@@ -2,7 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost', 'res.cloudinary.com'],
+    domains: [
+      'localhost',
+      'res.cloudinary.com',
+      'images.compressibleflowcalculator.com',
+    ],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
