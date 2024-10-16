@@ -594,6 +594,8 @@ type StoreState = {
   // now lets differentiate between Time View and Singular Date View
   date_or_time_view: 'date' | 'time';
 
+  scroll_to_image: Image | null;
+
   paths_open: boolean;
 
   zoom_on_day_change: boolean;
@@ -670,6 +672,7 @@ export const tripViewStore = new Store<StoreState>({
   paths_open: init_state.paths_open ?? true,
   comparing_photos: false,
   horizontally_tabbed: init_state.horizontally_tabbed ?? true,
+  scroll_to_image: null,
 
   adding_images: false,
 

@@ -26,7 +26,7 @@ import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
 import { KML } from 'ol/format';
 
-import { Path } from '@/definitions/Trip_View';
+import { Image, Path } from '@/definitions/Trip_View';
 // store and tanstack query
 import {
   useQueryTrip,
@@ -77,6 +77,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     selecting_category,
     filtered_categories,
     filtering_images,
+    scroll_to_image,
   } = useTripViewStore();
 
   const currentDay = useMemo<string>(() => {
@@ -143,8 +144,70 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
           zoom: 2,
         }),
       });
+
+      //set scrollToImage function
     }
   }, [mapRef.current]);
+
+  const zoomLater = (image: Image) => {
+    setTimeout(() => {
+      const point = [parseFloat(image.long), parseFloat(image.lat)];
+      const transformed_point = fromLonLat(point);
+
+      if (!mapInstanceRef.current) return;
+      const current_zoom = mapInstanceRef.current.getView().getZoom();
+
+      console.log('zooming in', current_zoom);
+
+      //if (!current_zoom) return;
+
+      //const next_zoom = Math.max(current_zoom, Math.min(current_zoom + 3, 15));
+
+      mapInstanceRef.current.getView().animate({
+        center: transformed_point,
+        zoom: 15,
+        duration: 2000,
+      });
+    }, 2000);
+  };
+
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    const image = scroll_to_image;
+
+    if (!image) return;
+
+    //scroll the map center to the scroll_to_image
+    const point = [parseFloat(image.long), parseFloat(image.lat)];
+
+    const transformed_point = fromLonLat(point);
+
+    //return if the point is 0,0
+    if (point[0] === 0 && point[1] === 0) {
+      return;
+    }
+
+    //return if either is undefined
+    if (!point[0] || !point[1]) {
+      return;
+    }
+
+    //animate the map to the point
+    mapInstanceRef.current.getView().animate({
+      center: transformed_point,
+      duration: 2000,
+    });
+
+    //zoom in after 2 seconds
+    mapInstanceRef.current.getView().animate({
+      center: transformed_point,
+      zoom: 15,
+      duration: 2000,
+    });
+
+    //mapInstanceRef.current.getView().setCenter(transformed_point);
+  }, [scroll_to_image]);
 
   //use Effect that runs every 3 seconds and resets the zoom if the zoom has been changed
 

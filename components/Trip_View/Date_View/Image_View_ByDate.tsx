@@ -2,7 +2,7 @@
 
 import { Image } from '@/definitions/Trip_View';
 
-import { HiOutlinePencil, HiEye } from 'react-icons/hi';
+import { HiOutlinePencil, HiEye, HiMap } from 'react-icons/hi';
 
 import NextImage from 'next/image';
 import CoordinateForm from '@/components/CoordinateForm';
@@ -30,7 +30,13 @@ import {} from '@/components/Trip_View/Time_View/Time_View_Gallery';
 
 import { AiFillDelete } from 'react-icons/ai';
 
-const Image_View_ByDate: React.FC = () => {
+type ImageViewByDateProps = {
+  scrollToImage?: (image: Image) => void;
+};
+
+const Image_View_ByDate: React.FC<ImageViewByDateProps> = ({
+  scrollToImage = (image: Image) => {},
+}) => {
   const {
     selected_date,
 
@@ -203,6 +209,7 @@ const Image_View_ByDate: React.FC = () => {
         <GroupImagesByTime
           images={groupedOrderedImagesByDay.images}
           date={groupedOrderedImagesByDay.date}
+          scrollToImage={scrollToImage}
         />
       </div>
       <ImagePreview />
@@ -222,11 +229,13 @@ type SubRangeOfImages = {
 type groupImagesByTimeProps = {
   images: (Image & { index: number })[];
   date: Date;
+  scrollToImage: (image: Image) => void;
 };
 
 const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   images,
   date,
+  scrollToImage = (image: Image) => {},
 }) => {
   // group images into SubRangeOfImages
   const { selected_image_location, horizontally_tabbed } = useTripViewStore();
@@ -384,6 +393,15 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  const setShowOnMap = (image: Image) => {
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        scroll_to_image: image,
+      };
+    });
+  };
+
   //child size should be 1/3 of the parent
 
   //return gallery based on subranges
@@ -457,6 +475,11 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         <HiEye
                           onClick={() => setPreviewImage(image.index)}
                           className="cursor-pointer"
+                          size={24}
+                        />
+                        <HiMap
+                          onClick={() => setShowOnMap(image)}
+                          className="cursor-pointer ml-2"
                           size={24}
                         />
                       </div>

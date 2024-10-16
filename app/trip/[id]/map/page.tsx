@@ -73,11 +73,19 @@ interface TripProviderProps {
   id: string;
   bearer_token: string | null;
   setBearerToken: (token: string) => void;
+  scrollToImage: (image: Image) => void;
 }
 
-const TripProvider = ({ children, id, setBearerToken }: TripProviderProps) => {
+const TripProvider = ({
+  children,
+  id,
+  setBearerToken,
+  scrollToImage,
+}: TripProviderProps) => {
   return (
-    <TripContext.Provider value={{ id, bearer_token: null, setBearerToken }}>
+    <TripContext.Provider
+      value={{ id, bearer_token: null, setBearerToken, scrollToImage }}
+    >
       {children}
     </TripContext.Provider>
   );
@@ -96,6 +104,7 @@ const PageWithProvider: React.FC<{ params: { id: string } }> = ({
       id={id || '0'}
       bearer_token={bearerToken}
       setBearerToken={setBearerToken}
+      scrollToImage={(image: Image) => {}}
     >
       <QueryClientProvider client={queryClient}>
         <Page />
