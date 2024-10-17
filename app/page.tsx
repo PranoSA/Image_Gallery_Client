@@ -143,7 +143,7 @@ function Home() {
 
   //if not logged in, redirect to login page
   if (!session) {
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') {
       return <IntroPage />;
     }
 
