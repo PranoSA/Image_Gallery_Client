@@ -12,6 +12,8 @@ import { useContext } from 'react';
 import TripContext from '../TripContext';
 import React from 'react';
 
+import { FaTimes } from 'react-icons/fa';
+
 export default function AddImagesForm() {
   const { id } = useContext(TripContext);
 
@@ -55,6 +57,13 @@ export default function AddImagesForm() {
       {adding_images && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <FaTimes
+              className="absolute top-5 right-5"
+              onClick={closeModal}
+              size={30}
+              title="Cancel Add Images"
+            />
+
             <h2>Upload Images</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -84,9 +93,6 @@ export default function AddImagesForm() {
                 Upload
               </button>
             </form>
-            <button onClick={closeModal} className="close-modal-button">
-              Close
-            </button>
           </div>
         </div>
       )}

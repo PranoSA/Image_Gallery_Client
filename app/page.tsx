@@ -5,11 +5,13 @@ import '@/globals.css';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
 import InviteUserToTripForm from '@/components/Home_View/InviteUserToTripForm';
 import IntroPage from '@/components/Home_View/IntroPage';
 import NextImage from 'next/image';
+
+import './page.css';
 
 //import query provider
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -23,6 +25,11 @@ import { useQueryTripImages } from '@/components/Trip_View/Trip_View_Image_Store
 //pencil faIcon for editing
 import { FaPencilAlt } from 'react-icons/fa';
 
+import { FaTimes } from 'react-icons/fa';
+
+//sign out icon
+import { FaSignOutAlt } from 'react-icons/fa';
+
 //add person icon for inviting users
 import { FaUserPlus } from 'react-icons/fa';
 
@@ -30,9 +37,6 @@ import { FaUserPlus } from 'react-icons/fa';
 import { FaPlus } from 'react-icons/fa';
 //image upload icon
 import { FaImage } from 'react-icons/fa';
-
-//Download Icon
-import { FaDownload } from 'react-icons/fa';
 
 import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';
 
@@ -67,10 +71,6 @@ function Home() {
   });
   const [showForm, setShowForm] = useState(false);
 
-  const [editTrip, setEditTrip] = useState<boolean>(false);
-  const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
-  const [editTripError, setEditTripError] = useState<string | null>(null);
-
   //id of trip to invite user to
   // if null, then no form is shown
   const [inviteForm, setInviteForm] = useState<Trip | null>(null);
@@ -88,10 +88,6 @@ function Home() {
   //login status
   const { data: session, status } = useSession();
 
-  const addImage = useAddImage();
-
-  const token = session?.accessToken;
-
   const [selectedTripUploadImage, setSelectedTripUploadImage] = useState<
     string | null
   >(null);
@@ -100,6 +96,11 @@ function Home() {
     //set local storage bearer token
     if (typeof window !== 'undefined' && session) {
       localStorage.setItem('accessToken', session.accessToken as string);
+      //set date_redeemed -> store unix timestamp
+      const now_time = Date.now();
+      const unix_time = Math.floor(now_time / 1000);
+
+      localStorage.setItem('date_redeemed', unix_time.toString());
     }
   }, [session]);
 
@@ -142,27 +143,57 @@ function Home() {
 
   //if not logged in, redirect to login page
   if (!session) {
-    return <IntroPage />;
+    const last_redeemed = localStorage.getItem('date_redeemed');
+    //see if 5 minutes have passed
+    if (!last_redeemed) {
+      return <IntroPage />;
+    }
+
+    const last_redeemed_date = new Date(parseInt(last_redeemed));
+    const current_date = new Date();
+    const diff = current_date.getTime() - last_redeemed_date.getTime();
+    if (diff > 5 * 60 * 1000) {
+      return <IntroPage />;
+    }
+
+    //return <IntroPage />;
   }
 
   // show invite modal if inviteForm is not null
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between ">
+    <div className="flex flex-wrap flex-row justify-around ">
+      {/* signout icon here */}
+      <div className="absolute top-5 left-5 z-50" title="Sign Out">
+        <FaSignOutAlt
+          className="text-gray-500 hover:text-black cursor-pointer transition duration-300 ease-in-out"
+          onClick={() => {
+            signOut({ callbackUrl: '/' });
+            // Remove local storage items
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('date_redeemed');
+          }}
+          size={30}
+          title="Sign Out"
+        />
+      </div>
       {inviteForm && (
         <InviteUserToTripForm
           trip={inviteForm}
           closeInviteForm={closeInviteForm}
         />
       )}
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <h1 className="text-2xl font-bold">My Trips</h1>
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-          onClick={() => setShowForm(true)}
-        >
-          Add New Trip
-        </button>
+      <div className="z-10 w-full items-center justify-between font-mono text-sm p-5 ">
+        <h1 className="text-2xl font-bold text-center">My Trips</h1>
+      </div>
+      <div
+        className="z-10 w-full flex items-center justify-center font-mono text-sm p-5"
+        onClick={() => setShowForm(true)}
+      >
+        <FaPlus className="text-black hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
+        <p className="font-black  font-bold text-lg hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out m-5">
+          Create New Trip
+        </p>
       </div>
       <TripListCompontent />
       {showForm && (
@@ -253,7 +284,7 @@ function Home() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -281,7 +312,12 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   // if null, then no form is shown
   const [inviteForm, setInviteForm] = useState<string | null>(null);
 
+  const [imageUploadState, setImageUploadState] = useState<
+    'uploading' | 'error' | 'success' | 'none'
+  >('none');
+
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    setImageUploadState('uploading');
     e.preventDefault();
     handleSubmitImages(e);
   };
@@ -290,11 +326,13 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <h2>Upload Images</h2>
+        <FaTimes
+          className="absolute top-5 right-5"
+          onClick={onClose}
+          size={30}
+          title="Cancel Add Images"
+        />
         <form onSubmit={handleFormSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Name:</label>
-            <input type="text" id="name" name="name" required />
-          </div>
           <div className="form-group">
             <label htmlFor="description">Description:</label>
             <textarea id="description" name="description" required></textarea>
@@ -314,9 +352,6 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             Upload
           </button>
         </form>
-        <button onClick={onClose} className="close-modal-button">
-          Close
-        </button>
       </div>
     </div>
   );
@@ -573,8 +608,8 @@ const TripListCompontent = () => {
   }
 
   return (
-    <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-      <div className="w-full z-100 flex justify-between border-4 border-blue-500">
+    <div className=" flex flex-wrap w-full   p-5">
+      <div className="w-full z-100 flex justify-between ">
         {inviteForm && (
           <InviteUserToTripForm
             trip={inviteForm}
@@ -582,39 +617,43 @@ const TripListCompontent = () => {
           />
         )}
       </div>
-      {selectedTripUploadImage && (
-        <ImageUploadModal
-          tripId={selectedTripUploadImage}
-          onClose={() => setSelectedTripUploadImage(null)}
-          handleSubmitImages={handleSubmitImages}
-        />
-      )}
+      <div className="w-full">
+        {selectedTripUploadImage && (
+          <ImageUploadModal
+            tripId={selectedTripUploadImage}
+            onClose={() => setSelectedTripUploadImage(null)}
+            handleSubmitImages={handleSubmitImages}
+          />
+        )}
 
-      {
-        //EDIT TRIP MODAL
-        editTrip && editTripModal(editedTrip || trips[0])
-      }
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+        {
+          //EDIT TRIP MODAL
+          editTrip && editTripModal(editedTrip || trips[0])
+        }
+      </div>
+      <div className="w-full flex flex-wrap flex-row">
         {trips.map((trip) => (
           <div
             key={trip.id}
-            className="flex flex-col justify-between bg-white shadow-md rounded p-4"
+            className=" relative w-full lg:w-1/2 flex flex-col justify-start bg-white shadow-md rounded p-4"
           >
+            <FaPencilAlt
+              className={`  
+                  absolute top-5 right-5
+                text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out`}
+              onClick={() => handleEditTrip(trip)}
+            />
             <div className="w-full flex-row flex justify-around">
               <Link href={`/trip/${trip.id}`} passHref>
                 <h2 className="text-xl font-bold cursor-pointer hover:text-blue-600 transition duration-300 ease-in-out">
                   {trip.name}
                 </h2>
               </Link>
-              <FaPencilAlt
-                className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
-                onClick={() => handleEditTrip(trip)}
-              />
             </div>
             <p className="font-bold text-center">
               {trip.start_date} - {trip.end_date}
             </p>
-            <p className="text-gray-600">{trip.description}</p>
+            <p className="text-gray-600 mt-1 mb-4">{trip.description}</p>
             <ScrollableImageBar trip_id={trip.id} />
 
             <div className="flex justify-between mt-auto space-x-2 flex-row w-full justify-between">
@@ -622,12 +661,14 @@ const TripListCompontent = () => {
                 className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
                 onClick={() => setInviteForm(trip)}
                 size={20}
+                title="Invite User"
               />
               <div
-                className="flex-row flex flex-wrap"
+                className="flex-row flex flex-wrap hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
                 onClick={() => handleAddImagesClick(trip.id)}
+                title="Add Images"
               >
-                <FaPlus className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
+                <FaPlus className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out mr-2" />
                 <FaImage className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
               </div>
             </div>
@@ -662,7 +703,7 @@ const ScrollableImageBar: React.FC<scrollableImageBarProps> = ({ trip_id }) => {
   }
 
   return (
-    <div className="overflow-x-scroll flex space-x-2 mb-4">
+    <div className="overflow-x-scroll flex space-x-2 mb-4 scrollbar-class">
       {images.map((image, idx) => (
         <div key={idx} className="w-24 h-24 flex-shrink-0 relative">
           <NextImage

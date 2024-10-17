@@ -44,6 +44,8 @@ const refreshAccessToken = async (token: JWT) => {
 };
 
 const authOptions: AuthOptions = {
+  debug: true,
+  events: {},
   providers: [
     KeycloakProvider({
       clientId: process.env.KEYCLOAK_CLIENT_ID as string,

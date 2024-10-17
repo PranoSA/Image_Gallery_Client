@@ -19,7 +19,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import TripContext from '@/components/TripContext';
 
 //back arrow icon
-import { FaArrowLeft, FaDownload, FaPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaDownload, FaHome, FaPlus } from 'react-icons/fa';
 
 import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
 
@@ -238,7 +238,7 @@ const Page = () => {
     //load the page /trip/${id} --> not using window.history
     //use router to go back
     // router.push(`/trip/${id}`);
-    window.location.href = ''; //`/trip/${id}`;
+    window.location.href = '/'; //`/trip/${id}`;
   };
 
   return (
@@ -246,13 +246,13 @@ const Page = () => {
       <nav className="bg-blue-500 p-4 shadow-md">
         <div className="container mx-auto flex justify-around">
           {/* back button */}
-          <FaArrowLeft
+          <FaHome
             className="text-white text-2xl cursor-pointer"
             onClick={goBack}
             title="Back To Home"
           >
             Back
-          </FaArrowLeft>
+          </FaHome>
           {/* Modal to Add New Images */}
           <AddImagesForm />
           {/* Plus Icon To Add New Image */}

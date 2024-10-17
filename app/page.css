@@ -1,0 +1,27 @@
+.scrollbar-class {
+  overflow-x: scroll;
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #333;
+}
+
+/*Always Visible Both Firefox and Chrome */
+
+.scrollbar-class::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-class::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+
+.scrollbar-class::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+.scrollbar-class::-webkit-scrollbar-track {
+  background: #333;
+}
