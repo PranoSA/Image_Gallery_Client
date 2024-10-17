@@ -143,6 +143,10 @@ function Home() {
 
   //if not logged in, redirect to login page
   if (!session) {
+    if (typeof window !== 'undefined') {
+      return <IntroPage />;
+    }
+
     const last_redeemed = localStorage.getItem('date_redeemed');
     //see if 5 minutes have passed
     if (!last_redeemed) {
