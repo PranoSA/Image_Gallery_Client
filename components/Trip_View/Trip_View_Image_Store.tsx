@@ -210,7 +210,7 @@ const addImages = async (
   //this was done through multipart-form
   try {
     const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/images/`,
+      `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${id}/images/`,
       formData,
       {
         headers: {

@@ -368,11 +368,6 @@ const TripListCompontent = () => {
 
   // when done loading, load the images
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-
-  const [showForm, setShowForm] = useState(false);
-
   const [editTrip, setEditTrip] = useState<boolean>(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
