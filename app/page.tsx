@@ -116,7 +116,7 @@ function Home() {
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/trips`, newTrip, {
         headers: {
-          Authorization: `Bearer ${session?.accessToken}`,
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
       setNewTrip({

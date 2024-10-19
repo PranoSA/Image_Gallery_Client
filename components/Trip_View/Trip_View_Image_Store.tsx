@@ -70,7 +70,7 @@ const fetchTripImages = async (trip_id: string): Promise<Image[]> => {
   const auth_token = getBearerFromLocalStorage();
 
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/images`,
+    `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${trip_id}/images`,
     {
       headers: createRequestHeaders(),
     }
@@ -123,7 +123,7 @@ const updateImageMutation = async (image: Image, trip: Trip) => {
   );
 
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip.id}/images/${image.id}`,
+    `${process.env.NEXT_NEXT_PUBLIC_IMAGE_API_URL}/trip/${trip.id}/images/${image.id}`,
     {
       method: 'PUT',
       headers: {
@@ -234,7 +234,7 @@ export const useDeleteImage = () => {
     ///trip/:tripid/images/:id
     mutationFn: async (image: Image) => {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/trip/${image.tripid}/images/${image.id}`,
+        `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${image.tripid}/images/${image.id}`,
         {
           method: 'DELETE',
           headers: createRequestHeaders(),

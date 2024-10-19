@@ -178,7 +178,7 @@ const CategoryView = () => {
     trip_id: string,
     old_images: Image[]
   ) => {
-    const api_url = `${process.env.NEXT_PUBLIC_API_URL}/trip/${trip_id}/images/`;
+    const api_url = `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${trip_id}/images/`;
 
     /// print all ima
 
