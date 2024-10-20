@@ -326,6 +326,18 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     handleSubmitImages(e);
   };
 
+  const [totalSize, setTotalSize] = useState(0);
+  const maxSize = 100 * 1024 * 1024; // 100 MB in bytes
+
+  const handleFileChange = (event: { target: { files: any } }) => {
+    const files = event.target.files;
+    let size = 0;
+    for (let i = 0; i < files.length; i++) {
+      size += files[i].size;
+    }
+    setTotalSize(size);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -350,11 +362,26 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               multiple
               accept="image/*"
               required
+              onChange={handleFileChange}
             />
           </div>
-          <button type="submit" className="submit-button">
+          <button
+            type="submit"
+            className={`submit-button ${
+              totalSize > maxSize
+                ? 'bg-red-500 cursor-not-allowed'
+                : 'bg-blue-500'
+            }`}
+            disabled={totalSize > maxSize}
+          >
             Upload
           </button>
+          <div className="file-size-info">
+            <p>Total size: {(totalSize / (1024 * 1024)).toFixed(2)} MB</p>
+            {totalSize > maxSize && (
+              <p className="text-red-500">Total size exceeds 100 MB limit!</p>
+            )}
+          </div>
         </form>
       </div>
     </div>

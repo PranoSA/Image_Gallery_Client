@@ -6,6 +6,7 @@ const nextConfig = {
       'localhost',
       'res.cloudinary.com',
       'images.compressibleflowcalculator.com',
+      'imageapi.compressibleflowcalculator.com',
     ],
   },
   webpack: (config, { isServer }) => {
