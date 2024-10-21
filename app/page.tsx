@@ -371,7 +371,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         <form onSubmit={handleFormSubmit}>
           <div className="form-group">
             <label htmlFor="description">Description:</label>
-            <textarea id="description" name="description" required></textarea>
+            <textarea id="description" name="description"></textarea>
           </div>
           <div className="form-group">
             <label htmlFor="images">Images:</label>
@@ -406,7 +406,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           {/* print the number of value*/}
           {
             <div className="progress-bar">
-              <h1> {progress_percenta}%</h1>
+              <h1> {totalSize > 0 ? progress_percenta : 0}% Uploaded</h1>
 
               <div
                 className="progress-bar-fill bg-green-500"
