@@ -425,6 +425,7 @@ const ImageDragFolder = ({
                   alt={`Image for ${selectedImage.created_at}`}
                   layout="fill"
                   objectFit="contain"
+                  sizes="(max-width: 500px) 100vw, 500px"
                 />
               </div>
             )}
