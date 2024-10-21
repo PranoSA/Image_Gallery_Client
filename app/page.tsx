@@ -738,7 +738,7 @@ const ScrollableImageBar: React.FC<scrollableImageBarProps> = ({ trip_id }) => {
             layout="fill"
             objectFit="cover"
             className="rounded"
-            sizes='128px
+            sizes="128px"
           />
         </div>
       ))}
