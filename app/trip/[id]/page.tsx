@@ -62,7 +62,12 @@ import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
 import { FaPencil } from 'react-icons/fa6';
 import { init } from 'next/dist/compiled/webpack/webpack';
 
-const useTripContext = () => {
+const useTripContext = (): {
+  id: string;
+  bearer_token: string | null;
+  setBearerToken: (token: string) => void;
+  scrollToImage: (image: any) => void;
+} => {
   return useContext(TripContext);
 };
 
@@ -240,34 +245,32 @@ const Page = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-blue-500 p-4 shadow-md">
-        <div className="container mx-auto flex justify-around">
-          {/* back button */}
+    <div className="min-h-screen bg-gray-100 overflow-x-scroll">
+      <nav className="bg-blue-500 p-4 shadow-md w-full overflow-x-auto">
+        <div className="flex flex-nowrap items-center space-x-4">
+          {/* Back button */}
           <FaHome
             className="text-white text-2xl cursor-pointer"
             onClick={goBack}
             title="Back To Home"
-          >
-            Back
-          </FaHome>
+            size={30}
+          />
           {/* Modal to Add New Images */}
           <AddImagesForm />
           {/* Plus Icon To Add New Image */}
-          <div className="flex justify-center">
-            <button
-              onClick={() => {
-                tripViewStore.setState((state) => {
-                  return { ...state, adding_images: true };
-                });
-              }}
-              className="hover:text-blue-700 transition-colors duration-50"
-              title="Add Images"
-            >
-              <div className="flex flex-row items-center justify-center gap-1">
-                <FaPlus />
-              </div>
-            </button>
+          <div className="pl-4 pr-4">
+            <div className="flex flex-row items-center justify-center gap-1">
+              <FaPlus
+                onClick={() => {
+                  tripViewStore.setState((state) => {
+                    return { ...state, adding_images: true };
+                  });
+                }}
+                className="hover:text-blue-700 transition-colors duration-50"
+                title="Add Images"
+                size={30}
+              />
+            </div>
           </div>
           <button
             className={`px-4 py-2 rounded-lg text-white ${
@@ -310,36 +313,32 @@ const Page = () => {
             View
           </button>
           {/* Compare Button */}
-          <div className="">
+          <div className="pr-4 pl-6">
             <FaExchangeAlt
-              className={`'bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg`}
+              className="bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg"
               onClick={() => {
                 setMode('compare');
               }}
               title="Compare and Pick"
               size={30}
-            >
-              Compare
-            </FaExchangeAlt>
+            />
           </div>
           {/* Map Icon + View Map*/}
-          <div className="">
+          <div className="pr-4 pl-4">
             <FaMap
-              className={`'bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg`}
+              className="bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg"
               onClick={() => {
                 window.location.href = `/trip/${id}/map`;
               }}
               title="Map View"
               size={30}
-            >
-              View Map
-            </FaMap>
+            />
           </div>
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center gap-2 pr-4 pl-4">
             <FaDownload
               className="text-white text-2xl cursor-pointer"
               onClick={async () => {
-                //make a request to download_begin to create a temp link
+                // Make a request to download_begin to create a temp link
                 const res = await fetch(
                   `${process.env.NEXT_PUBLIC_API_URL}/trip/${id}/download_begin`,
                   {
@@ -382,13 +381,9 @@ const Page = () => {
 
                 // Revoke the object URL to free up memory
                 window.URL.revokeObjectURL(url);
-                /*window.open(
-                  `${process.env.NEXT_PUBLIC_API_URL}/trip/${code}/download`
-                );*/
               }}
-            >
-              Download Trip
-            </FaDownload>
+              title="Download Images"
+            />
           </div>
         </div>
       </nav>
