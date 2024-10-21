@@ -194,6 +194,7 @@ const ImagePreview: React.FC = () => {
               fill
               //ensure it keeps the aspect ratio
               objectFit="contain"
+              sizes="(max-width: 480px) 100vw, (max-width: 768px) 75vw, (max-width: 1024px) 50vw, 33vw"
             />
           </div>
           <div className="text-white text-2xl mt-2 flex-shrink-0">

@@ -756,7 +756,9 @@ const init_state: PersistedSettings =
     ? JSON.parse(localStorage.getItem('trip_view_settings') || '{}')
     : {};
 
-const viewport_bigger_than_600 = window.innerWidth > 600;
+const viewport_bigger_than_600 =
+  //check if window is defined
+  typeof window !== 'undefined' ? window.innerWidth > 600 : false;
 
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',

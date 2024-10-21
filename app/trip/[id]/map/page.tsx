@@ -127,7 +127,7 @@ function Page() {
   //width of the gallery
 
   //make a media query for 1/2 the screen width
-  const screen_width = window.innerWidth;
+  const screen_width = typeof window !== 'undefined' ? window.innerWidth : 1000;
 
   const [galleryWidth, setGalleryWidth] = useState(screen_width / 2); // Initial width of the gallery
   const prevGalleryWidth = useRef<number>(galleryWidth);
