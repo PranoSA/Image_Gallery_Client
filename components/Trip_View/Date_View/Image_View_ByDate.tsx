@@ -443,7 +443,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="flex flex-grow items-center justify-center bg-gray-100 p-1 border  "
+                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px]  "
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
