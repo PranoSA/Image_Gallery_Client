@@ -55,9 +55,9 @@ const SelectionComponentGallery = () => {
   return (
     <div className="text-center ">
       {/* Should be Singular Row with justify space around*/}
-      <div className="w-full flex flex-wrap flex-row items-center justify-around ">
-        <div className="w-1/4 flex justify-center">
-          <div className="relative inline-flex items-center">
+      <div className="w-full flex flex-row items-center overflow-x-scroll ">
+        <div className=" flex justify-center p-8">
+          <div className="relative inline-flex items-center ">
             <input
               type="checkbox"
               id="toggle"
@@ -87,7 +87,7 @@ const SelectionComponentGallery = () => {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <FaCalendar size={20} />
+                    <FaCalendar size={30} />
                     Date View
                   </div>
                 )}
@@ -95,7 +95,7 @@ const SelectionComponentGallery = () => {
             </label>
           </div>
         </div>
-        <div className="w-1/4 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center p-5">
           {/* Modal to Add New Images */}
           <AddImagesForm />
           {/* Plus Icon To Add New Image */}
@@ -110,12 +110,12 @@ const SelectionComponentGallery = () => {
             >
               <div className="flex flex-row items-center justify-center gap-1">
                 <span className="text-lg">Add Images</span>
-                <FaPlus />
+                <FaPlus size={30} />
               </div>
             </button>
           </div>
         </div>
-        <div className="w-1/4 flex justify-center">
+        <div className="flex justify-center p-5">
           {/* Div For Filtering Categories if filtering_selection, or a button to open it */}
           <div className="w-full flex justify-center">
             {store.state.selecting_category ? (
