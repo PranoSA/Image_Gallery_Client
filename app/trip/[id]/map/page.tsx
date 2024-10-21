@@ -422,16 +422,32 @@ function Page() {
             onResizeStop={(e, direction, ref, d) => {
               //set minmum size 50px
 
-              setGalleryWidth(
+              /*setGalleryWidth(
                 Math.max(150, prevGalleryWidth.current + d.width)
-              );
+              );*/
               prevGalleryWidth.current = Math.max(
                 150,
                 prevGalleryWidth.current + d.width
               );
+              const newWidth = prevGalleryWidth.current + d.width;
+
+              const atLeast100 = Math.max(100, newWidth);
+              const atMostScreenWidth = Math.min(
+                screen_width - 100,
+                atLeast100
+              );
+              console.log('Screen Width:', screen_width);
+
+              console.log('atMostScreenWidth:', atMostScreenWidth);
+
+              setGalleryWidth(atMostScreenWidth);
             }}
             onResize={(e, direction, ref, d) => {
-              setGalleryWidth(prevGalleryWidth.current + d.width);
+              //make sure its not less than 100px
+              //or more than screen width - 100px
+              const newWidth = prevGalleryWidth.current + d.width;
+
+              setGalleryWidth(newWidth);
             }}
             style={{
               cursor: 'col-resize',

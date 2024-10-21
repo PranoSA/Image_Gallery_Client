@@ -476,7 +476,10 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           size={24}
                         />
                         <HiMap
-                          onClick={() => setShowOnMap(image)}
+                          onClick={() => {
+                            setSelectedImageLocation(image);
+                            setShowOnMap(image);
+                          }}
                           className="cursor-pointer ml-2"
                           size={24}
                         />

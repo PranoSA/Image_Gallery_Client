@@ -123,7 +123,7 @@ const updateImageMutation = async (image: Image, trip: Trip) => {
   );
 
   const response = await fetch(
-    `${process.env.NEXT_NEXT_PUBLIC_IMAGE_API_URL}/trip/${trip.id}/images/${image.id}`,
+    `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${trip.id}/images/${image.id}`,
     {
       method: 'PUT',
       headers: {
@@ -139,8 +139,9 @@ const updateImageMutation = async (image: Image, trip: Trip) => {
 // useQuery hook for updating image metadata with mutation
 export const UpdateImage = () => {
   return useMutation({
-    mutationFn: ({ image, trip }: { image: Image; trip: Trip }) =>
-      updateImageMutation(image, trip),
+    mutationFn: async ({ image, trip }: { image: Image; trip: Trip }) => {
+      return await updateImageMutation(image, trip);
+    },
     onSuccess: () => {
       //queryClient.invalidateQueries({ queryKey: ['images'] }); // invalidate the query cache
       //invalidate - then set the images to the new data
@@ -754,6 +755,9 @@ const init_state: PersistedSettings =
   typeof localStorage !== 'undefined'
     ? JSON.parse(localStorage.getItem('trip_view_settings') || '{}')
     : {};
+
+const viewport_bigger_than_600 = window.innerWidth > 600;
+
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
   filtering_images: init_state.filtering_images || false,
@@ -773,7 +777,8 @@ export const tripViewStore = new Store<StoreState>({
   image_heat_map: init_state.image_heat_map ?? true,
   paths_open: init_state.paths_open ?? true,
   comparing_photos: false,
-  horizontally_tabbed: init_state.horizontally_tabbed ?? true,
+  horizontally_tabbed:
+    init_state.horizontally_tabbed ?? viewport_bigger_than_600,
   scroll_to_image: null,
 
   adding_images: false,

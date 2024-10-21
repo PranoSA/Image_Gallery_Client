@@ -44,7 +44,7 @@ import FilteredCategoryForm from '@/components/Trip_View/FilteredCategoryForm';
 
 import ImagePreview from '../ImagePreview';
 
-import { HiOutlinePencil, HiEye } from 'react-icons/hi';
+import { HiOutlinePencil, HiEye, HiMap } from 'react-icons/hi';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 import { Image } from '@/definitions/Trip_View';
@@ -484,6 +484,15 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  const setShowOnMap = (image: Image) => {
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        scroll_to_image: image,
+      };
+    });
+  };
+
   //return gallery based on subranges
   return (
     <div className="p-4">
@@ -564,6 +573,14 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           size={24}
                         />
                       </div>
+                      <HiMap
+                        onClick={() => {
+                          setSelectedImageLocation(image);
+                          setShowOnMap(image);
+                        }}
+                        className="cursor-pointer ml-2"
+                        size={24}
+                      />
                       <div className="mt-2 text-center text-sm font-medium text-gray-700">
                         {image.name}
                       </div>
