@@ -121,7 +121,12 @@ export default PageWithProvider;
 function Page() {
   const { id, bearer_token, setBearerToken } = useTripContext();
 
-  const [galleryHeight, setGalleryHeight] = useState(400); // Initial height of the gallery
+  const screen_height =
+    typeof window !== 'undefined' ? window.innerHeight : 1000;
+
+  const [galleryHeight, setGalleryHeight] = useState(
+    Math.min(400, screen_height / 2)
+  ); // Initial height of the gallery
   const prevGalleryHeight = useRef<number>(galleryHeight);
 
   //width of the gallery
@@ -441,6 +446,8 @@ function Page() {
               console.log('atMostScreenWidth:', atMostScreenWidth);
 
               setGalleryWidth(atMostScreenWidth);
+
+              prevGalleryWidth.current = atMostScreenWidth;
             }}
             onResize={(e, direction, ref, d) => {
               //make sure its not less than 100px
@@ -485,13 +492,16 @@ function Page() {
           onResizeStop={(e, direction, ref, d) => {
             //set minmum size 50px
 
-            setGalleryHeight(
-              Math.max(150, prevGalleryHeight.current + d.height)
-            );
-            prevGalleryHeight.current = Math.max(
-              150,
-              prevGalleryHeight.current + d.height
-            );
+            const min_gallery_height = 150;
+            const max_gallery_height = screen_height - 150;
+
+            const new_height = prevGalleryHeight.current + d.height;
+            const atLeast150 = Math.max(min_gallery_height, new_height);
+            const atMostScreenHeight = Math.min(max_gallery_height, atLeast150);
+
+            setGalleryHeight(atMostScreenHeight);
+
+            prevGalleryHeight.current = atMostScreenHeight;
           }}
           onResize={(e, direction, ref, d) => {
             setGalleryHeight(prevGalleryHeight.current + d.height);
