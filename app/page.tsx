@@ -17,7 +17,10 @@ import './page.css';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { QueryClient } from '@tanstack/react-query';
 
-import { useAddImage } from '@/components/Trip_View/Trip_View_Image_Store';
+import {
+  useAddImage,
+  useGetUploadProgress,
+} from '@/components/Trip_View/Trip_View_Image_Store';
 import AddImagesForm from '../components/Trip_View/AddImagesForm';
 import { Category, Image, Trip } from '@/definitions/Trip_View';
 import { useFetchMyTrips } from '@/components/Trip_View/Trip_View_Image_Store';
@@ -320,10 +323,10 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     'uploading' | 'error' | 'success' | 'none'
   >('none');
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setImageUploadState('uploading');
     e.preventDefault();
-    handleSubmitImages(e);
+    await handleSubmitImages(e);
   };
 
   const [totalSize, setTotalSize] = useState(0);
@@ -337,6 +340,12 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     }
     setTotalSize(size);
   };
+
+  const {
+    data: upload_progress,
+    status: upload_progress_status,
+    error: upload_progress_error,
+  } = useGetUploadProgress();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -382,6 +391,16 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
               <p className="text-red-500">Total size exceeds 100 MB limit!</p>
             )}
           </div>
+          {/* Upload progress */}
+          {/* print the number of value*/}
+          {
+            <div className="progress-bar">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${upload_progress?.progress}%` }}
+              ></div>
+            </div>
+          }
         </form>
       </div>
     </div>
@@ -398,6 +417,12 @@ const TripListCompontent = () => {
   const [editTrip, setEditTrip] = useState<boolean>(false);
   const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
   const [editTripError, setEditTripError] = useState<string | null>(null);
+
+  const {
+    data: upload_progress,
+    status: upload_progress_status,
+    error: upload_progress_error,
+  } = useGetUploadProgress();
 
   //id of trip to invite user to
   // if null, then no form is shown

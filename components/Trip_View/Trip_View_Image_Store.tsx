@@ -208,6 +208,12 @@ const addImages = async (
   id: string
 ): Promise<Image | null> => {
   //this was done through multipart-form
+
+  //set upload progress to 0
+  queryClient.setQueryData(['trip', id, 'images', 'uploading'], {
+    progress: 0,
+  });
+
   try {
     const res = await axios.post(
       `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${id}/images/`,
@@ -216,6 +222,21 @@ const addImages = async (
         headers: {
           Authorization: `Bearer ${getBearerFromLocalStorage()}`,
           'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          //set query key ['trip', trip_id, 'images', 'uploading']
+          //queryClient.setQueryData(['trip', id, 'images', 'uploading'], {
+          //  progress: progressEvent.loaded / progressEvent.total,
+          //});
+
+          const upload_percentage = progressEvent.loaded;
+
+          console.log('Upload Percentage:', upload_percentage);
+
+          //set the upload percentage
+          queryClient.setQueryData(['trip', 'images', 'uploading'], {
+            progress: upload_percentage,
+          });
         },
       }
     );
@@ -226,6 +247,17 @@ const addImages = async (
     console.error('Error uploading images:', error);
   }
   return null;
+};
+
+export const useGetUploadProgress = () => {
+  return useQuery({
+    queryKey: ['trip', 'images', 'uploading'],
+    queryFn: async () => {
+      return {
+        progress: 0,
+      };
+    },
+  });
 };
 
 //['trip', trip_id, 'images']
