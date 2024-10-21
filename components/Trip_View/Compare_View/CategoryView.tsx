@@ -518,6 +518,7 @@ const ImageItemClosed = ({
         alt={`Image for ${image.created_at}`}
         layout="fill"
         objectFit="contain"
+        sizes="64px"
       />
     </div>
   );
@@ -561,6 +562,7 @@ const ImageItem = ({
         className="h-[128px]"
         layout="fill"
         objectFit="contain"
+        sizes="128px"
       />
     </div>
   );

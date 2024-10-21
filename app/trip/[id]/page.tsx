@@ -21,8 +21,6 @@ import TripContext from '@/components/TripContext';
 //back arrow icon
 import { FaArrowLeft, FaDownload, FaHome, FaPlus } from 'react-icons/fa';
 
-import CategoryViewOld from '@/components/Trip_View/Compare_View/CategoryViewOld';
-
 //comparison or swap icon
 import { FaExchangeAlt } from 'react-icons/fa';
 
