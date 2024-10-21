@@ -2,7 +2,7 @@
 
 import '@/globals.css';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
@@ -347,6 +347,17 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
     error: upload_progress_error,
   } = useGetUploadProgress();
 
+  useEffect(() => {
+    console.log('Upload Progress:', upload_progress);
+  }, [upload_progress]);
+
+  const progress_percenta = useMemo(() => {
+    const megabytes_completed =
+      (upload_progress?.progress || 0) / (1024 * 1024);
+    const megabytes_total = totalSize / (1024 * 1024);
+    return Math.floor((megabytes_completed / megabytes_total) * 100);
+  }, [upload_progress, totalSize]);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -395,10 +406,23 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
           {/* print the number of value*/}
           {
             <div className="progress-bar">
+              <h1> {progress_percenta}%</h1>
+
               <div
-                className="progress-bar-fill"
+                className="progress-bar-fill bg-green-500"
                 style={{ width: `${upload_progress?.progress}%` }}
               ></div>
+            </div>
+          }
+          {
+            <div>
+              <h1>
+                {' '}
+                {Math.floor(
+                  (upload_progress?.progress || 0) / (1024 * 1024)
+                )}{' '}
+                MB / {Math.floor(totalSize / (1024 * 1024))} MB
+              </h1>
             </div>
           }
         </form>
@@ -638,8 +662,10 @@ const TripListCompontent = () => {
     }
 
     try {
-      const image = await addImage.mutate({ formData, id });
+      console.log('Start Add Image');
+      await addImage.mutateAsync({ formData, id });
 
+      console.log('End Add Image');
       //add
     } catch (error) {
       console.error('Error uploading images:', error);

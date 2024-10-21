@@ -210,7 +210,7 @@ const addImages = async (
   //this was done through multipart-form
 
   //set upload progress to 0
-  queryClient.setQueryData(['trip', id, 'images', 'uploading'], {
+  queryClient.setQueryData(['trip', 'images', 'uploading'], {
     progress: 0,
   });
 
@@ -333,8 +333,15 @@ export const useDeleteImage = () => {
 
 export const useAddImage = () => {
   return useMutation({
-    mutationFn: ({ formData, id }: { formData: FormData; id: string }) => {
-      return addImages(formData, id);
+    mutationFn: async ({
+      formData,
+      id,
+    }: {
+      formData: FormData;
+      id: string;
+    }) => {
+      const images = await addImages(formData, id);
+      return images;
     },
     onSuccess: (data) => {
       //queryClient.invalidateQueries({ queryKey: ['images'] });
