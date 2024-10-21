@@ -774,6 +774,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}
+                          sizes="(max-width: 500px) 100vw, 500px"
                           onLoad={(e) => {
                             console.log('Image Loaded', e);
                           }}

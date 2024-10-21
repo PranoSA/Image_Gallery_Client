@@ -427,7 +427,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                   <div
                     key={image.id}
                     className={`relative flex flex-col  h-100% ${
-                      horizontally_tabbed ? 'w-1/4' : 'w-1/4'
+                      horizontally_tabbed ? 'w-1/2 xl:w-1/4' : 'w-1/2 xl:w-1/4'
                     } bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]`}
                     style={{
                       border:
