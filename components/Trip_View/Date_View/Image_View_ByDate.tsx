@@ -426,9 +426,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 return (
                   <div
                     key={image.id}
-                    className={`relative flex flex-col  h-100% ${
-                      horizontally_tabbed ? 'w-1/2 xl:w-1/4' : 'w-1/2 xl:w-1/4'
-                    } bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]`}
+                    className={`relative flex flex-col  h-100% bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]`}
                     style={{
                       border:
                         selected_image_location &&
@@ -443,7 +441,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px]  "
+                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px] min-w-[200px] "
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
