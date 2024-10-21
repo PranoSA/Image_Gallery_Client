@@ -514,11 +514,9 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 return (
                   <div
                     key={image.id}
-                    className={`relative flex flex-col items-center ${
-                      horizontally_tabbed
-                        ? 'w-1/3 xl:w-1/4'
-                        : 'w-1/3 lg:w-1/4 xl:w-1/6'
-                    }  bg-white rounded-lg shadow-lg border border-gray-300`}
+                    className={`relative flex flex-col  h-100% ${
+                      horizontally_tabbed ? 'w-1/2 xl:w-1/4' : 'w-1/2 xl:w-1/4'
+                    } bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]`}
                     style={{
                       border:
                         selected_image_location &&
@@ -529,11 +527,11 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                   >
                     <div
                       key={image.id}
-                      className="relative w-full flex flex-col items-center p-4 bg-white rounded-lg shadow-lg border border-gray-300"
+                      className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300"
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="w-32  flex items-center justify-center bg-gray-100 p-1 border "
+                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px]  "
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
@@ -544,6 +542,8 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           style={{
                             cursor: 'pointer',
                             margin: '10px',
+                            //allign self to center
+                            justifySelf: 'flex-end',
                           }}
                         />
                       </div>
