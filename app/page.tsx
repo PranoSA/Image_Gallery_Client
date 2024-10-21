@@ -324,9 +324,15 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
   >('none');
 
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    //check if already uploading
+    if (imageUploadState === 'uploading') {
+      return;
+    }
+
     setImageUploadState('uploading');
     e.preventDefault();
     await handleSubmitImages(e);
+    setImageUploadState('success');
   };
 
   const [totalSize, setTotalSize] = useState(0);
