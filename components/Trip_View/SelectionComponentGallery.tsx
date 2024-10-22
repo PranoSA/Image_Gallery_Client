@@ -76,6 +76,25 @@ const SelectionComponentGallery = () => {
     error: imagesError,
   } = useQueryTripImages(useContext(TripContext).id);
 
+  //find the earliest date
+  useEffect(() => {
+    if (!images) return;
+
+    let earliest_date = new Date(images[0].created_at);
+
+    images.forEach((image) => {
+      const current_date = new Date(image.created_at);
+
+      if (current_date < earliest_date) {
+        earliest_date = current_date;
+      }
+    });
+
+    CompareViewStore.setState((state) => {
+      return { ...state, untimed_trips_selected_date: earliest_date };
+    });
+  }, [images]);
+
   const [openCalendar, setOpenCalendar] = useState(false);
 
   const candidate_dates = useMemo(() => {
@@ -247,6 +266,7 @@ const SelectionComponentGallery = () => {
                       setOpenCalendar(false);
                     }}
                     tileDisabled={tileDisabled}
+                    value={CompareViewStore.state.untimed_trips_selected_date}
                     onActiveStartDateChange={(date) => {
                       console.log('Active Start Date Change', date);
 
@@ -324,7 +344,10 @@ const SelectionComponentGallery = () => {
         {
           //trip.untimed_trips ? <TimeViewGalleryUntimed /> : <TimeViewGallery />
           trip?.untimed_trips ? (
-            <div className="  justify-center w-full h-full bg-white rounded-b-lg shadow-lg border border-gray-300">
+            <div
+              className="  justify-center w-full h-full bg-white rounded-b-lg shadow-lg border border-gray-300"
+              style={{ maxHeight: 'calc(100vh - 60px)' }}
+            >
               {date_or_time_view === 'time' ? (
                 <TimeViewGalleryUntimed />
               ) : (
