@@ -62,6 +62,7 @@ type TripSubmitState = {
   start_date: string;
   end_date: string;
   categories: Category[];
+  untimed_trips: boolean;
 };
 
 function Home() {
@@ -71,6 +72,7 @@ function Home() {
     start_date: '',
     end_date: '',
     categories: [],
+    untimed_trips: false,
   });
   const [showForm, setShowForm] = useState(false);
 
@@ -128,6 +130,7 @@ function Home() {
         start_date: '',
         end_date: '',
         categories: [],
+        untimed_trips: false,
       });
       setShowForm(false);
       // Fetch trips again to update the list
@@ -167,6 +170,11 @@ function Home() {
   }
 
   // show invite modal if inviteForm is not null
+
+  const toggleNewTrip = () => {
+    //set untimed_trips to !untimed_trips
+    setNewTrip((prev) => ({ ...prev, untimed_trips: !prev.untimed_trips }));
+  };
 
   return (
     <div className="flex flex-wrap flex-row justify-around ">
@@ -238,40 +246,67 @@ function Home() {
                   required
                 />
               </div>
-              <div className="mb-4">
+              <div className="mb-4 flex flex-col items-center">
                 <label
                   className="block text-sm font-bold mb-2"
-                  htmlFor="start_date"
+                  htmlFor="untimed_trips"
                 >
-                  Start Date
+                  Untimed Trips
                 </label>
-                <input
-                  type="date"
-                  id="start_date"
-                  name="start_date"
-                  value={newTrip.start_date}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
+                <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                  <input
+                    type="checkbox"
+                    id="untimed_trips"
+                    name="untimed_trips"
+                    checked={newTrip.untimed_trips}
+                    onChange={() => toggleNewTrip()}
+                    className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                  />
+                  <label
+                    htmlFor="untimed_trips"
+                    className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                  ></label>
+                </div>
               </div>
-              <div className="mb-4">
-                <label
-                  className="block text-sm font-bold mb-2"
-                  htmlFor="end_date"
-                >
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  id="end_date"
-                  name="end_date"
-                  value={newTrip.end_date}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded"
-                  required
-                />
-              </div>
+
+              {!newTrip.untimed_trips && (
+                <>
+                  <div className="mb-4">
+                    <label
+                      className="block text-sm font-bold mb-2"
+                      htmlFor="start_date"
+                    >
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      id="start_date"
+                      name="start_date"
+                      value={newTrip.start_date}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border rounded"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label
+                      className="block text-sm font-bold mb-2"
+                      htmlFor="end_date"
+                    >
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      id="end_date"
+                      name="end_date"
+                      value={newTrip.end_date}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border rounded"
+                      required
+                    />
+                  </div>
+                </>
+              )}
               <div className="flex justify-end">
                 <button
                   type="button"
@@ -733,13 +768,15 @@ const TripListCompontent = () => {
                 </h2>
               </Link>
             </div>
-            <p className="font-bold text-center">
-              {trip.start_date} - {trip.end_date}
-            </p>
+            {!trip.untimed_trips && (
+              <p className="font-bold text-center">
+                {trip.start_date} - {trip.end_date}
+              </p>
+            )}
             <p className="text-gray-600 mt-1 mb-4">{trip.description}</p>
             <ScrollableImageBar trip_id={trip.id} />
 
-            <div className="flex justify-between mt-auto space-x-2 flex-row w-full justify-between">
+            <div className="flex justify-between mt-au)to space-x-2 flex-row w-full justify-between">
               <FaUserPlus
                 className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
                 onClick={() => setInviteForm(trip)}

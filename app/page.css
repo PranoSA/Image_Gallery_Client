@@ -25,3 +25,46 @@
 .scrollbar-class::-webkit-scrollbar-track {
   background: #333;
 }
+
+/* Add this to your global CSS file */
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: #68d391;
+  background-color: #68d391;
+}
+
+.toggle-checkbox:checked + .toggle-label {
+  background-color: #68d391;
+}
+
+.toggle-checkbox {
+  right: 0;
+  border-color: #d1d5db;
+  background-color: #d1d5db;
+}
+
+.toggle-label {
+  background-color: #d1d5db;
+}
+
+.toggle-checkbox:checked {
+  transform: translateX(100%);
+}
+
+.toggle-checkbox {
+  transition: transform 0.2s ease-in-out;
+}
+
+.toggle-checkbox:checked + .toggle-label::before {
+  transform: translateX(100%);
+}
+
+.toggle-label::before {
+  content: '';
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease-in-out;
+}

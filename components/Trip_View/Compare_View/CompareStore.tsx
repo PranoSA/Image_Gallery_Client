@@ -27,6 +27,8 @@ type CompareViewStoreType = {
   filtered_image_indexes: number[]; //This only applies if mode is filter
 
   add_category_modal_open: boolean;
+
+  untimed_trips_selected_date: Date;
 };
 
 const InitialValue: CompareViewStoreType = {
@@ -35,10 +37,13 @@ const InitialValue: CompareViewStoreType = {
   compared_image_indexes: [],
   filtered_image_indexes: [],
   add_category_modal_open: false,
+  untimed_trips_selected_date: new Date('1970-01-01'),
 };
 
 //create the store
-export const CompareViewStore = new Store(InitialValue);
+export const CompareViewStore: Store<CompareViewStoreType> = new Store(
+  InitialValue
+);
 
 //use the store in the component
 export const useCompareViewStore = () => {

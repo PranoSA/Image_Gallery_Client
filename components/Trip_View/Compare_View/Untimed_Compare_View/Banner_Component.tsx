@@ -19,7 +19,8 @@ import TripContext from '@/components/TripContext';
 import {
   CompareViewStore,
   useCompareViewStore,
-} from './Compare_View/CompareStore';
+} from '@/components/Trip_View/Compare_View/CompareStore';
+import { copyFile } from 'fs';
 
 type BanngerComponentProps = {
   go_to_next_available_image?: boolean; //default is false
@@ -29,8 +30,7 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
   go_to_next_available_image = false,
 }) => {
   //get the information about the trip and the current_date
-  const { selected_date, editingDaySummary, date_or_time_view } =
-    useTripViewStore();
+  const { editingDaySummary } = useTripViewStore();
 
   const { untimed_trips_selected_date } = useCompareViewStore();
 
@@ -47,14 +47,8 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
   const { data: trip, isLoading, error } = useQueryTrip(selected_trip_id);
 
   const selectedDateToDayOfYear = () => {
-    if (!trip) {
-      //return epoch time
-      return new Date().toISOString().split('T')[0];
-    }
-    const startDate = new Date(trip?.start_date);
-    startDate.setDate(startDate.getDate() + selected_date);
     //return string version of the current date
-    return new Date(startDate).toISOString().split('T')[0];
+    return untimed_trips_selected_date.toISOString().split('T')[0];
   };
 
   const { data: daySummary, isLoading: daySummaryLoading } = useQueryDaySummary(
@@ -65,34 +59,13 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
   const [daySummaryFormInput, setDaySummaryFormInput] = useState('');
 
   const currentDay = useMemo(() => {
-    // get the selected_day and subtract from the start_date of the trip
-    //ignore time zone - everytjhin is in UTC
-    // and has no time zone information
+    //get the untimed_trips_selected_date
+    const selected_date = untimed_trips_selected_date;
 
-    const start_date = trip?.start_date || '1970-01-01';
-
-    const trip_start_date = new Date(start_date);
-    trip_start_date.setDate(trip_start_date.getDate() + selected_date);
-
-    //add offset from UTC in current time-zoen - to accurately translate what it isin== UTC to the current time zone
-    const offset_minutes = trip_start_date.getTimezoneOffset();
-
-    //add the offset to the start_date
-    trip_start_date.setMinutes(trip_start_date.getMinutes() + offset_minutes);
-
-    return trip_start_date.toDateString();
-
-    const [year, month, day] = start_date.split('-').map(Number);
-
-    const date = new Date(Date.UTC(year, month - 1, day));
-
-    date.setDate(date.getDate() + selected_date);
-
-    //convert back to UTC date
-
-    //return UTC string Day of Week, Month Day, Year
-    return date.toUTCString().split(' ').slice(0, 4).join(' ');
-  }, [selected_date, trip]);
+    console.log('Selected Date', selected_date.toString());
+    console.log(selected_date.toISOString().split('T')[0]);
+    return selected_date.toISOString().split('T')[0];
+  }, [untimed_trips_selected_date]);
 
   useEffect(() => {
     if (daySummary && !daySummaryLoading) {
@@ -134,50 +107,60 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
   );*/
 
   const handleDayChange = (direction: 'prev' | 'next') => {
-    if (go_to_next_available_image) {
-      //find the next available date with images
+    //absolutely unnecessary to use get_images_for_day
+    console.log(untimed_trips_selected_date);
+    const day_value =
+      untimed_trips_selected_date.getDate() +
+      365 * untimed_trips_selected_date.getFullYear();
+    console.log('Day Value Today', day_value);
+    if (!images) return;
 
-      // go 1 by 1 in the images, until you find a date after the current date
-      // then set the selected_date to that date
+    //reverse the images array [latest image first] for this purpose
+    const images_reversed = images.slice().reverse();
 
-      //absolutely unnecessary to use get_images_for_day
-      const selected_date = untimed_trips_selected_date;
-      const day_value = selected_date.getDay();
-      if (!images) return;
-      for (var image of images) {
+    if (direction === 'prev') {
+      for (var image of images_reversed) {
         //find image with the date (as in the day) that is after the current date
-        const image_day = image.created_at.getDay();
+        const image_day =
+          image.created_at.getDate() + 365 * image.created_at.getFullYear();
 
-        if (image_day > day_value) {
+        if (image_day < day_value) {
+          console.log('Found Prev Image');
+          console.log(image);
+          console.log('Day Value Image', day_value);
           CompareViewStore.setState((state) => {
             return {
               ...state,
-              untimed_trips_selected_date: new Date(image.created_at),
+              untimed_trips_selected_date: image.created_at,
             };
           });
+          return;
         }
-        return;
+      }
+    } else {
+      for (var image of images) {
+        //find image with the date (as in the day) that is after the current date
+        const image_day =
+          image.created_at.getDate() + 365 * image.created_at.getFullYear();
+
+        if (image_day > day_value) {
+          console.log('Found Next Image');
+          console.log(image);
+          console.log('Day Value Image', day_value);
+          CompareViewStore.setState((state) => {
+            return {
+              ...state,
+              untimed_trips_selected_date: image.created_at,
+            };
+          });
+          return;
+        }
       }
     }
-
-    const newDate = new Date(selected_date);
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 1);
-    }
-    tripViewStore.setState((state) => {
-      return {
-        ...state,
-        selected_date:
-          direction === 'prev'
-            ? state.selected_date - 1
-            : state.selected_date + 1,
-      };
-    });
   };
 
   function submitDayDescription(event: React.MouseEvent<HTMLButtonElement>) {
+    return; // for now, just ignore this stuff
     event.preventDefault();
 
     //use the mutation hook
@@ -198,37 +181,17 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
     setDaySummaryFormInput(daySummaryFormInput);
   }
 
-  const total_days = () => {
-    if (!trip) {
-      return 0;
-    }
-
-    const start_date = new Date(trip?.start_date);
-    const end_date = new Date(trip?.end_date);
-
-    const elapsed = end_date.getTime() - start_date.getTime();
-
-    return Math.ceil(elapsed / (1000 * 3600 * 24)) + 1;
-  };
-
   return (
     <div className="flex justify-around items-center mb-4 p=5">
       <FaChevronLeft
         onClick={() => {
-          if (selected_date !== 0) {
-            handleDayChange('prev');
-          }
+          handleDayChange('prev');
         }}
-        className={`cursor-pointer ${
-          selected_date === 0 ? 'cursor-not-allowed opacity-50' : ''
-        }`}
+        className={`cursor-pointer `}
       />
 
       <div className="flex flex-col items-center justify-center h-full">
         <div className="w-full flex flex-col items-center">
-          <span className="w-full text-center">
-            Day # {selected_date + 1} / {total_days()}
-          </span>
           <div className="text-2xl font-bold mb-4">{currentDay.toString()}</div>
         </div>
         {/* Display the Day Summary, and then allow editing of it */}
@@ -263,15 +226,9 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
       </div>
       <FaChevronRight
         onClick={() => {
-          if (selected_date < total_days() - 1) {
-            handleDayChange('next');
-          }
+          handleDayChange('next');
         }}
-        className={`cursor-pointer ${
-          selected_date >= total_days() - 1
-            ? 'cursor-not-allowed opacity-50'
-            : ''
-        }`}
+        className={`cursor-pointer`}
       />
     </div>
   );

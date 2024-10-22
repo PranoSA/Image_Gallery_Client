@@ -1,5 +1,5 @@
 .scrollable-container {
-  max-height: 500px; /* Set a fixed vertical size */
+  /* max-height: 500px; /* Set a fixed vertical size */
   overflow-y: auto; /* Make it scrollable */
   border: 1px solid #ccc; /* Optional: Add a border for better visibility */
   padding: 10px; /* Optional: Add padding for better spacing */
@@ -29,7 +29,7 @@
 .content-container {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  /*flex-grow: 1;*/
   overflow: hidden;
 }
 

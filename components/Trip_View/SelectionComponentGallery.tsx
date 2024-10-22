@@ -9,15 +9,27 @@
       {view === 'time' ? TimeViewGallery({}) : Image_View_ByDate({})}
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 import Image_View_ByDate from '@/components/Trip_View/Date_View/Image_View_ByDate';
 import TimeViewGallery from '@/components/Trip_View/Time_View/Time_View_Gallery';
 
-import { FaClock, FaCalendar, FaPlus } from 'react-icons/fa';
+import Image_View_ByDateUntimed from './Date_View/ImageViewByDateUntimed';
+import TimeViewGalleryUntimed from './Time_View/TimeViewGalleryUntimed';
+
+import { CompareViewStore } from './Compare_View/CompareStore';
+
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+
+import { FaClock, FaCalendar, FaPlus, FaTimes } from 'react-icons/fa';
 
 import { useQuery } from '@tanstack/react-query';
-import { tripViewStore, useQueryTrip } from './Trip_View_Image_Store';
+import {
+  tripViewStore,
+  useQueryTrip,
+  useQueryTripImages,
+} from './Trip_View_Image_Store';
 
 import TripContext from '@/components/TripContext';
 import { useContext } from 'react';
@@ -36,6 +48,12 @@ const SelectionComponentGallery = () => {
   const { date_or_time_view } = useTripViewStore();
   const store = tripViewStore;
 
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    error: tripError,
+  } = useQueryTrip(useContext(TripContext).id);
+
   const setView = (view: 'date' | 'time') => {
     store.setState((state) => {
       return { ...state, date_or_time_view: view };
@@ -52,11 +70,79 @@ const SelectionComponentGallery = () => {
     }
   };
 
+  const {
+    data: images,
+    isLoading: imagesLoading,
+    error: imagesError,
+  } = useQueryTripImages(useContext(TripContext).id);
+
+  const [openCalendar, setOpenCalendar] = useState(false);
+
+  const candidate_dates = useMemo(() => {
+    //Pretty much, return a list of every unique date in the images
+
+    const unique_dates: Date[] = [];
+
+    if (!images) return [];
+
+    let last_saw_date = new Date(images[0].created_at);
+
+    unique_dates.push(last_saw_date);
+
+    images.forEach((image) => {
+      const current_date = new Date(image.created_at);
+
+      if (current_date.toDateString() !== last_saw_date.toDateString()) {
+        unique_dates.push(current_date);
+        last_saw_date = current_date;
+      }
+    });
+
+    return unique_dates;
+  }, [images]);
+
+  const handleDateChange = (date: Date) => {
+    CompareViewStore.setState((state) => ({
+      ...state,
+      untimed_trips_selected_date: date,
+    }));
+  };
+
+  const innerMinusOuter = () => {
+    const outer = document.getElementById('outer');
+    const inner = document.getElementById('inner');
+
+    if (outer && inner) {
+      outer.scrollTop = inner.offsetTop - 100;
+    }
+  };
+
+  const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
+    // Disable tiles that are not in candidateDates
+    if (view === 'month') {
+      const candidateDates = candidate_dates;
+
+      return !candidateDates.some(
+        (candidateDate) =>
+          candidateDate.getFullYear() === date.getFullYear() &&
+          candidateDate.getMonth() === date.getMonth() &&
+          candidateDate.getDate() === date.getDate()
+      );
+    }
+    return false;
+  };
+
   return (
-    <div className="text-center ">
+    <div
+      className="text-center w-full flex flex-wrap max-h-full h-full "
+      id="outer"
+    >
       {/* Should be Singular Row with justify space around*/}
-      <div className="w-full flex flex-row items-center overflow-x-scroll ">
-        <div className=" flex justify-center p-8">
+      <div
+        id="outer"
+        className="w-full flex flex-row items-center overflow-x-scroll "
+      >
+        <div className=" flex justify-center pl-8 pr-8">
           <div className="relative inline-flex items-center ">
             <input
               type="checkbox"
@@ -95,7 +181,7 @@ const SelectionComponentGallery = () => {
             </label>
           </div>
         </div>
-        <div className="flex flex-col items-center justify-center p-5">
+        <div className="flex items-center justify-center pl-5 pr-5">
           {/* Modal to Add New Images */}
           <AddImagesForm />
           {/* Plus Icon To Add New Image */}
@@ -115,7 +201,7 @@ const SelectionComponentGallery = () => {
             </button>
           </div>
         </div>
-        <div className="flex justify-center p-5">
+        <div className="flex justify-center pl-5 pr-5">
           {/* Div For Filtering Categories if filtering_selection, or a button to open it */}
           <div className="w-full flex justify-center">
             {store.state.selecting_category ? (
@@ -136,13 +222,125 @@ const SelectionComponentGallery = () => {
             )}
           </div>
         </div>
-      </div>
-      <div className=" w-full flex flex-wrap justify-center  bg-white rounded-b-lg shadow-lg border border-gray-300">
-        {date_or_time_view === 'time' ? (
-          <TimeViewGallery />
-        ) : (
-          <Image_View_ByDate />
+        {/* If Trip is untimed, add a calendar component that does this:
+          1. Blacks out dates without an image (only candidate dates available)
+          2. When selected -> sets compareViewStore -> untimed_trips_selected_date
+        */}
+        {trip?.untimed_trips && (
+          <div className="relative w-full flex justify-center p-4">
+            <FaCalendar onClick={() => setOpenCalendar(true)} />
+            {openCalendar && (
+              <div className="fixed inset-0 flex items-center justify-center z-50">
+                <div className="absolute inset-0 bg-black opacity-50"></div>
+                <div className="relative bg-white p-4 rounded-lg shadow-lg z-50">
+                  <div className="flex justify-end">
+                    <FaTimes
+                      onClick={() => setOpenCalendar(false)}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                  <Calendar
+                    onChange={(value, event) => {
+                      console.log(value);
+                      console.log('event', event);
+                      handleDateChange(value as Date);
+                      setOpenCalendar(false);
+                    }}
+                    tileDisabled={tileDisabled}
+                    onActiveStartDateChange={(date) => {
+                      console.log('Active Start Date Change', date);
+
+                      //disregard whether prev2 prev1, or next2, next1
+
+                      //return if activateStartDate is not a date
+                      if (!(date.activeStartDate instanceof Date)) return;
+
+                      //check if either prev1 or prev2
+                      if (date.action === 'prev' && date.view === 'month') {
+                        //set the month to the previous month where a candidate date exists
+                        const candidateDates = candidate_dates.reverse(); //-- should be in reverse order
+                        for (let candidateDate of candidateDates) {
+                          //check if the candidate date is before the activeStartDate
+                          if (candidateDate < date.activeStartDate) {
+                            date.activeStartDate.setMonth(
+                              candidateDate.getMonth()
+                            );
+                            date.activeStartDate.setFullYear(
+                              candidateDate.getFullYear()
+                            );
+                            return;
+                          }
+                        }
+                        //if all fail - you can set it to the last candidate date
+                        date.activeStartDate.setMonth(
+                          candidateDates[candidateDates.length - 1].getMonth()
+                        );
+                        date.activeStartDate.setFullYear(
+                          candidateDates[
+                            candidateDates.length - 1
+                          ].getFullYear()
+                        );
+                      }
+
+                      //check if either next1 or next2
+                      if (date.action === 'next' && date.view === 'month') {
+                        //set the month to the next month where a candidate date exists
+                        const candidateDates = candidate_dates;
+                        for (let candidateDate of candidateDates) {
+                          //check if the candidate date is before the activeStartDate
+                          if (candidateDate > date.activeStartDate) {
+                            date.activeStartDate.setMonth(
+                              candidateDate.getMonth()
+                            );
+                            date.activeStartDate.setFullYear(
+                              candidateDate.getFullYear()
+                            );
+                            return;
+                          }
+                        }
+                        //if all fail - you can set it to the last candidate date
+                        date.activeStartDate.setMonth(
+                          candidateDates[candidateDates.length - 1].getMonth()
+                        );
+                        date.activeStartDate.setFullYear(
+                          candidateDates[
+                            candidateDates.length - 1
+                          ].getFullYear()
+                        );
+                      }
+
+                      console.log('Active Start Date Change', date);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         )}
+      </div>
+      {/* Display untimed or timed based on trip field */}
+
+      <div className={`max-h-full flex flex-col flex-wrap w-full`}>
+        {
+          //trip.untimed_trips ? <TimeViewGalleryUntimed /> : <TimeViewGallery />
+          trip?.untimed_trips ? (
+            <div className="  justify-center w-full h-full bg-white rounded-b-lg shadow-lg border border-gray-300">
+              {date_or_time_view === 'time' ? (
+                <TimeViewGalleryUntimed />
+              ) : (
+                <Image_View_ByDateUntimed />
+              )}
+            </div>
+          ) : (
+            <div className=" w-full flex flex-wrap justify-center  bg-white rounded-b-lg shadow-lg border border-gray-300">
+              {date_or_time_view === 'time' ? (
+                <TimeViewGallery />
+              ) : (
+                <Image_View_ByDate />
+              )}
+            </div>
+          )
+        }
       </div>
     </div>
   );

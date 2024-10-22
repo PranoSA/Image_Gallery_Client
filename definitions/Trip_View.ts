@@ -33,6 +33,7 @@ interface Trip {
   images: Image[];
   paths: Path[];
   categories: Category[];
+  untimed_trips: boolean;
 }
 
 interface Path {

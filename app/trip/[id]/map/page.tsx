@@ -14,8 +14,10 @@ import '@/globals.css';
 import { TripDropdownMenu } from '@/components/Trip_View/TripDropdownOptions';
 
 import { Banner_Component } from '@/components/Trip_View/Banner_Component';
+import { Banner_Component as Banner_Component_Untimed } from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Banner_Component';
 
 import MapComponent from '@/components/Trip_View/MapComponent';
+import UntimedMapComponent from '@/components/Trip_View/UntimedMapComponent';
 
 import AddPathsForm from '@/components/Trip_View/AddPathsForm';
 import axios from 'axios';
@@ -234,8 +236,16 @@ function Page() {
 
   //store computed Banner Component
   const bannerComponent = useMemo(() => {
+    if (!trip) {
+      return <div></div>;
+    }
+
+    if (trip.untimed_trips) {
+      return <Banner_Component_Untimed />;
+    }
+
     return <Banner_Component />;
-  }, []);
+  }, [trip]);
 
   // if selecting the path, then it shows a pop up modal
 
@@ -397,7 +407,7 @@ function Page() {
   //The Resizable will be done left to right
   if (horizontally_tabbed) {
     return (
-      <div className="page-container">
+      <div className="page-container h-screen">
         <div
           className="z-100 absolute top-0 left-0"
           style={{ zIndex: 214748364 }}
@@ -417,9 +427,13 @@ function Page() {
           </div>
         </div>
 
-        <div className="content-container-horizontal h-screen flex ">
+        <div className="content-container-horizontal h-screen flex h-max-full ">
           <div className="MapComponent flex-grow">
-            <MapComponent height={`calc(100vh)`} />
+            {trip?.untimed_trips ? (
+              <UntimedMapComponent height={`calc(100vh)`} />
+            ) : (
+              <MapComponent height={`calc(100vh)`} />
+            )}
           </div>
 
           <Resizable
@@ -479,7 +493,7 @@ function Page() {
         <TripDropdownMenu />
       </div>
 
-      <div className="content-container">
+      <div className="content-container max-h-full">
         <div
           className="MapComponent"
           style={{ height: `calc(100vh - ${galleryHeight}px)` }}
@@ -499,6 +513,11 @@ function Page() {
             const atLeast150 = Math.max(min_gallery_height, new_height);
             const atMostScreenHeight = Math.min(max_gallery_height, atLeast150);
 
+            console.log(screen_height);
+            console.log(new_height);
+            console.log(atLeast150);
+            console.log(atMostScreenHeight);
+
             setGalleryHeight(atMostScreenHeight);
 
             prevGalleryHeight.current = atMostScreenHeight;
@@ -509,9 +528,17 @@ function Page() {
           style={{
             borderTop: '', // Add a top border
             cursor: 'row-resize',
+            maxHeight: `calc(100vh - 150px)`,
           }}
         >
-          <SelectionComponentGallery />
+          <div
+            style={{
+              maxHeight: `${galleryHeight}px`,
+              height: `${galleryHeight}px`,
+            }}
+          >
+            <SelectionComponentGallery />
+          </div>
         </Resizable>
       </div>
       {/*<AddPathsForm /> */}

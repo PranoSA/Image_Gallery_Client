@@ -56,11 +56,15 @@ import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedIm
 import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
 import SelectionCompare from '@/components/Trip_View/Compare_View/SelectionCompare';
 
+import CategoryViewUntimedTrips from '@/components/Trip_View/Compare_View/Untimed_Compare_View/CategoryViewUntimed';
+
 import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';
 import { useRouter } from 'next/router';
 import PlainView from '@/components/Trip_View/Compare_View/Plain_View';
 import { FaPencil } from 'react-icons/fa6';
 import { init } from 'next/dist/compiled/webpack/webpack';
+
+import PlainViewTimed from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Plain_View_Timed';
 
 const useTripContext = (): {
   id: string;
@@ -118,6 +122,12 @@ const Page = () => {
     compared_image_indexes,
     filtered_image_indexes,
   } = useCompareViewStore();
+
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    error: tripError,
+  } = useQueryTrip(id);
 
   const { selected_date } = useTripViewStore();
 
@@ -206,6 +216,27 @@ const Page = () => {
    */
 
   const renderContent = () => {
+    if (!trip) {
+      return <div>Loading...</div>;
+    }
+
+    if (trip.untimed_trips) {
+      switch (mode) {
+        case 'sort':
+          return <CategoryViewUntimedTrips />;
+        case 'undated':
+          return <UntimedImagesView />;
+        case 'unlocated':
+          return <UnlocatedImagesView />;
+        case 'view':
+          return <PlainViewTimed />;
+        case 'compare':
+          return <SelectionCompare />;
+        default:
+          return null;
+      }
+    }
+
     switch (mode) {
       case 'sort':
         return <CategoryView />;
