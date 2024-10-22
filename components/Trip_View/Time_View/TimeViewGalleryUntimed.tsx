@@ -123,7 +123,7 @@ const TimeViewGallery: React.FC = () => {
       });
 
     return unique_dates;
-  }, [images]);
+  }, [filtered_categories, images]);
 
   const groupedOrderedImagesByDay: ImagesByDay[] = useMemo(() => {
     const groupImagesByDay = (images: Image[] | undefined) => {
