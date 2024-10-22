@@ -99,18 +99,28 @@ const TimeViewGallery: React.FC = () => {
 
     if (!images) return [];
 
-    let last_saw_date = new Date(images[0].created_at);
+    const filtered_images = images.filter((image) => {
+      return !filtered_categories.includes(image.category || '');
+    });
+
+    if (filtered_images.length === 0) return [];
+
+    let last_saw_date = new Date(filtered_images[0].created_at);
 
     unique_dates.push(last_saw_date);
 
-    images.forEach((image) => {
-      const current_date = new Date(image.created_at);
+    images
+      .filter((image) => {
+        return !filtered_categories.includes(image.category || '');
+      })
+      .forEach((image) => {
+        const current_date = new Date(image.created_at);
 
-      if (current_date.toDateString() !== last_saw_date.toDateString()) {
-        unique_dates.push(current_date);
-        last_saw_date = current_date;
-      }
-    });
+        if (current_date.toDateString() !== last_saw_date.toDateString()) {
+          unique_dates.push(current_date);
+          last_saw_date = current_date;
+        }
+      });
 
     return unique_dates;
   }, [images]);
@@ -134,11 +144,15 @@ const TimeViewGallery: React.FC = () => {
       return image_date.toDateString() === date.toDateString();
     });
         */
-        const imagesForDay = images.filter((image) => {
-          const image_date = new Date(image.created_at);
-          return image_date.toDateString() === date.toDateString();
-        });
-
+        const imagesForDay = images
+          .filter((image) => {
+            const image_date = new Date(image.created_at);
+            return image_date.toDateString() === date.toDateString();
+          })
+          .filter((image) => {
+            //make sure it is not one of the filtered categories
+            return !filtered_categories.includes(image.category || '');
+          });
         const newr = imagesForDay.map((image, index) => {
           return {
             ...image,
@@ -158,7 +172,7 @@ const TimeViewGallery: React.FC = () => {
     };
 
     return groupImagesByDay(images);
-  }, [candidate_dates, images, trip]);
+  }, [candidate_dates, images, trip, filtered_categories]);
 
   const selectedDate = useMemo(() => {
     if (!trip) return new Date().toDateString();
@@ -554,7 +568,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px]  "
+                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px] min-w-[200px] "
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
@@ -584,20 +598,24 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           style={{ marginRight: '10px' }}
                         />
                         <HiEye
-                          onClick={() => setPreviewImage(i)}
+                          onClick={() =>
+                            setPreviewImage(
+                              images.findIndex((img) => img.id === image.id)
+                            )
+                          }
                           className="cursor-pointer"
                           size={24}
                         />
+                        <HiMap
+                          onClick={() => {
+                            setSelectedImageLocation(image);
+                            setShowOnMap(image);
+                          }}
+                          className="cursor-pointer ml-2"
+                          size={24}
+                        />
                       </div>
-                      <HiMap
-                        onClick={() => {
-                          setSelectedImageLocation(image);
-                          setShowOnMap(image);
-                        }}
-                        className="cursor-pointer ml-2"
-                        size={24}
-                      />
-                      <div className="mt-2 text-center text-sm font-medium text-gray-700">
+                      <div className="mt-2 text-center text-sm font-medium text-gray-700 justify-self-end">
                         {image.name}
                       </div>
                     </div>
