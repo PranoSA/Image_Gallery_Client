@@ -41,6 +41,7 @@ import { dateFromString } from './Time_Functions';
 
 import CategoryLegendAndPoints from '@/components/Trip_View/Time_View/CategoryLegendAndPoints';
 import CategoryLegendAndPointsUntimed from './CategoryLegendAndPointsUntimed';
+import { CompareViewStore } from './Compare_View/CompareStore';
 
 type MapProps = {
   height?: string;
@@ -64,7 +65,7 @@ type MapProps = {
  * @returns
  */
 
-export default function MapComponent<MapProps>({ height = '50vh' }) {
+export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   //get td from context
   const { id } = useContext(TripContext);
 
@@ -82,6 +83,54 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   const categoryImageLayer = useRef<VectorLayer>(new VectorLayer());
 
   const [zoom, setZoom] = useState<number>(0);
+
+  //when map loads, add a click listener to the map
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    //add listener
+    mapInstanceRef.current.on('click', (event) => {
+      //get the feature at the clicked location
+      const feature = mapInstanceRef.current?.forEachFeatureAtPixel(
+        event.pixel,
+        (feature) => feature
+      );
+
+      console.log('Feature', feature);
+
+      if (feature) {
+        //show the modal
+        //set the path to the selected path
+        //set the modal to open
+
+        //see if there is an image at the clicked location
+        const images = imageState.data;
+
+        if (!images) return;
+
+        const image = images.find((image) => {
+          const point = [parseFloat(image.long), parseFloat(image.lat)];
+          const transformed_point = fromLonLat(point);
+
+          return (
+            transformed_point[0] === event.coordinate[0] &&
+            transformed_point[1] === event.coordinate[1]
+          );
+        });
+
+        if (image) {
+          CompareViewStore.setState((state) => {
+            return { ...state, untimed_trips_selected_date: image.created_at };
+          });
+
+          //also set selected image location
+          tripViewStore.setState((state) => {
+            return { ...state, selected_image_location: image };
+          });
+        }
+      }
+    });
+  }, [mapInstanceRef.current]);
 
   //get information about the day, the image_location
   // for the purpose of filtering paths and stuff and mapopen
@@ -388,6 +437,68 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     fetchKMLFiles();
   }, [selected_date, tripsState.data, pathState.data, paths_open]);
 
+  //add listener
+  mapInstanceRef.current?.on('click', (event) => {
+    console.log('Map Clicked');
+    //get the feature at the clicked location
+    const feature = mapInstanceRef.current?.forEachFeatureAtPixel(
+      event.pixel,
+      (feature) => feature
+    );
+
+    console.log('Feature', feature);
+
+    if (feature) {
+      //show the modal
+      //set the path to the selected path
+      //set the modal to open
+
+      //see if there is an image at the clicked location
+      const images = imageState.data;
+
+      if (!images) return;
+
+      const geometry = feature.getGeometry();
+      if (geometry instanceof Point) {
+        console.log('feature geometry', geometry.getCoordinates());
+      }
+
+      if (!(geometry instanceof Point)) return;
+
+      const coordinates = geometry.getCoordinates();
+
+      const image = images.find((image) => {
+        const point = [parseFloat(image.long), parseFloat(image.lat)];
+        const transformed_point = fromLonLat(point);
+
+        console.log('transformed_point', transformed_point);
+        console.log('coordinates', coordinates);
+
+        return (
+          transformed_point[0] === coordinates[0] &&
+          transformed_point[1] === coordinates[1]
+        );
+
+        return (
+          transformed_point[0] === event.coordinate[0] &&
+          transformed_point[1] === event.coordinate[1]
+        );
+      });
+
+      console.log('image', image);
+
+      if (image) {
+        CompareViewStore.setState((state) => {
+          return { ...state, untimed_trips_selected_date: image.created_at };
+        });
+
+        //also set selected image location
+        tripViewStore.setState((state) => {
+          return { ...state, selected_image_location: image };
+        });
+      }
+    }
+  });
   // What is this for??
   mapInstanceRef.current?.on('click', (event) => {
     //get the feature at the clicked location
