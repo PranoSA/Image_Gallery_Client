@@ -210,6 +210,15 @@ const TimeViewGallery: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedDate && dateRefs.current[selectedDate]) {
+      dateRefs.current[selectedDate].scrollIntoView({
+        behavior: 'instant',
+        block: 'start',
+      });
+    }
+  }, [selectedDate]);
+
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const containerTop = event.currentTarget.getBoundingClientRect().top;
     const threshold = 50; // Adjust this value as needed
