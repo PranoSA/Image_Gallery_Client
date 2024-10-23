@@ -467,7 +467,7 @@ const ImageDragFolder = ({
 
   return (
     <div
-      className="w-1/3 grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+      className="w-full lg:w-1/2 xl:w-1/3 grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
       ref={dropRef}
     >
       <FaFolder className="text-6xl text-yellow-500 mr-2" />
