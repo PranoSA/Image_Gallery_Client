@@ -276,8 +276,8 @@ const Page = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 overflow-x-scroll">
-      <nav className="bg-blue-500 p-4 shadow-md w-full overflow-x-auto">
+    <div className="min-h-screen bg-gray-100 overflow-x-scroll dark:bg-black">
+      <nav className="bg-blue-500 p-4 shadow-md w-full overflow-x-auto dark:bg-blue-800">
         <div className="flex flex-nowrap items-center space-x-4">
           {/* Back button */}
           <FaHome
@@ -305,7 +305,9 @@ const Page = () => {
           </div>
           <button
             className={`px-4 py-2 rounded-lg text-white ${
-              mode === 'sort' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+              mode === 'sort'
+                ? 'bg-blue-700 dark:bg-blue-500'
+                : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-800'
             }`}
             onClick={() => setMode('sort')}
             title="Categorize Images"
@@ -315,8 +317,8 @@ const Page = () => {
           <button
             className={`px-4 py-2 rounded-lg text-white ${
               mode === 'undated'
-                ? 'bg-blue-700'
-                : 'bg-blue-500 hover:bg-blue-600'
+                ? 'bg-blue-700 dark:bg-blue-500'
+                : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-800'
             }`}
             onClick={() => setMode('undated')}
             title="View Images Without Date"
@@ -326,8 +328,8 @@ const Page = () => {
           <button
             className={`px-4 py-2 rounded-lg text-white ${
               mode === 'unlocated'
-                ? 'bg-blue-700'
-                : 'bg-blue-500 hover:bg-blue-600'
+                ? 'bg-blue-700 dark:bg-blue-500'
+                : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-800'
             }`}
             onClick={() => setMode('unlocated')}
             title="View Images Without Location"
@@ -336,7 +338,9 @@ const Page = () => {
           </button>
           <button
             className={`px-4 py-2 rounded-lg text-white ${
-              mode === 'view' ? 'bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'
+              mode === 'view'
+                ? 'bg-blue-700 dark:bg-blue-500'
+                : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-800'
             }`}
             onClick={() => setMode('view')}
             title="View All Sorted By Time"
@@ -346,7 +350,7 @@ const Page = () => {
           {/* Compare Button */}
           <div className="pr-4 pl-6">
             <FaExchangeAlt
-              className="bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg"
+              className="bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg dark:bg-blue-800"
               onClick={() => {
                 setMode('compare');
               }}
@@ -357,7 +361,7 @@ const Page = () => {
           {/* Map Icon + View Map*/}
           <div className="pr-4 pl-4">
             <FaMap
-              className="bg-blue-500 hover:bg-blue-600 text-white hover:text-black rounded-lg"
+              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-800 text-white hover:text-black rounded-lg"
               onClick={() => {
                 window.location.href = `/trip/${id}/map`;
               }}

@@ -52,6 +52,19 @@ const UntimedImagesView = () => {
   const untimedImages = useMemo(() => {
     if (!images || !trip) return [];
 
+    //if trip is untimed, only return images that have invalid dates or 1970-01-01 (timestamp value of 0)
+    if (trip.untimed_trips) {
+      return images.filter((image) => {
+        return (
+          image.created_at === null ||
+          image.created_at === undefined ||
+          (image.created_at.getFullYear() === 1970 &&
+            image.created_at.getMonth() === 0 &&
+            image.created_at.getDate() === 1)
+        );
+      });
+    }
+
     const trip_start = new Date(trip.start_date);
     const offset_minutes = trip_start.getTimezoneOffset();
     trip_start.setMinutes(trip_start.getMinutes() + offset_minutes);

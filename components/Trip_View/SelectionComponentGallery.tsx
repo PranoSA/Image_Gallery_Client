@@ -186,13 +186,13 @@ const SelectionComponentGallery = () => {
               </div>
               <div className="ml-3 text-gray-700 font-medium">
                 {date_or_time_view === 'time' ? (
-                  <div className="flex items-center gap-2">
-                    <FaClock size={30} />
+                  <div className="flex items-center gap-2 dark:text-white">
+                    <FaClock size={30} className="dark:text-white" />
                     Time View
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <FaCalendar size={30} />
+                  <div className="flex items-center gap-2 dark:text-white">
+                    <FaCalendar size={30} className="dark:text-white" />
                     Date View
                   </div>
                 )}

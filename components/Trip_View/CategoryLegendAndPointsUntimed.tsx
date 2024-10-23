@@ -446,12 +446,13 @@ const CategoryLegendComponent: React.FC<CategoryLegendComponentProps> = ({
   zoom_to_category,
 }) => {
   return (
-    <div className="absolute top-0 left-0 m-4 p-4 bg-white bg-opacity-75 rounded-lg shadow-lg w-1/3">
-      <h3 className="text-xl font-semibold mb-2">Categories</h3>
-
+    <div className="absolute top-10 left-0 m-4 p-4 bg-white bg-opacity-75 rounded-lg shadow-lg w-1/3 dark:bg-white">
       <ul>
         {categories.map((category) => (
-          <li key={category.category} className="flex items-center mb-2">
+          <li
+            key={category.category}
+            className="flex items-center mb-2 dark:text-black"
+          >
             <span
               className="category-legend-color w-4 h-4 inline-block mr-2"
               style={{ backgroundColor: category.color }}
@@ -459,7 +460,7 @@ const CategoryLegendComponent: React.FC<CategoryLegendComponentProps> = ({
             {category.category}
             <span>
               <FaSearchPlus
-                className="ml-2"
+                className="ml-2 dark:text-black"
                 onClick={() => zoom_to_category(category.category)}
               />
             </span>

@@ -30,9 +30,10 @@
 
 import '@/globals.css';
 import { timeFromString } from '../Time_Functions';
-import { useContext, useMemo, useRef, useEffect } from 'react';
+import { useContext, useMemo, useRef, useEffect, useState } from 'react';
 import {
   tripViewStore,
+  UpdateImage,
   useDeleteImage,
   useQueryTrip,
   useQueryTripImages,
@@ -58,6 +59,7 @@ import {
   CompareViewStore,
   useCompareViewStore,
 } from '../Compare_View/CompareStore';
+import { FaPencil } from 'react-icons/fa6';
 
 const TimeViewGallery: React.FC = () => {
   const id = useContext(TripContext).id;
@@ -307,7 +309,10 @@ const TimeViewGallery: React.FC = () => {
                     ? 'bg-gray-400 text-white'
                     : 'bg-white text-black hover:bg-gray-100'
                 }`}
-                onClick={() => scrollToGroup(group.date.toDateString())}
+                onClick={() => {
+                  //scrollToGroup(group.date.toDateString() -> doesn't work -- to long scrolling
+                  setSelectedDate(group.date.toDateString());
+                }}
               >
                 {group.date.toDateString()}
               </li>
@@ -338,7 +343,7 @@ const TimeViewGallery: React.FC = () => {
               ref={(el) => {
                 dateRefs.current[group.date.toDateString()] = el;
               }}
-              className="mb-4"
+              className=""
             >
               <GroupImagesByTime images={group.images} date={group.date} />
             </div>
@@ -371,6 +376,19 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   const { selected_image_location, horizontally_tabbed } = useTripViewStore();
 
   const deleteImageMutation = useDeleteImage();
+
+  const [editingImageName, setEditingImageName] = useState<Image | null>(null);
+  const [editedName, setEditedName] = useState('');
+
+  const id = useContext(TripContext).id;
+
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    isError: tripError,
+  } = useQueryTrip(id);
+
+  const editImage = UpdateImage();
 
   const deleteImage = async (image: Image) => {
     //use mutation to delete image
@@ -471,6 +489,8 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     return groupedSubRangeImages(images, date);
   }, [images, date]);
 
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
   //use store to set the selected image preview and editing image
   const store = tripViewStore;
 
@@ -493,10 +513,18 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [editingImageName]);
+
   // set the selected image location
-  const setSelectedImageLocation = (image: Image) => {
+  const setSelectedImageLocation = (image: Image, force = false) => {
     //check if the image is already selected
-    if (selected_image_location && selected_image_location.id === image.id) {
+    if (
+      selected_image_location &&
+      selected_image_location.id === image.id &&
+      !force
+    ) {
       tripViewStore.setState((state) => {
         return {
           ...state,
@@ -532,9 +560,30 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  const handleNameSubmit = async (
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    const image = editingImageName;
+
+    if (!image) return;
+    if (!trip) return;
+
+    const new_image = await editImage.mutateAsync({
+      image: {
+        ...image,
+        id: image.id,
+        name: editedName,
+      },
+      trip: trip,
+    });
+
+    setEditingImageName(null);
+    setEditedName('');
+  };
+
   //return gallery based on subranges
   return (
-    <div className="p-4">
+    <div className="p-4 dark:bg-black">
       <div className="text-2xl font-bold mb-4">{date.toDateString()}</div>
       {subranges.map((subrange) => {
         const startHour = new Date(subrange.start_hour).toLocaleTimeString([], {
@@ -573,37 +622,39 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                   >
                     <div
                       key={image.id}
-                      className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300"
+                      className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300 h-[300px] w-[220px]"
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px] min-w-[200px] "
+                        className="relative flex flex-grow items-center justify-center bg-gray-100 border h-[200px] w-[200px]"
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}
-                          width={164}
-                          height={164}
-                          className="object-contain rounded-lg"
+                          height={200}
+                          width={200}
+                          className=" rounded-lg"
                           style={{
                             cursor: 'pointer',
-                            margin: '10px',
                             //allign self to center
                             justifySelf: 'flex-end',
+                            maxHeight: '200px',
+                            maxWidth: '200px',
+                            objectFit: 'contain',
                           }}
                         />
                       </div>
                       <div className="absolute top-1 right-1 flex ">
                         <AiFillDelete
                           onClick={() => deleteImage(image)}
-                          className="cursor-pointer"
-                          size={24}
+                          className="cursor-pointer dark:text-red-500 "
+                          size={30}
                           style={{ marginRight: '10px' }}
                         />
                         <HiOutlinePencil
                           onClick={() => setEditingImage(image)}
-                          className="cursor-pointer"
-                          size={24}
+                          className="cursor-pointer dark:text-blue-800 font-semibold"
+                          size={30}
                           style={{ marginRight: '10px' }}
                         />
                         <HiEye
@@ -612,20 +663,54 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                               images.findIndex((img) => img.id === image.id)
                             )
                           }
-                          className="cursor-pointer"
-                          size={24}
+                          className="cursor-pointer dark:text-blue-800 font-semibold"
+                          size={30}
                         />
                         <HiMap
                           onClick={() => {
-                            setSelectedImageLocation(image);
+                            setSelectedImageLocation(image, true);
                             setShowOnMap(image);
                           }}
-                          className="cursor-pointer ml-2"
-                          size={24}
+                          className="cursor-pointer ml-2 dark:text-black font-semibold"
+                          size={30}
                         />
                       </div>
                       <div className="mt-2 text-center text-sm font-medium text-gray-700 justify-self-end">
-                        {image.name}
+                        {editingImageName &&
+                        editingImageName.id === image.id ? (
+                          <textarea
+                            ref={inputRef}
+                            value={editedName}
+                            onChange={(event) =>
+                              setEditedName(event.target.value)
+                            }
+                            onBlur={() => {
+                              setEditingImageName(null);
+                              setEditedName('');
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                //use the mutation to update the image name
+                                handleNameSubmit(event);
+                              }
+                              if (event.key === 'Escape') {
+                                setEditedName('');
+                                setEditingImageName(null);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="flex flex-row">
+                            <p className="w-[80%]">{image.name}</p>
+                            <FaPencil
+                              size={20}
+                              onClick={() => {
+                                setEditingImageName(image);
+                                setEditedName(image.name);
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

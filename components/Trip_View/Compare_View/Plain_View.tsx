@@ -310,7 +310,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       <ImagePreview />
       <div className="w-full overflow-x-auto" style={{ flexShrink: 0 }}>
         <div className="scrollmenu" ref={scrollContainerRef}>
-          <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
+          <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300 dark:bg-black">
             {groupedOrderedImagesByDay.map((group) => (
               <li
                 key={group.date.toDateString()}
@@ -321,8 +321,8 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
                 }
                 className={`cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors ${
                   selectedDate === group.date.toDateString()
-                    ? 'bg-gray-400 text-white'
-                    : 'bg-white text-black hover:bg-gray-100'
+                    ? 'bg-gray-400 text-white !important dark:bg-gray-100 '
+                    : 'bg-white text-black hover:bg-gray-100 dark:bg-black dark:bg-gray-400 dark:color-white'
                 }`}
                 onClick={() => scrollToGroup(group.date.toDateString())}
               >
@@ -333,7 +333,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
         </div>
       </div>
       <div
-        className="scrollable-container overflow-y-auto h-full p-4 bg-white rounded-b-lg shadow-lg border border-gray-300"
+        className="scrollable-container overflow-y-auto h-full p-4 bg-white dark:bg-black rounded-b-lg shadow-lg border border-gray-300"
         onScroll={handleScroll}
       >
         {groupedOrderedImagesByDay.map((group) => {
@@ -770,7 +770,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                       className={`w-full flex items-center justify-center bg-gray-100 p-1 min-h-[500px] ${borderClass}`}
                     >
                       {' '}
-                      <div className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]">
+                      <div className="relative w-full dark:bg-black h-full flex items-center justify-center max-w-full max-h-[500px]">
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}
@@ -788,8 +788,10 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           className="object-contain rounded-lg"
                           style={{
                             cursor: 'pointer',
-                            margin: '10px',
+                            objectFit: 'contain',
                           }}
+                          ///contain
+                          objectFit="contain"
                         />
                       </div>
                     </div>

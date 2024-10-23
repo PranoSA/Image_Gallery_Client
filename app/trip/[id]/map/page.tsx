@@ -155,7 +155,7 @@ function Page() {
     }, 140000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [session, setBearerToken]);
 
   useEffect(() => {
     //store the access token in local storage
@@ -163,9 +163,9 @@ function Page() {
       localStorage.removeItem('accessToken');
       localStorage.setItem('accessToken', session.accessToken);
     }
-    setBearerToken(session?.accessToken || '');
+    //setBearerToken(session?.accessToken || '');
     //set tripContext bearer token
-  }, [session, setBearerToken]);
+  }, [session]);
 
   const {
     data: trip,
@@ -413,13 +413,13 @@ function Page() {
           style={{ zIndex: 214748364 }}
         >
           <div className="flex flex-row ">
-            <div className="bg-gray-200 p-2 rounded-lg mr-5 ">
+            <div className=" p-2 rounded-lg mr-5 ">
               <FaHome
                 onClick={() => {
                   window.location.href = `/trip/${id}`;
                 }}
-                className="cursor-pointer"
-                size={24}
+                className="cursor-pointer dark:text-gray-800"
+                size={30}
               />
             </div>
 
@@ -441,13 +441,12 @@ function Page() {
             onResizeStop={(e, direction, ref, d) => {
               //set minmum size 50px
 
+              console.log('Prev Gallery Width:', prevGalleryWidth.current);
+              console.log('Dragged Width:', d.width);
+
               /*setGalleryWidth(
                 Math.max(150, prevGalleryWidth.current + d.width)
               );*/
-              prevGalleryWidth.current = Math.max(
-                150,
-                prevGalleryWidth.current + d.width
-              );
               const newWidth = prevGalleryWidth.current + d.width;
 
               const atLeast100 = Math.max(100, newWidth);
@@ -490,7 +489,19 @@ function Page() {
         className="z-100 absolute top-0 left-0"
         style={{ zIndex: 214748364 }}
       >
-        <TripDropdownMenu />
+        <div className="flex flex-row ">
+          <div className=" p-2 rounded-lg mr-5 ">
+            <FaHome
+              onClick={() => {
+                window.location.href = `/trip/${id}`;
+              }}
+              className="cursor-pointer dark:text-gray-800"
+              size={30}
+            />
+          </div>
+
+          <TripDropdownMenu />
+        </div>
       </div>
 
       <div className="content-container max-h-full">

@@ -367,9 +367,14 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   };
 
   // set the selected image location
-  const setSelectedImageLocation = (image: Image) => {
+  const setSelectedImageLocation = (image: Image, force = true) => {
     //check if the image is already selected
-    if (selected_image_location && selected_image_location.id === image.id) {
+    if (
+      selected_image_location &&
+      selected_image_location.id === image.id &&
+      !force
+    ) {
+      console.log('clearing');
       tripViewStore.setState((state) => {
         return {
           ...state,
@@ -478,10 +483,10 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         />
                         <HiMap
                           onClick={() => {
-                            setSelectedImageLocation(image);
+                            setSelectedImageLocation(image, true);
                             setShowOnMap(image);
                           }}
-                          className="cursor-pointer ml-2"
+                          className="cursor-pointer ml-2 z-40"
                           size={24}
                         />
                       </div>
