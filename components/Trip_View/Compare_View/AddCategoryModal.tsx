@@ -222,29 +222,31 @@ const AddCategoryForm = () => {
               <p className="text-red-500 text-sm mt-1">{startDateError}</p>
             )}
           </div>
-          <div className="mb-4">
-            <label
-              htmlFor="end_date"
-              className="block text-gray-700 font-bold mb-2"
-            >
-              End Date
-            </label>
-            <input
-              type="date"
-              name="end_date"
-              id="end_date"
-              value={category.end_date}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                endDateError
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'focus:ring-blue-500'
-              }`}
-            />
-            {endDateError && (
-              <p className="text-red-500 text-sm mt-1">{endDateError}</p>
-            )}
-          </div>
+          {trip?.untimed_trips && (
+            <div className="mb-4">
+              <label
+                htmlFor="end_date"
+                className="block text-gray-700 font-bold mb-2"
+              >
+                End Date
+              </label>
+              <input
+                type="date"
+                name="end_date"
+                id="end_date"
+                value={category.end_date}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                  endDateError
+                    ? 'border-red-500 focus:ring-red-500'
+                    : 'focus:ring-blue-500'
+                }`}
+              />
+              {endDateError && (
+                <p className="text-red-500 text-sm mt-1">{endDateError}</p>
+              )}
+            </div>
+          )}
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"

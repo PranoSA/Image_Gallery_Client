@@ -10,6 +10,7 @@ import { Session } from 'next-auth';
 import InviteUserToTripForm from '@/components/Home_View/InviteUserToTripForm';
 import IntroPage from '@/components/Home_View/IntroPage';
 import NextImage from 'next/image';
+import ImageUploadModal from '@/components/ImageUploadModal';
 
 import './page.css';
 
@@ -18,12 +19,16 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { QueryClient } from '@tanstack/react-query';
 
 import {
+  tripViewStore,
   useAddImage,
   useGetUploadProgress,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import AddImagesForm from '../components/Trip_View/AddImagesForm';
 import { Category, Image, Trip } from '@/definitions/Trip_View';
-import { useFetchMyTrips } from '@/components/Trip_View/Trip_View_Image_Store';
+import {
+  useFetchMyTrips,
+  useTripViewStore,
+} from '@/components/Trip_View/Trip_View_Image_Store';
 import { useQueryTripImages } from '@/components/Trip_View/Trip_View_Image_Store';
 //pencil faIcon for editing
 import { FaPencilAlt } from 'react-icons/fa';
@@ -85,6 +90,8 @@ function Home() {
     status: tripsStatus,
     error: tripsError,
   } = useFetchMyTrips();
+
+  const { adding_images } = useTripViewStore();
 
   const closeInviteForm = () => {
     setInviteForm(null);
@@ -205,7 +212,7 @@ function Home() {
         className="z-10 w-full flex items-center justify-center font-mono text-sm p-5"
         onClick={() => setShowForm(true)}
       >
-        <FaPlus className="text-black hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
+        <FaPlus className="text-black hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out dark:text-white" />
         <p className="font-black  font-bold text-lg hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out m-5">
           Create New Trip
         </p>
@@ -330,148 +337,6 @@ function Home() {
   );
 }
 
-type ImageUploadModalProps = {
-  tripId: string;
-  onClose: () => void;
-  handleSubmitImages: (e: React.FormEvent<HTMLFormElement>) => void;
-};
-
-const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
-  tripId,
-  onClose,
-  handleSubmitImages,
-}) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-
-  const [showForm, setShowForm] = useState(false);
-
-  const [editTrip, setEditTrip] = useState<boolean>(false);
-  const [editedTrip, setEditedTrip] = useState<Trip | null>(null);
-  const [editTripError, setEditTripError] = useState<string | null>(null);
-
-  //id of trip to invite user to
-  // if null, then no form is shown
-  const [inviteForm, setInviteForm] = useState<string | null>(null);
-
-  const [imageUploadState, setImageUploadState] = useState<
-    'uploading' | 'error' | 'success' | 'none'
-  >('none');
-
-  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    //check if already uploading
-    if (imageUploadState === 'uploading') {
-      return;
-    }
-
-    setImageUploadState('uploading');
-    e.preventDefault();
-    await handleSubmitImages(e);
-    setImageUploadState('success');
-  };
-
-  const [totalSize, setTotalSize] = useState(0);
-  const maxSize = 100 * 1024 * 1024; // 100 MB in bytes
-
-  const handleFileChange = (event: { target: { files: any } }) => {
-    const files = event.target.files;
-    let size = 0;
-    for (let i = 0; i < files.length; i++) {
-      size += files[i].size;
-    }
-    setTotalSize(size);
-  };
-
-  const {
-    data: upload_progress,
-    status: upload_progress_status,
-    error: upload_progress_error,
-  } = useGetUploadProgress();
-
-  useEffect(() => {
-    console.log('Upload Progress:', upload_progress);
-  }, [upload_progress]);
-
-  const progress_percenta = useMemo(() => {
-    const megabytes_completed =
-      (upload_progress?.progress || 0) / (1024 * 1024);
-    const megabytes_total = totalSize / (1024 * 1024);
-    return Math.floor((megabytes_completed / megabytes_total) * 100);
-  }, [upload_progress, totalSize]);
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>Upload Images</h2>
-        <FaTimes
-          className="absolute top-5 right-5"
-          onClick={onClose}
-          size={30}
-          title="Cancel Add Images"
-        />
-        <form onSubmit={handleFormSubmit}>
-          <div className="form-group">
-            <label htmlFor="description">Description:</label>
-            <textarea id="description" name="description"></textarea>
-          </div>
-          <div className="form-group">
-            <label htmlFor="images">Images:</label>
-            <input
-              type="file"
-              id="image"
-              name="image"
-              multiple
-              accept="image/*"
-              required
-              onChange={handleFileChange}
-            />
-          </div>
-          <button
-            type="submit"
-            className={`submit-button ${
-              totalSize > maxSize
-                ? 'bg-red-500 cursor-not-allowed'
-                : 'bg-blue-500'
-            }`}
-            disabled={totalSize > maxSize}
-          >
-            Upload
-          </button>
-          <div className="file-size-info">
-            <p>Total size: {(totalSize / (1024 * 1024)).toFixed(2)} MB</p>
-            {totalSize > maxSize && (
-              <p className="text-red-500">Total size exceeds 100 MB limit!</p>
-            )}
-          </div>
-          {/* Upload progress */}
-          {/* print the number of value*/}
-          {
-            <div className="progress-bar">
-              <h1> {totalSize > 0 ? progress_percenta : 0}% Uploaded</h1>
-
-              <div
-                className="progress-bar-fill bg-green-500"
-                style={{ width: `${upload_progress?.progress}%` }}
-              ></div>
-            </div>
-          }
-          {
-            <div>
-              <h1>
-                {' '}
-                {Math.floor(
-                  (upload_progress?.progress || 0) / (1024 * 1024)
-                )}{' '}
-                MB / {Math.floor(totalSize / (1024 * 1024))} MB
-              </h1>
-            </div>
-          }
-        </form>
-      </div>
-    </div>
-  );
-};
-
 const TripListCompontent = () => {
   //you don't need authetnication context - it will be conditionally rendered
 
@@ -488,6 +353,8 @@ const TripListCompontent = () => {
     status: upload_progress_status,
     error: upload_progress_error,
   } = useGetUploadProgress();
+
+  const { adding_images } = useTripViewStore();
 
   //id of trip to invite user to
   // if null, then no form is shown
@@ -687,6 +554,12 @@ const TripListCompontent = () => {
 
   const handleAddImagesClick = (trip_id: string | null) => {
     setSelectedTripUploadImage(trip_id);
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        adding_images: true,
+      };
+    });
   };
 
   if (!trips) {
@@ -736,12 +609,8 @@ const TripListCompontent = () => {
         )}
       </div>
       <div className="w-full">
-        {selectedTripUploadImage && (
-          <ImageUploadModal
-            tripId={selectedTripUploadImage}
-            onClose={() => setSelectedTripUploadImage(null)}
-            handleSubmitImages={handleSubmitImages}
-          />
+        {adding_images && selectedTripUploadImage && (
+          <ImageUploadModal tripId={selectedTripUploadImage} />
         )}
 
         {
@@ -753,43 +622,48 @@ const TripListCompontent = () => {
         {trips.map((trip) => (
           <div
             key={trip.id}
-            className=" relative w-full lg:w-1/2 flex flex-col justify-start bg-white shadow-md rounded p-4"
+            className=" relative w-full lg:w-1/2 flex flex-col justify-start  shadow-md rounded p-4"
           >
-            <FaPencilAlt
-              className={`  
-                  absolute top-5 right-5
+            <div className="w-full border-1 dark:border-white p-6 m-1 dark:bg-gray-800 bg-white h-full">
+              <FaPencilAlt
+                className={`  
+                  absolute top-10 right-5 dark:text-neon-green
                 text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out`}
-              onClick={() => handleEditTrip(trip)}
-            />
-            <div className="w-full flex-row flex justify-around">
-              <Link href={`/trip/${trip.id}`} passHref>
-                <h2 className="text-xl font-bold cursor-pointer hover:text-blue-600 transition duration-300 ease-in-out">
-                  {trip.name}
-                </h2>
-              </Link>
-            </div>
-            {!trip.untimed_trips && (
-              <p className="font-bold text-center">
-                {trip.start_date} - {trip.end_date}
-              </p>
-            )}
-            <p className="text-gray-600 mt-1 mb-4">{trip.description}</p>
-            <ScrollableImageBar trip_id={trip.id} />
-
-            <div className="flex justify-between mt-au)to space-x-2 flex-row w-full justify-between">
-              <FaUserPlus
-                className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
-                onClick={() => setInviteForm(trip)}
-                size={20}
-                title="Invite User"
+                onClick={() => handleEditTrip(trip)}
+                size={30}
               />
-              <div
-                className="flex-row flex flex-wrap hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
-                onClick={() => handleAddImagesClick(trip.id)}
-                title="Add Images"
-              >
-                <FaPlus className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out mr-2" />
-                <FaImage className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out" />
+              <div className="w-full flex-row flex justify-around">
+                <Link href={`/trip/${trip.id}`} passHref>
+                  <h2 className="text-xl font-bold cursor-pointer hover:text-blue-600 transition duration-300 ease-in-out dark:text-white">
+                    {trip.name}
+                  </h2>
+                </Link>
+              </div>
+              {!trip.untimed_trips && (
+                <p className="font-bold text-center">
+                  {trip.start_date} - {trip.end_date}
+                </p>
+              )}
+              <p className="text-gray-600 mt-1 mb-4 dark:text-gray-400">
+                {trip.description}
+              </p>
+              <ScrollableImageBar trip_id={trip.id} />
+
+              <div className="flex justify-between mt-auto space-x-2 flex-row w-full justify-between">
+                <FaUserPlus
+                  className="text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out dark:text-neon-pink"
+                  onClick={() => setInviteForm(trip)}
+                  size={20}
+                  title="Invite User"
+                />
+                <div
+                  className="flex-row flex flex-wrap hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out"
+                  onClick={() => handleAddImagesClick(trip.id)}
+                  title="Add Images"
+                >
+                  <FaPlus className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out mr-2 dark:text-neon-blue" />
+                  <FaImage className=" text-gray-500 hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out dark:text-neon-blue" />
+                </div>
               </div>
             </div>
           </div>
@@ -823,19 +697,23 @@ const ScrollableImageBar: React.FC<scrollableImageBarProps> = ({ trip_id }) => {
   }
 
   return (
-    <div className="overflow-x-scroll flex space-x-2 mb-4 scrollbar-class">
-      {images.map((image, idx) => (
-        <div key={idx} className="w-24 h-24 flex-shrink-0 relative">
-          <NextImage
-            src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
-            alt={`${image.name}`}
-            layout="fill"
-            objectFit="cover"
-            className="rounded"
-            sizes="128px"
-          />
-        </div>
-      ))}
+    <div className="overflow-x-scroll flex space-x-2 w-26 h-26 mb-4 scrollbar-class">
+      {images.length > 0 ? (
+        images.map((image, idx) => (
+          <div key={idx} className="w-24 h-24 flex-shrink-0 relative">
+            <NextImage
+              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
+              alt={`${image.name}`}
+              layout="fill"
+              objectFit="cover"
+              className="rounded"
+              sizes="128px"
+            />
+          </div>
+        ))
+      ) : (
+        <p>No images found</p>
+      )}
     </div>
   );
 };

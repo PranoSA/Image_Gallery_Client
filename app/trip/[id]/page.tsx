@@ -13,6 +13,8 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
+import ImageUploadModal from '@/components/ImageUploadModal';
+
 import { signIn, useSession } from 'next-auth/react';
 
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -286,8 +288,10 @@ const Page = () => {
             title="Back To Home"
             size={30}
           />
-          {/* Modal to Add New Images */}
-          <AddImagesForm />
+          {/* Modal to Add New Images type ImageUploadModalProps = {
+  tripId: string;
+};*/}
+          <ImageUploadModal tripId={id} />
           {/* Plus Icon To Add New Image */}
           <div className="pl-4 pr-4">
             <div className="flex flex-row items-center justify-center gap-1">
