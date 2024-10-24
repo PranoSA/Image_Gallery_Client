@@ -506,10 +506,14 @@ function Page() {
 
       <div className="content-container max-h-full">
         <div
-          className="MapComponent"
+          className="MapComponent flex-grow"
           style={{ height: `calc(100vh - ${galleryHeight}px)` }}
         >
-          <MapComponent height={`calc(100vh - ${galleryHeight}px)`} />
+          {trip?.untimed_trips ? (
+            <UntimedMapComponent height={`calc(100vh - ${galleryHeight}px)`} />
+          ) : (
+            <MapComponent height={`calc(100vh - ${galleryHeight}px)`} />
+          )}
         </div>
 
         <Resizable
@@ -546,6 +550,7 @@ function Page() {
             style={{
               maxHeight: `${galleryHeight}px`,
               height: `${galleryHeight}px`,
+              flexShrink: 1,
             }}
           >
             <SelectionComponentGallery />

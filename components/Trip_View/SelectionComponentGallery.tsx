@@ -340,7 +340,12 @@ const SelectionComponentGallery = () => {
       </div>
       {/* Display untimed or timed based on trip field */}
 
-      <div className={`max-h-full flex flex-col flex-wrap w-full`}>
+      <div
+        className={`max-h-full flex flex-col flex-wrap w-full`}
+        style={{
+          maxHeight: 'calc(100% - 60px)',
+        }}
+      >
         {
           //trip.untimed_trips ? <TimeViewGalleryUntimed /> : <TimeViewGallery />
           trip?.untimed_trips ? (

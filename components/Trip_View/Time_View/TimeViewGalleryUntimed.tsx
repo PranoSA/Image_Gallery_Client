@@ -287,15 +287,18 @@ const TimeViewGallery: React.FC = () => {
   // Now Render the described UI
 
   return (
-    <div className="w-full h-full flex-wrap max-h-full flex " id="number1">
+    <div
+      className="w-full h-full flex-wrap max-h-full flex overflow-auto "
+      id="number1"
+    >
       <ImagePreview />
       <div
         className="w-full overflow-x-auto"
         id="number2"
-        style={{ flexShrink: 1, height: '72px' }}
+        style={{ height: '72px' }}
       >
         <div className="scrollmenu" ref={scrollContainerRef}>
-          <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
+          <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg  border-gray-300">
             {groupedOrderedImagesByDay.map((group) => (
               <li
                 key={group.date.toDateString()}
@@ -324,7 +327,7 @@ const TimeViewGallery: React.FC = () => {
       <div
         className={`${
           horizontally_tabbed ? '' : ''
-        } overflow-y-auto p-4 bg-white rounded-b-lg shadow-lg border border-gray-300 pb-20 mb-10 w-full`}
+        } overflow-y-auto p-4 bg-white rounded-b-lg shadow-lg border-gray-300 w-full`}
         onScroll={handleScroll}
         //if horizontally tabbed, do height = calc(100% - 100px), if not - do not set the height
         //do not set ANY height with ANY string
@@ -332,7 +335,6 @@ const TimeViewGallery: React.FC = () => {
         // NO!!! DO NOT PUT height "" if not horizontally tabbed
         // it should not be in the first place
         style={{
-          flexGrow: 1,
           height: 'calc(100% - 72px)',
         }}
       >
@@ -622,6 +624,9 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                   >
                     <div
                       key={image.id}
+                      style={{
+                        width: '250px',
+                      }}
                       className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300 h-[300px] w-[220px]"
                     >
                       <div
