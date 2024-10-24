@@ -382,18 +382,21 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     const l = 's';
     const max_diff = Math.max(max_lon - min_lon, max_lat - min_lat);
 
-    //determine zoom level based on max_diff
-    // and center the map on the center of the coordinates
-    const zoom = 9 - Math.log2(Math.abs(max_diff));
-
-    map.getView().setZoom(10);
+    const zoom_prev = map.getView().getZoom();
+    console.log('zoom_prev', zoom_prev);
 
     //zoom to the center
     map.getView().animate({
       center: fromLonLat(center.geometry.coordinates as Coordinate),
-      zoom: 10,
+      zoom: zoom_prev,
       duration: 2000,
     });
+
+    //determine zoom level based on max_diff
+    // and center the map on the center of the coordinates
+    const zoom = 9 - Math.log2(Math.abs(max_diff));
+
+    //map.getView().setZoom(10);
 
     console.log('zoom', zoom);
 

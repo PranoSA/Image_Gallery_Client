@@ -193,16 +193,14 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
       return;
     }
 
+    const current_zoom = mapInstanceRef.current.getView().getZoom();
+
+    console.log('zooming in', current_zoom);
+
     //animate the map to the point
     mapInstanceRef.current.getView().animate({
       center: transformed_point,
-      duration: 2000,
-    });
-
-    //zoom in after 2 seconds
-    mapInstanceRef.current.getView().animate({
-      center: transformed_point,
-      zoom: 15,
+      zoom: current_zoom,
       duration: 2000,
     });
 
