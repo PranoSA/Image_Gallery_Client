@@ -263,13 +263,63 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       return;
     }
 
-    const current_zoom = mapInstanceRef.current.getView().getZoom();
+    //get distance from transformed_point to current center
+    const current_center = mapInstanceRef.current.getView().getCenter();
+
+    if (!current_center) return;
+
+    const distance = Math.sqrt(
+      (current_center[0] - transformed_point[0]) ** 2 +
+        (current_center[1] - transformed_point[1]) ** 2
+    );
+
+    //this is the projected distance in meters (not actual distance)
+
+    //  zoom -> 13 [the max distance is 20km]
+    //  zoom -> 14 [the max distance is 10km]
+    //  zoom -> 15 [the max distance is 3km]
+    //  zoom -> 16 [the max distance is 1km]
+    //  zoom -> 17 [the max distance is 500m]
+    // 17 is the absolute maximum zoom
+    // zoom -> 12 [the max distance is 40km]
+    // zoom -> 11 [the max distance is 80km]
+    // zoom -> 10 [the max distance is 160km]
+    // zoom -> 9 [the max distance is 320km]
+    // zoom -> 8 [the max distance is 640km]
+    // zoom -> 7 [the max distance is 1280km]
+    // zoom -> 6 [the max distance is 2560km]
+    // zoom -> 5 [the max distance is 5120km]
+    // zoom -> 4 [the max distance is 10240km]
+    // zoom -> 3 [the max distance is 20480km] -- that is it
+
+    //what is maximum distance on a globe? 20,000 km?
+    // 20000/distance = 2^zoom
+    // log2(20000/distance) = zoom
+    // log2(20000/distance) = zoom
+    const max_zoom = Math.ceil(Math.log2(60000000 / distance));
+
+    //maybe make this a strict mathematical value in the future
+
+    // make a "maximum zoom" depending on distance
+
+    const current_zoom = Math.min(
+      mapInstanceRef.current.getView().getZoom() || 10,
+      max_zoom
+    );
+
+    console.log('Current Zoom', current_zoom);
+    console.log(
+      'Acutal zoom of map',
+      mapInstanceRef.current.getView().getZoom()
+    );
+
+    mapInstanceRef.current.getView().setZoom(current_zoom);
 
     //animate the map to the point
     mapInstanceRef.current.getView().animate({
       center: transformed_point,
       duration: 2000,
-      zoom: current_zoom,
+      zoom: Math.ceil(current_zoom),
     });
 
     //mapInstanceRef.current.getView().setCenter(transformed_point);
