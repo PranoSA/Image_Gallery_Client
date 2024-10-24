@@ -40,6 +40,7 @@ import TripContext from '@/components/TripContext';
 import { dateFromString } from './Time_Functions';
 
 import CategoryLegendAndPoints from '@/components/Trip_View/Time_View/CategoryLegendAndPoints';
+import { CompareViewStore } from './Compare_View/CompareStore';
 
 type MapProps = {
   height?: string;
@@ -198,10 +199,24 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     console.log('zooming in', current_zoom);
 
     //animate the map to the point
-    mapInstanceRef.current.getView().animate({
-      center: transformed_point,
-      zoom: current_zoom,
-      duration: 2000,
+    mapInstanceRef.current.getView().animate(
+      {
+        center: transformed_point,
+        zoom: current_zoom,
+        duration: 2000,
+      },
+      {
+        zoom: mapInstanceRef.current.getView().getZoom() || 0 + 1,
+        duration: 2000,
+      }
+    );
+
+    //reset scroll to image
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        scroll_to_image: null,
+      };
     });
 
     //mapInstanceRef.current.getView().setCenter(transformed_point);

@@ -42,6 +42,7 @@ import { dateFromString } from './Time_Functions';
 import CategoryLegendAndPoints from '@/components/Trip_View/Time_View/CategoryLegendAndPoints';
 import CategoryLegendAndPointsUntimed from './CategoryLegendAndPointsUntimed';
 import { CompareViewStore } from './Compare_View/CompareStore';
+import { Coordinate } from 'ol/coordinate';
 
 type MapProps = {
   height?: string;
@@ -241,6 +242,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     }, 2000);
   };
 
+  const previousZoomCoordinate = useRef<Coordinate | null>(null);
+
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -315,11 +318,33 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     mapInstanceRef.current.getView().setZoom(current_zoom);
 
-    //animate the map to the point
-    mapInstanceRef.current.getView().animate({
-      center: transformed_point,
-      duration: 2000,
-      zoom: Math.ceil(current_zoom),
+    if (
+      previousZoomCoordinate.current &&
+      previousZoomCoordinate.current[0] === transformed_point[0] &&
+      previousZoomCoordinate.current[1] === transformed_point[1]
+    ) {
+      mapInstanceRef.current.getView().animate({
+        zoom: current_zoom + 3,
+        duration: 2000,
+        center: transformed_point,
+      });
+    } else {
+      //animate the map to the point
+      mapInstanceRef.current.getView().animate({
+        center: transformed_point,
+        duration: 2000,
+        zoom: Math.ceil(current_zoom),
+      });
+    }
+
+    previousZoomCoordinate.current = transformed_point;
+
+    //reset scroll to image
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        scroll_to_image: null,
+      };
     });
 
     //mapInstanceRef.current.getView().setCenter(transformed_point);
