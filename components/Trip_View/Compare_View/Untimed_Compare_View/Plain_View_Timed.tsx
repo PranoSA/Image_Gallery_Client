@@ -334,7 +334,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
         </div>
       </div>
       <div
-        className="scrollable-container overflow-y-auto h-full p-4 bg-white rounded-b-lg shadow-lg border border-gray-300"
+        className="scrollable-container overflow-y-auto h-full p-4 bg-white rounded-b-lg shadow-lg border border-gray-300 dark:bg-gray-800 dark:border-gray-700"
         onScroll={handleScroll}
       >
         {groupedOrderedImagesByDay.map((group) => {
@@ -735,7 +735,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 return (
                   <div
                     key={image.id}
-                    className="relative flex flex-col items-center justify-end bg-white rounded-lg shadow-lg border border-gray-300"
+                    className="relative flex flex-col items-center justify-end bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-300"
                   >
                     <div
                       onClick={() => {
@@ -768,7 +768,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           setPreviewImage(image.index);
                         }
                       }}
-                      className={`w-full flex items-center justify-center bg-gray-100 p-1 min-h-[500px] ${borderClass}`}
+                      className={`w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 p-1 min-h-[500px] ${borderClass}`}
                     >
                       {' '}
                       <div className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]">
@@ -797,19 +797,19 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     <div className="absolute top-1 right-1 flex">
                       <AiFillDelete
                         onClick={() => deleteImage(image)}
-                        className="cursor-pointer"
+                        className="cursor-pointer dark:text-red-500"
                         size={24}
                         style={{ marginRight: '10px' }}
                       />
                       <HiOutlinePencil
                         onClick={() => setEditingImage(image)}
-                        className="cursor-pointer"
+                        className="cursor-pointer dark:text-blue dark:text-blue-800 font-bold"
                         size={24}
                         style={{ marginRight: '10px' }}
                       />
                       <HiEye
                         onClick={() => setPreviewImage(image.index)}
-                        className="cursor-pointer"
+                        className="cursor-pointer dark:text-black"
                         size={24}
                       />
                       <FaDownload
@@ -818,7 +818,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                             `${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}?download=true`
                           );
                         }}
-                        className="cursor-pointer"
+                        className="cursor-pointer dark:text-green-500"
                         size={24}
                         style={{ marginLeft: '10px' }}
                       />
@@ -854,7 +854,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           />
                         </div>
                       ) : (
-                        <div className="w-full flex flex-width justify-around">
+                        <div className="w-full flex flex-width justify-around dark:text-neon-pink">
                           {image.name}{' '}
                           <FaPencil
                             onClick={() => setEditingName(image)}
@@ -864,7 +864,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         </div>
                       )}
                     </div>
-                    <div className="text-center text-sm text-gray-500">
+                    <div className="text-center text-sm text-gray-500 dark:text-neon-green">
                       <span> {image.created_at.toDateString()} </span>
                       {image.created_at.getHours() > 12
                         ? (image.created_at.getHours() - 12)
@@ -879,7 +879,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                         .getMinutes()
                         .toLocaleString()
                         .padStart(2, '0')}
-                      {image.created_at.getHours() > 12 ? ' PM' : ' AM'}:
+                      {image.created_at.getHours() > 12 ? ' PM' : ' AM'}
                     </div>
                   </div>
                 );

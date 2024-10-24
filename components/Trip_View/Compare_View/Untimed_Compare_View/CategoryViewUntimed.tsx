@@ -54,6 +54,23 @@ const CategoryView = () => {
   const { add_category_modal_open, untimed_trips_selected_date } =
     useCompareViewStore();
 
+  useEffect(() => {
+    if (!images) return;
+
+    //if the images start date is more than the untimed_trips_selected_date, then set the untimed_trips_selected_date to the start date
+
+    const first_image_date = new Date(images[0].created_at);
+
+    if (first_image_date > untimed_trips_selected_date) {
+      CompareViewStore.setState((state) => {
+        return {
+          ...state,
+          untimed_trips_selected_date: first_image_date,
+        };
+      });
+    }
+  }, [images, untimed_trips_selected_date]);
+
   const addImage = useAddImage();
   const editImage = UpdateImage();
 
@@ -197,84 +214,6 @@ const CategoryView = () => {
     );
   };
 
-  //save categorized images
-  //save categorized images
-  const saveCategorizedImages = (
-    images: Image[],
-    trip_id: string,
-    old_images: Image[]
-  ) => {
-    const api_url = `${process.env.NEXT_PUBLIC_IMAGE_API_URL}/trip/${trip_id}/images/`;
-
-    /// print all ima
-
-    const filtered_images = images.filter((image) => {
-      const old_image = old_images.find(
-        (old_image) => old_image.id === image.id
-      );
-
-      //print image if category is not '' or undefined
-      if (image.category && image.category !== '') {
-      }
-
-      //print old image if category is not '' or undefined
-      if (old_image?.category && old_image.category !== '') {
-      }
-
-      //if old_image category is undefined and image category is not, then return true
-      if (!old_image?.category && image.category) {
-        return true;
-      }
-
-      return old_image?.category !== image.category;
-    });
-
-    //promise all to update all images
-    const promises = filtered_images.map((image) => {
-      return fetch(`${api_url}${image.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(image),
-      });
-    });
-
-    // return Promise.all(promises)
-
-    return Promise.all(promises);
-
-    for (const image of images) {
-      fetch(`${api_url}/${image.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(image),
-      })
-        .then((res) => res.json())
-        .catch((err) => console.error(err));
-    }
-  };
-
-  const saveState = async () => {
-    const trip_id = id;
-
-    if (!images) return;
-
-    try {
-      const _ = await saveCategorizedImages(localImages, trip_id, images);
-
-      //save the trip
-      //const __ = await saveCategorizedTrip(localTrip as Trip);
-
-      //if both work, set trip to local trip
-      //and set images to local images
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   return (
     <div>
       <div className="flex justify-center space-x-4 w-full">
@@ -301,19 +240,24 @@ const CategoryView = () => {
 
         <Banner_Component />
         <div className="flex flex-wrap w-full flex-row">
-          {folders.map((folder) => (
-            <ImageDragFolder
-              key={folder.name}
-              folder={folder}
-              images={(images || []).filter(
-                (img) => img.category === folder.name
-              )}
-              onDropImage={handleDropImage}
-              onDragEnd={handleDragEnd}
-              opened={openCategoryFolder === folder.name}
-              setOpen={(name: string | null) => setOpenCategoryFolder(name)}
-            />
-          ))}
+          {folders
+            .sort((a, b) =>
+              //make sure that the opened folder is at LAST
+              a.name === openCategoryFolder ? 1 : -1
+            )
+            .map((folder) => (
+              <ImageDragFolder
+                key={folder.name}
+                folder={folder}
+                images={(images || []).filter(
+                  (img) => img.category === folder.name
+                )}
+                onDropImage={handleDropImage}
+                onDragEnd={handleDragEnd}
+                opened={openCategoryFolder === folder.name}
+                setOpen={(name: string | null) => setOpenCategoryFolder(name)}
+              />
+            ))}
         </div>
         {images_for_day_and_unassigned.length == 0 && (
           <div className="flex justify-center items-center w-full h-96">
@@ -405,10 +349,11 @@ const ImageDragFolder = ({
         ref={dropRef}
       >
         <div className="w-full flex flex-row ">
-          <FaFolder className="text-6xl text-yellow-500 mr-2" />
+          <FaFolder className="text-6xl text-yellow-500 mr-2" size={20} />
           <FaChevronUp
-            className="text-2xl cursor-pointer"
+            className="text-2xl cursor-pointer dark:text-black"
             onClick={() => setOpen(null)}
+            size={12}
           />
           <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
         </div>
@@ -435,7 +380,7 @@ const ImageDragFolder = ({
                   <div>
                     <FaArrowAltCircleDown
                       onClick={() => removeImageFromCategory(image)}
-                      className="text-2xl cursor-pointer"
+                      className="text-2xl cursor-pointer dark:text-black"
                     />
                   </div>
                 </div>
@@ -461,46 +406,96 @@ const ImageDragFolder = ({
     );
   };
 
-  if (opened) {
-    return <OpenFolder />;
-  }
-
   return (
     <div
-      className="w-full lg:w-1/2 xl:w-1/3 grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
-      ref={dropRef}
+      className={`${
+        opened ? `w-full grow-1` : `w-full lg:w-1/2 xl:w-1/3 grow-`
+      }`}
     >
-      <FaFolder className="text-6xl text-yellow-500 mr-2" />
       {!opened ? (
-        <FaChevronDown
-          className="text-2xl cursor-pointer"
-          onClick={() => setOpen(folder.name)}
-        />
-      ) : (
-        <FaChevronUp
-          className="text-2xl cursor-pointer"
-          onClick={() => setOpen(null)}
-        />
-      )}
-      <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
-      {!opened ? (
-        //return the "stack" of images that compresses them
-        <>
-          <div className="relative w-full flex flex-wrap flex-row">
-            <h2> Images : {images.length}</h2>
-          </div>
-        </>
-      ) : (
-        //return list of images that makes each one accessible
-        <div className="relative w-full flex flex-wrap flex-row">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="flex relative w-1/4 min-w-[180px] h-[160px]  justify-center align-center items-center border rounded bg-yellow-100 "
-            >
-              <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
+        <div
+          ref={dropRef}
+          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+        >
+          <FaFolder className="text-6xl text-yellow-500 mr-2" size={24} />
+          <div className="flex flex-row items-center">
+            <FaChevronDown
+              className="text-2xl cursor-pointer dark:text-black"
+              onClick={() => setOpen(folder.name)}
+              size={12}
+            />
+            <h2 className="text-md ml-5 font-semibold">{folder.name}</h2>
+            <div className="relative w-full flex flex-wrap flex-row pl-5">
+              <p className="dark:text-black text-sm">
+                {' '}
+                ({images.length} Images)
+              </p>
             </div>
-          ))}
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={dropRef}
+          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+        >
+          <div className="w-full flex flex-row ">
+            <FaFolder className="text-6xl text-yellow-500 mr-2" size={20} />
+            <FaChevronUp
+              className="text-2xl cursor-pointer dark:text-black"
+              onClick={() => setOpen(null)}
+              size={12}
+            />
+            <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
+          </div>
+          {/* Mow -> The Open Folder Contains List of images*/}
+          <div className="w-full flex flex-row">
+            <div className="w-1/4 w-min-[150px] flex flex-wrap flex-row items-top items-start">
+              <div className="w-full flex flex-col items-left max-h-[400px] overflow-y-auto ">
+                {images.map((image) => (
+                  <div
+                    onClick={() => {
+                      if (selectedImage === image) {
+                        setSelectedImage(null);
+                      } else {
+                        setSelectedImage(image);
+                      }
+                    }}
+                    key={image.id}
+                    className="flex w-full justify-between items-center border rounded p-2"
+                  >
+                    <h3 className="text-black font-bold h-12">{image.name}</h3>
+                    <div className="flex-shrink-0">
+                      <ImageItemClosed image={image} onDragEnd={onDragEnd} />
+                    </div>
+                    <div>
+                      <FaArrowAltCircleDown
+                        onClick={() => removeImageFromCategory(image)}
+                        className="text-2xl cursor-pointer dark:text-black"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Image Preview Taking Up Rest of the Space */}
+            <div
+              className={`relative w-1/2 flex flex-wrap flex-row ${
+                selectedImage ? 'h-[300px]' : ''
+              } `}
+            >
+              {selectedImage && (
+                <div className="w-full h-full">
+                  <NextImage
+                    src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${selectedImage.file_path}`}
+                    alt={`Image for ${selectedImage.created_at}`}
+                    layout="fill"
+                    objectFit="contain"
+                    sizes="(max-width: 500px) 100vw, 500px"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -535,7 +530,7 @@ const ImageItemClosed = ({
   return (
     <div
       ref={dragRef}
-      className={` relative p-2 border rounded w-full  h-[64px]${
+      className={` relative  border rounded w-full  h-[64px]  w-[64px] ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >

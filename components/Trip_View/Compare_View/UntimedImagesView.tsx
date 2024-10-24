@@ -122,6 +122,16 @@ const UntimedImagesView = () => {
     return <div>No Images</div>;
   }
 
+  if (untimedImages.length === 0) {
+    return (
+      <div>
+        <div className="flex justify-center items-center w-full h-96">
+          <h1 className="text-2xl text-gray-500">No untimed images</h1>
+        </div>
+      </div>
+    );
+  }
+
   //Return a Gallery View of the images With
   //"Eye" -> Sets Preview Image to the image
   //"Edit" -> Opens Up EditImageModal
