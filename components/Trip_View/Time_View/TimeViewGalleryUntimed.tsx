@@ -613,14 +613,11 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 return (
                   <div
                     key={image.id}
-                    className={`relative flex flex-col  h-100% bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]`}
-                    style={{
-                      border:
-                        selected_image_location &&
-                        selected_image_location.id === image.id
-                          ? '5px solid blue'
-                          : 'none',
-                    }}
+                    className={`relative flex flex-col  h-100% bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]  ${
+                      selected_image_location?.id === image.id
+                        ? 'border-8 border-blue-800 dark:border-red-700'
+                        : 'border-2 border-gray-300 dark:border-gray-700'
+                    }`}
                   >
                     <div
                       key={image.id}

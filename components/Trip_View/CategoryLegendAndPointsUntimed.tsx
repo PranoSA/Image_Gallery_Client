@@ -264,25 +264,20 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
 
       //maybe determine size based on# of points, like >40->3 pixels, >30 -> 4 pixels >20 -> 5 pixels, >10 -> 6 pixels, >5 -> 7 pixels, >1 -> 8 pixels
       let point_size = 3;
-      switch (images_in_extent.length) {
-        case 1:
-          point_size = 8;
-          break;
-        case 2:
-          point_size = 7;
-          break;
-        case 3:
-          point_size = 6;
-          break;
-        case 4:
-          point_size = 5;
-          break;
-        case 5:
-          point_size = 4;
-          break;
-        default:
-          point_size = 3;
-          break;
+      if (images_in_extent.length > 40) {
+        point_size = 3;
+      } else if (images_in_extent.length > 30) {
+        point_size = 4;
+      } else if (images_in_extent.length > 20) {
+        point_size = 5;
+      } else if (images_in_extent.length > 10) {
+        point_size = 6;
+      } else if (images_in_extent.length > 5) {
+        point_size = 7;
+      } else if (images_in_extent.length > 1) {
+        point_size = 8;
+      } else {
+        point_size = 9;
       }
 
       //draw the points
