@@ -78,6 +78,45 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
     //setDaySummaryFormInput(daySummary);
   }
 
+  const leftArrowDisabled = useMemo(() => {
+    //check if there is an image with a date before the current date
+    if (!images) return true;
+
+    //reverse the images array [latest image first] for this purpose
+    const first_image = images[0];
+
+    const image_day =
+      first_image.created_at.getDate() +
+      365 * first_image.created_at.getFullYear();
+
+    const day_value =
+      untimed_trips_selected_date.getDate() +
+      365 * untimed_trips_selected_date.getFullYear();
+
+    console.log('Day Value Today', day_value);
+    console.log('Day Value Image', image_day);
+
+    return image_day >= day_value;
+  }, [images, untimed_trips_selected_date]);
+
+  const rightArrowDisabled = useMemo(() => {
+    //check if there is an image with a date after the current date
+    if (!images) return true;
+
+    //reverse the images array [latest image first] for this purpose
+    const last_image = images[images.length - 1];
+
+    const image_day =
+      last_image.created_at.getDate() +
+      365 * last_image.created_at.getFullYear();
+
+    const day_value =
+      untimed_trips_selected_date.getDate() +
+      365 * untimed_trips_selected_date.getFullYear();
+
+    return image_day <= day_value;
+  }, [images, untimed_trips_selected_date]);
+
   if (!selected_trip_id) {
     return null;
   }
@@ -183,13 +222,16 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
 
   return (
     <div className="flex justify-around items-center mb-4 p=5">
-      <FaChevronLeft
-        onClick={() => {
-          handleDayChange('prev');
-        }}
-        className={`cursor-pointer `}
-      />
-
+      {!leftArrowDisabled ? (
+        <FaChevronLeft
+          onClick={() => {
+            handleDayChange('prev');
+          }}
+          className={`cursor-pointer `}
+        />
+      ) : (
+        <div style={{}}> </div>
+      )}
       <div className="flex flex-col items-center justify-center h-full">
         <div className="w-full flex flex-col items-center">
           <div className="text-2xl font-bold mb-4">{currentDay.toString()}</div>
@@ -224,12 +266,16 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
           )}
         </div>
       </div>
-      <FaChevronRight
-        onClick={() => {
-          handleDayChange('next');
-        }}
-        className={`cursor-pointer`}
-      />
+      {!rightArrowDisabled ? (
+        <FaChevronRight
+          onClick={() => {
+            handleDayChange('next');
+          }}
+          className={`cursor-pointer`}
+        />
+      ) : (
+        <div> </div>
+      )}
     </div>
   );
 };
