@@ -157,9 +157,10 @@ const AddCategoryForm = () => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <div className="flex justify-center w-full">
+        <div className="absolute top-5 right-5 flex ">
           <FaTimes
-            className="text-2xl cursor-pointer"
+            size={30}
+            className="text-2xl cursor-pointer dark:text-black"
             onClick={() => {
               CompareViewStore.setState((state) => {
                 return {

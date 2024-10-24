@@ -11,7 +11,7 @@ import {
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { FaArchway, FaChevronUp, FaFolder } from 'react-icons/fa';
+import { FaArchway, FaChevronUp, FaFolder, FaPlus } from 'react-icons/fa';
 
 import { Image } from '@/definitions/Trip_View';
 import React from 'react';
@@ -219,7 +219,7 @@ const CategoryView = () => {
       <div className="flex justify-center space-x-4 w-full">
         {/* Button to add a category */}
         <div className="flex justify-center space-x-4">
-          <button
+          <FaPlus
             onClick={() => {
               CompareViewStore.setState((state) => {
                 return {
@@ -228,10 +228,9 @@ const CategoryView = () => {
                 };
               });
             }}
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Add Category
-          </button>
+            className="text-2xl cursor-pointer"
+            title="Add Category"
+          />
         </div>
         {add_category_modal_open && <AddCategoryForm />}
       </div>
@@ -239,7 +238,7 @@ const CategoryView = () => {
         {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
 
         <Banner_Component />
-        <div className="flex flex-wrap w-full flex-row">
+        <div className="flex flex-wrap w-full flex-row justify-around">
           {folders
             .sort((a, b) =>
               //make sure that the opened folder is at LAST
@@ -407,22 +406,18 @@ const ImageDragFolder = ({
   };
 
   return (
-    <div
-      className={`${
-        opened ? `w-full grow-1` : `w-full lg:w-1/2 xl:w-1/3 grow-`
-      }`}
-    >
+    <div className={` ${opened ? `w-full grow-1` : ` m-5`}`}>
       {!opened ? (
         <div
           ref={dropRef}
-          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+          className="w-full h-[40px] w-[300px] grow-1 m-6 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
         >
-          <FaFolder className="text-6xl text-yellow-500 mr-2" size={24} />
+          <FaFolder className="text-6xl text-yellow-500 mr-3 ml-6" size={30} />
           <div className="flex flex-row items-center">
             <FaChevronDown
               className="text-2xl cursor-pointer dark:text-black"
               onClick={() => setOpen(folder.name)}
-              size={12}
+              size={24}
             />
             <h2 className="text-md ml-5 font-semibold">{folder.name}</h2>
             <div className="relative w-full flex flex-wrap flex-row pl-5">
@@ -436,20 +431,20 @@ const ImageDragFolder = ({
       ) : (
         <div
           ref={dropRef}
-          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center bg-white shadow-md rounded-lg order-yellow-500"
         >
           <div className="w-full flex flex-row ">
-            <FaFolder className="text-6xl text-yellow-500 mr-2" size={20} />
+            <FaFolder className="text-6xl text-yellow-500 mr-2" size={24} />
             <FaChevronUp
               className="text-2xl cursor-pointer dark:text-black"
               onClick={() => setOpen(null)}
-              size={12}
+              size={24}
             />
             <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
           </div>
           {/* Mow -> The Open Folder Contains List of images*/}
           <div className="w-full flex flex-row">
-            <div className="w-1/4 w-min-[150px] flex flex-wrap flex-row items-top items-start">
+            <div className="w-1/2 w-min-[150px] flex flex-wrap flex-row items-top items-start">
               <div className="w-full flex flex-col items-left max-h-[400px] overflow-y-auto ">
                 {images.map((image) => (
                   <div
@@ -461,10 +456,12 @@ const ImageDragFolder = ({
                       }
                     }}
                     key={image.id}
-                    className="flex w-full justify-between items-center border rounded p-2"
+                    className="flex w-full justify-between items-center border rounded "
                   >
-                    <h3 className="text-black font-bold h-12">{image.name}</h3>
-                    <div className="flex-shrink-0">
+                    <p className="text-black font-bold h-6  text-sm w-1/2 ">
+                      {image.name}
+                    </p>
+                    <div className="flex-shrink-0 w-1/2">
                       <ImageItemClosed image={image} onDragEnd={onDragEnd} />
                     </div>
                     <div>
@@ -484,7 +481,7 @@ const ImageDragFolder = ({
               } `}
             >
               {selectedImage && (
-                <div className="w-full h-full">
+                <div className="w-full h-full ">
                   <NextImage
                     src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${selectedImage.file_path}`}
                     alt={`Image for ${selectedImage.created_at}`}
@@ -530,7 +527,7 @@ const ImageItemClosed = ({
   return (
     <div
       ref={dragRef}
-      className={` relative  border rounded w-full  h-[64px]  w-[64px] ${
+      className={` relative  border rounded w-full  h-[40px]  w-[40px]  ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
