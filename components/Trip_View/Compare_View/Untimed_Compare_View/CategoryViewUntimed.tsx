@@ -280,7 +280,7 @@ const ImageGallery = ({
   onDragEnd: (id: string) => void;
 }) => {
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2">
       {images.map((image) => (
         <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
       ))}
@@ -341,76 +341,12 @@ const ImageDragFolder = ({
     //set the local images
   };
 
-  const OpenFolder = () => {
-    return (
-      <div
-        className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center p-4 bg-white shadow-md rounded-lg border-1 order-yellow-500"
-        ref={dropRef}
-      >
-        <div className="w-full flex flex-row ">
-          <FaFolder className="text-6xl text-yellow-500 mr-2" size={20} />
-          <FaChevronUp
-            className="text-2xl cursor-pointer dark:text-black"
-            onClick={() => setOpen(null)}
-            size={12}
-          />
-          <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
-        </div>
-        {/* Mow -> The Open Folder Contains List of images*/}
-        <div className="w-full flex flex-row">
-          <div className="w-1/4 w-min-[150px] flex flex-wrap flex-row items-top items-start">
-            <div className="w-full flex flex-col items-left">
-              {images.map((image) => (
-                <div
-                  onClick={() => {
-                    if (selectedImage === image) {
-                      setSelectedImage(null);
-                    } else {
-                      setSelectedImage(image);
-                    }
-                  }}
-                  key={image.id}
-                  className="flex w-full justify-between items-center border rounded p-2"
-                >
-                  <h3 className="text-black font-bold h-12">{image.name}</h3>
-                  <div className="flex-shrink-0">
-                    <ImageItemClosed image={image} onDragEnd={onDragEnd} />
-                  </div>
-                  <div>
-                    <FaArrowAltCircleDown
-                      onClick={() => removeImageFromCategory(image)}
-                      className="text-2xl cursor-pointer dark:text-black"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* Image Preview Taking Up Rest of the Space */}
-          <div className="relative w-3/5 flex flex-wrap flex-row min-h-[400px]">
-            {selectedImage && (
-              <div className="w-full h-full">
-                <NextImage
-                  src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${selectedImage.file_path}`}
-                  alt={`Image for ${selectedImage.created_at}`}
-                  layout="fill"
-                  objectFit="contain"
-                  sizes="(max-width: 500px) 100vw, 500px"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className={` ${opened ? `w-full grow-1` : ` m-5`}`}>
+    <div className={` ${opened ? `w-full grow-1` : `m-1 grow-1`}`}>
       {!opened ? (
         <div
           ref={dropRef}
-          className="w-full h-[40px] w-[300px] grow-1 m-6 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+          className="w-full h-[40px] w-[300px] grow-1 mr-6 ml-6 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
         >
           <FaFolder className="text-6xl text-yellow-500 mr-3 ml-6" size={30} />
           <div className="flex flex-row items-center">
@@ -570,7 +506,7 @@ const ImageItem = ({
   return (
     <div
       ref={dragRef}
-      className={` relative p-2 h-[128px] border rounded w-full ${
+      className={` relative p-2 h-[164px] border rounded w-full ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
