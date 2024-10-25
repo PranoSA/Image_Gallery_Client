@@ -342,7 +342,7 @@ const ImageDragFolder = ({
   };
 
   return (
-    <div className={` ${opened ? `w-full grow-1` : `m-1 grow-1`}`}>
+    <div className={` ${opened ? `w-full grow-1 mb-4` : `m-1 grow-1`}`}>
       {!opened ? (
         <div
           ref={dropRef}
@@ -379,9 +379,9 @@ const ImageDragFolder = ({
             <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
           </div>
           {/* Mow -> The Open Folder Contains List of images*/}
-          <div className="w-full flex flex-row">
-            <div className="w-1/2 w-min-[150px] flex flex-wrap flex-row items-top items-start">
-              <div className="w-full flex flex-col items-left max-h-[400px] overflow-y-auto ">
+          <div className="w-full flex flex-row overflow-x-auto">
+            <div className=" flex-grow flex flex-row  min-w-[250px] items-top items-start ">
+              <div className="w-full flex flex-col items-left max-h-[400px]  overflow-y-auto ">
                 {images.map((image) => (
                   <div
                     onClick={() => {
@@ -394,10 +394,10 @@ const ImageDragFolder = ({
                     key={image.id}
                     className="flex w-full justify-between items-center border rounded "
                   >
-                    <p className="text-black font-bold h-6  text-sm w-1/2 ">
+                    <p className="text-black font-bold text-sm w-2/3">
                       {image.name}
                     </p>
-                    <div className="flex-shrink-0 w-1/2">
+                    <div className="flex-shrink-0 w-1/3">
                       <ImageItemClosed image={image} onDragEnd={onDragEnd} />
                     </div>
                     <div>
@@ -412,8 +412,10 @@ const ImageDragFolder = ({
             </div>
             {/* Image Preview Taking Up Rest of the Space */}
             <div
-              className={`relative w-1/2 flex flex-wrap flex-row ${
-                selectedImage ? 'h-[300px]' : ''
+              className={`relative  flex flex-wrap flex-row flex-grow ml-3 ${
+                selectedImage
+                  ? 'h-[300px] w-[300px] min-h-[300px] min-w-[300px]'
+                  : ''
               } `}
             >
               {selectedImage && (
