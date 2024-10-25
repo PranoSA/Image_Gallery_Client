@@ -64,7 +64,8 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
 
     console.log('Selected Date', selected_date.toString());
     console.log(selected_date.toISOString().split('T')[0]);
-    return selected_date.toISOString().split('T')[0];
+    // return selected_date.toISOString().split('T')[0];
+    return selected_date.toLocaleDateString();
   }, [untimed_trips_selected_date]);
 
   useEffect(() => {
@@ -78,9 +79,15 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
     //setDaySummaryFormInput(daySummary);
   }
 
+  const get_day_value = (date: Date) => {
+    return date.getDate() + 372 * date.getFullYear() + 31 * date.getMonth();
+  };
+
   const leftArrowDisabled = useMemo(() => {
     //check if there is an image with a date before the current date
     if (!images) return true;
+
+    const day_value = get_day_value(untimed_trips_selected_date);
 
     const defined_images = images.filter((image) => {
       return image.created_at !== undefined;
@@ -90,7 +97,7 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
 
     const first_image = defined_images[0];
 
-    return first_image.created_at >= untimed_trips_selected_date;
+    return get_day_value(first_image.created_at) >= day_value;
   }, [images, untimed_trips_selected_date]);
 
   const rightArrowDisabled = useMemo(() => {
@@ -103,7 +110,10 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
 
     const last_image = defined_images[defined_images.length - 1];
 
-    return last_image.created_at <= untimed_trips_selected_date;
+    return (
+      get_day_value(last_image.created_at) <=
+      get_day_value(untimed_trips_selected_date)
+    );
   }, [images, untimed_trips_selected_date]);
 
   if (!selected_trip_id) {
@@ -154,7 +164,10 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
 
         if (image.created_at === undefined) continue;
 
-        if (image.created_at < untimed_trips_selected_date) {
+        if (
+          get_day_value(image.created_at) <
+          get_day_value(untimed_trips_selected_date)
+        ) {
           CompareViewStore.setState((state) => {
             return {
               ...state,
@@ -170,7 +183,10 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
 
         if (image.created_at === undefined) continue;
         //find image with the date (as in the day) that is after the current date
-        if (image.created_at > untimed_trips_selected_date) {
+        if (
+          get_day_value(image.created_at) >
+          get_day_value(untimed_trips_selected_date)
+        ) {
           CompareViewStore.setState((state) => {
             return {
               ...state,

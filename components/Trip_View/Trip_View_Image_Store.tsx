@@ -772,7 +772,7 @@ export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
 
   //
-  show_categories_on_map: false,
+  show_categories_on_map: init_state.show_categories_on_map ?? true,
 
   filtering_images: init_state.filtering_images || false,
   selecting_category: false,
@@ -785,7 +785,7 @@ export const tripViewStore = new Store<StoreState>({
   date_or_time_view: 'date',
   scroll_position: 0,
   editingImage: null,
-  show_convex_hull: false,
+  show_convex_hull: init_state.show_convex_hull ?? true,
   viewed_image_index: null,
   day_by_day_banners: init_state.day_by_day_banners ?? true,
   zoom_on_day_change: init_state.zoom_on_day_change ?? true,

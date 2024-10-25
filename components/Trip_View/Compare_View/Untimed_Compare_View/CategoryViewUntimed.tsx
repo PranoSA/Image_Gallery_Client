@@ -51,6 +51,10 @@ const CategoryView = () => {
 
   const { selected_date } = useTripViewStore();
 
+  const [dayByDay, setDayByDay] = useState(true);
+
+  console.log('Selected Date images', images);
+
   const { add_category_modal_open, untimed_trips_selected_date } =
     useCompareViewStore();
 
@@ -100,13 +104,15 @@ const CategoryView = () => {
   const imagesForDay = useMemo(() => {
     if (!images || !trip) return [];
 
+    const offset_timezone = new Date().getTimezoneOffset();
     const date = untimed_trips_selected_date;
+    //date.setMinutes(date.getMinutes() + offset_timezone);
 
     return images.filter((image) => {
       const image_date = new Date(image.created_at);
-      return image_date.toDateString() === date.toDateString();
+      return image_date.toDateString() === date.toDateString() || !dayByDay;
     });
-  }, [images, trip, untimed_trips_selected_date]);
+  }, [images, trip, untimed_trips_selected_date, dayByDay]);
 
   const current_date: Date = useMemo(() => {
     if (!trip) return new Date();
@@ -231,13 +237,30 @@ const CategoryView = () => {
             className="text-2xl cursor-pointer"
             title="Add Category"
           />
+          <label className="flex items-center cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={dayByDay}
+                onChange={(e) => setDayByDay(e.target.checked)}
+                className="sr-only"
+              />
+              <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
+              <div
+                className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${
+                  dayByDay ? 'transform translate-x-full bg-neon-green' : ''
+                }`}
+              ></div>
+            </div>
+            <span className="ml-3 text-white">Day By Day</span>
+          </label>
         </div>
         {add_category_modal_open && <AddCategoryForm />}
       </div>
       <DndProvider backend={HTML5Backend}>
         {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
 
-        <Banner_Component />
+        {dayByDay && <Banner_Component />}
         <div className="flex flex-wrap w-full flex-row justify-around">
           {folders
             .sort((a, b) =>

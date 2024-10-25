@@ -262,7 +262,7 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
 
       if (show_convex_hull) {
         //if the max_diff is less than 10% of the extent, then don't draw the convex hull
-        if (max_diff < 0.1 * max_extent) {
+        if (max_diff < 0.03 * max_extent) {
           too_small = true;
         }
 
@@ -348,6 +348,48 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
           convexHullSource.current.addFeature(feature1);
 
           convexHullSource.current.addFeature(feature2);
+        }
+
+        if (points.length > 2 && !too_small) {
+          //draw convex hull
+          const hull = turf.convex(turf.points(points));
+
+          if (hull) {
+            const buffered_hull = turf.buffer(hull, 0.01, {
+              units: 'kilometers',
+            });
+
+            if (!buffered_hull) return;
+
+            //transform the coordinates to EPSG:3857
+            const transformed_coordinates =
+              buffered_hull.geometry.coordinates[0].map((point) => {
+                //@ts-ignore
+                return fromLonLat([point[0], point[1]]);
+              });
+
+            const polygonFeature = new Feature({
+              geometry: new Polygon([
+                transformed_coordinates,
+                //buffered_hull.geometry.coordinates[0] as Coordinate[],
+              ]),
+            });
+
+            //set the color of the polygon
+            polygonFeature.setStyle(
+              new Style({
+                stroke: new Stroke({
+                  color: category.color,
+                  width: 8,
+                }),
+              })
+            );
+            convexHullSource.current.addFeature(polygonFeature);
+            //print coordinates of the convex hull
+
+            //@ts-ignore
+            //convexHullLayer.current?.getSource().addFeature(polygonFeature);
+          }
         }
       }
 
