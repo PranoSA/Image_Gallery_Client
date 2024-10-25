@@ -82,39 +82,28 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
     //check if there is an image with a date before the current date
     if (!images) return true;
 
-    //reverse the images array [latest image first] for this purpose
-    const first_image = images[0];
+    const defined_images = images.filter((image) => {
+      return image.created_at !== undefined;
+    });
 
-    const image_day =
-      first_image.created_at.getDate() +
-      365 * first_image.created_at.getFullYear();
+    if (defined_images.length === 0) return true;
 
-    const day_value =
-      untimed_trips_selected_date.getDate() +
-      365 * untimed_trips_selected_date.getFullYear();
+    const first_image = defined_images[0];
 
-    console.log('Day Value Today', day_value);
-    console.log('Day Value Image', image_day);
-
-    return image_day >= day_value;
+    return first_image.created_at >= untimed_trips_selected_date;
   }, [images, untimed_trips_selected_date]);
 
   const rightArrowDisabled = useMemo(() => {
     //check if there is an image with a date after the current date
     if (!images) return true;
 
-    //reverse the images array [latest image first] for this purpose
-    const last_image = images[images.length - 1];
+    const defined_images = images.filter((image) => {
+      return image.created_at !== undefined;
+    });
 
-    const image_day =
-      last_image.created_at.getDate() +
-      365 * last_image.created_at.getFullYear();
+    const last_image = defined_images[defined_images.length - 1];
 
-    const day_value =
-      untimed_trips_selected_date.getDate() +
-      365 * untimed_trips_selected_date.getFullYear();
-
-    return image_day <= day_value;
+    return last_image.created_at <= untimed_trips_selected_date;
   }, [images, untimed_trips_selected_date]);
 
   if (!selected_trip_id) {
@@ -160,13 +149,12 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
     if (direction === 'prev') {
       for (var image of images_reversed) {
         //find image with the date (as in the day) that is after the current date
-        const image_day =
-          image.created_at.getDate() + 365 * image.created_at.getFullYear();
 
-        if (image_day < day_value) {
-          console.log('Found Prev Image');
-          console.log(image);
-          console.log('Day Value Image', day_value);
+        if (image.created_at === null) continue;
+
+        if (image.created_at === undefined) continue;
+
+        if (image.created_at < untimed_trips_selected_date) {
           CompareViewStore.setState((state) => {
             return {
               ...state,
@@ -178,14 +166,11 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
       }
     } else {
       for (var image of images) {
-        //find image with the date (as in the day) that is after the current date
-        const image_day =
-          image.created_at.getDate() + 365 * image.created_at.getFullYear();
+        if (image.created_at === null) continue;
 
-        if (image_day > day_value) {
-          console.log('Found Next Image');
-          console.log(image);
-          console.log('Day Value Image', day_value);
+        if (image.created_at === undefined) continue;
+        //find image with the date (as in the day) that is after the current date
+        if (image.created_at > untimed_trips_selected_date) {
           CompareViewStore.setState((state) => {
             return {
               ...state,
