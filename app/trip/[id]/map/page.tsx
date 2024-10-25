@@ -27,7 +27,7 @@ import Modal from '@/components/PathModal';
 import { KML } from 'ol/format';
 import { HiOutlinePencil } from 'react-icons/hi';
 
-import type { Image, Path, Trip } from '@/definitions/Trip_View';
+import type { Image, Path, Trip, History } from '@/definitions/Trip_View';
 
 import {
   useQueryTripPaths,
@@ -58,6 +58,7 @@ import {
 import { FaHome } from 'react-icons/fa';
 import SideTab from '@/components/SideTab';
 import { Coordinate } from 'ol/coordinate';
+import { useCompareViewStore } from '@/components/Trip_View/Compare_View/CompareStore';
 //process.env.NEXT_PUBLIC_API_URL
 
 //create provider next-auth
@@ -195,6 +196,56 @@ function Page() {
     day_by_day_banners,
     horizontally_tabbed,
   } = useTripViewStore();
+
+  const { untimed_trips_selected_date } = useCompareViewStore();
+
+  //use effect for dealing with history
+  useEffect(() => {
+    //Retreive History object from local storage
+    const history = localStorage.getItem('history');
+
+    if (!trip) return;
+
+    //get last history object
+    const lastHistory: History = JSON.parse(history || '[]')[0] || [];
+
+    let is_new = true;
+
+    //if history is either empty or the trip id and MAP type is not the same
+    //then this is a new history, otherwise you'lll just update the history
+    if (
+      !lastHistory.tripId ||
+      lastHistory.tripId !== id ||
+      lastHistory.type !== 'mapWithTimeView'
+    ) {
+      is_new = true;
+    } else {
+      is_new = false;
+    }
+
+    //if is_new and the length is larger than 15, then remove the last element
+
+    if (trip.untimed_trips) {
+      if (is_new) {
+        //add to history
+        const newHistory: History = {
+          tripId: id,
+          type: 'mapWithTimeView',
+          setZoom: null,
+          setCenter: null,
+          link: `/trip/${id}/map?untimed_trips_selected_date=${untimed_trips_selected_date}`,
+          //selected_date: null,
+          scrolled_date: untimed_trips_selected_date || new Date(),
+        };
+
+        //store the history in local storage
+        localStorage.setItem(
+          'history',
+          JSON.stringify([newHistory, ...(JSON.parse(history || '[]') || [])])
+        );
+      }
+    }
+  }, [untimed_trips_selected_date, selected_date, trip, id]);
 
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<Map | null>(null);

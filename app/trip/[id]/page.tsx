@@ -1,6 +1,11 @@
 'use client';
 
-import { Image as Image, Trip, Category } from '@/definitions/Trip_View';
+import {
+  Image as Image,
+  Trip,
+  Category,
+  History,
+} from '@/definitions/Trip_View';
 
 import {
   CompareViewStore,
@@ -67,6 +72,8 @@ import { FaPencil } from 'react-icons/fa6';
 import { init } from 'next/dist/compiled/webpack/webpack';
 
 import PlainViewTimed from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Plain_View_Timed';
+import { json } from 'stream/consumers';
+import SideTab from '@/components/SideTab';
 
 const useTripContext = (): {
   id: string;
@@ -125,6 +132,8 @@ const Page = () => {
     filtered_image_indexes,
   } = useCompareViewStore();
 
+  const { untimed_trips_selected_date } = useCompareViewStore();
+
   const {
     data: trip,
     isLoading: tripLoading,
@@ -155,13 +164,35 @@ const Page = () => {
   useEffect(() => {
     initialized.current = 0;
     const urlParams = new URLSearchParams(window.location.search);
-    const date = urlParams.get('date');
-    const mode = urlParams.get('mode');
 
-    if (date) {
+    const date_param = urlParams.get('date');
+    //check if is formatted like a date or number
+    const is_date = date_param?.includes('-') || date_param?.includes('/');
+
+    const mode = urlParams.get('mode');
+    console.log('URL Parameters:', Array.from(urlParams.entries()));
+    if (is_date) {
+      const date = Array.from(urlParams.entries()).find(
+        ([key, value]) => key === 'date'
+      )?.[1];
+      if (!date) return;
+      //create new date - that is offseted by timezone
+      const new_date = new Date(date);
+      const offset = new_date.getTimezoneOffset();
+      new_date.setMinutes(new_date.getMinutes() + offset);
+
+      console.log('Date is', date.replace('-', '/'));
+      CompareViewStore.setState((state) => ({
+        ...state,
+        untimed_trips_selected_date: new Date(new_date) || new Date(),
+      }));
+    } else {
+      const date = parseInt(urlParams.get('date') || '0');
+      if (!date) return;
+
       tripViewStore.setState((state) => ({
         ...state,
-        selected_date: parseInt(date),
+        selected_date: date,
       }));
     }
 
@@ -180,7 +211,8 @@ const Page = () => {
     if (!initialized.current) return;
 
     //return if its obvious selected_date and mode has not been set yet
-    const initial_selection = selected_date === 0 && mode === 'sort';
+    const initial_selection =
+      selected_date === 0 && mode === 'sort' && !trip?.untimed_trips;
 
     if (initialized.current < 3 && initial_selection) {
       console.log('returning');
@@ -188,7 +220,15 @@ const Page = () => {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('date', selected_date.toString());
+    if (trip?.untimed_trips) {
+      console.log('setting untimed_trips_selected_date');
+      urlParams.set(
+        'date',
+        untimed_trips_selected_date.toISOString().split('T')[0]
+      );
+    } else {
+      urlParams.set('date', selected_date.toString());
+    }
     urlParams.set('mode', mode);
 
     window.history.replaceState(
@@ -198,7 +238,7 @@ const Page = () => {
     );
 
     initialized.current = initialized.current + 1;
-  }, [selected_date, mode]);
+  }, [selected_date, mode, trip?.untimed_trips, untimed_trips_selected_date]);
 
   const setMode = (
     mode: 'sort' | 'undated' | 'unlocated' | 'view' | 'compare'
@@ -208,6 +248,62 @@ const Page = () => {
       mode,
     }));
   };
+
+  //useEffect to update history object
+  useEffect(() => {
+    const last_history: History[] =
+      JSON.parse(localStorage.getItem('history') || '[]') || [];
+
+    const last_entry: History = last_history[0];
+
+    //overlapping views or views that are part of this page 'sort', 'undated', 'unlocated', 'view'
+    const overlapping_views: History['type'][] = [
+      'categorizeView',
+      'undatedView',
+      'unLocatedView',
+      'PlainView',
+      'compareView',
+    ];
+
+    const MapToType: { [key in typeof mode]: History['type'] } = {
+      sort: 'categorizeView',
+      undated: 'undatedView',
+      unlocated: 'unLocatedView',
+      view: 'PlainView',
+      compare: 'compareView',
+    };
+
+    const is_new =
+      last_entry === undefined ||
+      last_entry.tripId !== id ||
+      !overlapping_views.includes(last_entry.type);
+
+    console.log('is_new', is_new);
+    console.log(last_entry);
+    if (is_new) {
+      const new_entry: History = {
+        type: MapToType[mode],
+        tripId: id,
+        scrolled_date: new Date(),
+        setZoom: null,
+        setCenter: null,
+        link: `/trip/${id}?date=${selected_date}&mode=${mode}`,
+      };
+
+      const new_history = [new_entry, ...last_history];
+
+      localStorage.setItem('history', JSON.stringify(new_history));
+    } else {
+      //edit the first entry
+      last_entry.tripId = id;
+      last_entry.type = MapToType[mode];
+      last_entry.link = `/trip/${id}?date=${selected_date}&mode=${mode}`;
+
+      const new_history = [last_entry, ...last_history.slice(1)];
+
+      localStorage.setItem('history', JSON.stringify(new_history));
+    }
+  }, [id, mode, selected_date]);
 
   /**
    * Create a Navarbar that helps you select a mode
@@ -282,6 +378,7 @@ const Page = () => {
       <nav className="bg-blue-500 p-4 shadow-md w-full overflow-x-auto dark:bg-blue-800">
         <div className="flex flex-nowrap items-center space-x-4">
           {/* Back button */}
+          <SideTab />
           <FaHome
             className="text-white text-2xl cursor-pointer"
             onClick={goBack}

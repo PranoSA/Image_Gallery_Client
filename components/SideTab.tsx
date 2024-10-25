@@ -16,6 +16,7 @@ import { History } from '@/definitions/Trip_View';
 
 import Link from 'next/link';
 
+/*
 const SampeHistory: History = {
   type: 'mapWithTimeView',
   tripId: '0cbd0581-2a50-43b1-9ecd-62412bb8de4e',
@@ -36,7 +37,7 @@ const SampleHistories: History[] = [
     link: '/trip/1?view=category',
   },
   SampeHistory,
-];
+];*/
 
 const SideTab = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -214,7 +215,9 @@ const TypeToStringRepresentation = (type: History['type']) => {
 const HistoryList = () => {
   //history will be stored at local storage as a json array
 
-  const [histories, setHistories] = useState<History[]>(SampleHistories);
+  const [histories, setHistories] =
+    useState<History[]>(JSON.parse(localStorage.getItem('history') || '[]')) ||
+    [];
 
   const {
     data: trips,
@@ -223,11 +226,22 @@ const HistoryList = () => {
   } = useFetchMyTrips();
 
   useEffect(() => {
-    const histories = localStorage.getItem('histories');
+    const histories = localStorage.getItem('history');
+    console.log(JSON.parse(histories || '[]'));
+    console.log('histories', histories);
     if (histories) {
-      setHistories(JSON.parse(histories));
+      setHistories(
+        JSON.parse(histories).map((history: History) => {
+          return {
+            ...history,
+            scrolled_date: history.scrolled_date
+              ? new Date(history.scrolled_date)
+              : null,
+          };
+        })
+      );
     }
-  }, []);
+  }, [setHistories]);
 
   if (histories.length == 0) {
     return <p>No history found.</p>;
@@ -266,7 +280,7 @@ const HistoryList = () => {
           </Link>
           {history.scrolled_date && (
             <h1 className="text-sm text-gray-400">
-              Scrolled Date: {history.scrolled_date.toDateString()}
+              Scrolled Date: {history.scrolled_date.toString() || ''}
             </h1>
           )}
         </div>

@@ -11,7 +11,13 @@ import {
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-import { FaArchway, FaChevronUp, FaFolder, FaPlus } from 'react-icons/fa';
+import {
+  FaArchway,
+  FaChevronUp,
+  FaFolder,
+  FaPen,
+  FaPlus,
+} from 'react-icons/fa';
 
 import { Image } from '@/definitions/Trip_View';
 import React from 'react';
@@ -303,9 +309,15 @@ const ImageGallery = ({
   onDragEnd: (id: string) => void;
 }) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2">
+    <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2 mt-10">
       {images.map((image) => (
-        <ImageItem key={image.id} image={image} onDragEnd={onDragEnd} />
+        <div
+          className="flex-col items-center border dark:border-white rounded p-1"
+          key={image.id}
+        >
+          <ImageItem image={image} onDragEnd={onDragEnd} />
+          <h3 className="text-center text-sm dark:text-white">{image.name}</h3>
+        </div>
       ))}
     </div>
   );
@@ -364,6 +376,28 @@ const ImageDragFolder = ({
     //set the local images
   };
 
+  const [editingImage, setEditingImage] = useState<Image | null>(null);
+  const [editedName, setEditedName] = useState('');
+
+  const handleEditImage = async () => {
+    if (!editingImage) return;
+    if (!trip) return;
+
+    const new_image = {
+      ...editingImage,
+      name: editedName,
+    };
+
+    const res = await editImage.mutate({
+      image: new_image,
+      trip,
+    });
+
+    //set the local images
+  };
+
+  const editedFieldRef = React.useRef<HTMLInputElement>(null);
+
   return (
     <div className={` ${opened ? `w-full grow-1 mb-4` : `m-1 grow-1`}`}>
       {!opened ? (
@@ -390,7 +424,7 @@ const ImageDragFolder = ({
       ) : (
         <div
           ref={dropRef}
-          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center bg-white shadow-md rounded-lg order-yellow-500"
+          className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center bg-white  dark:bg-gray-800 shadow-md rounded-lg border-yellow-500"
         >
           <div className="w-full flex flex-row ">
             <FaFolder className="text-6xl text-yellow-500 mr-2" size={24} />
@@ -399,34 +433,71 @@ const ImageDragFolder = ({
               onClick={() => setOpen(null)}
               size={24}
             />
-            <h2 className="text-xl ml-5 font-semibold">{folder.name}</h2>
+            <h2 className="text-xl ml-5 font-semibold dark:text-yellow-100">
+              {folder.name}
+            </h2>
           </div>
           {/* Mow -> The Open Folder Contains List of images*/}
           <div className="w-full flex flex-row overflow-x-auto">
-            <div className=" flex-grow flex flex-row  min-w-[250px] items-top items-start ">
-              <div className="w-full flex flex-col items-left max-h-[400px]  overflow-y-auto ">
+            <div className="flex flex-row min-w-[400px] max-w-[400px]  items-start">
+              <div className="w-full flex flex-col items-start max-h-[420px] overflow-y-auto">
                 {images.map((image) => (
                   <div
-                    onClick={() => {
-                      if (selectedImage === image) {
-                        setSelectedImage(null);
-                      } else {
-                        setSelectedImage(image);
-                      }
-                    }}
                     key={image.id}
                     className="flex w-full justify-between items-center border rounded "
                   >
-                    <p className="text-black font-bold text-sm w-2/3">
-                      {image.name}
-                    </p>
-                    <div className="flex-shrink-0 w-1/3">
+                    {editingImage?.id !== image.id ? (
+                      <div className="flex flex-row flex-grow ml-3">
+                        <p className="text-black font-bold text-sm dark:text-white ">
+                          {image.name}
+                        </p>
+                        <FaPen
+                          size={20}
+                          onClick={() => {
+                            setEditingImage(image);
+                            setEditedName(image.name);
+                            setSelectedImage(image);
+                            // Focus on the input
+                            setTimeout(() => {
+                              editedFieldRef.current?.focus();
+                            }, 500);
+                          }}
+                          className="text-2xl cursor-pointer dark:text-black ml-3 mr-3"
+                        />
+                      </div>
+                    ) : (
+                      <input
+                        ref={editedFieldRef}
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        className="w-2/3 text-black dark:text-black"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleEditImage();
+                            setEditingImage(null);
+                          }
+                          if (e.key === 'Escape') {
+                            setEditingImage(null);
+                          }
+                        }}
+                      />
+                    )}
+                    <div
+                      className="flex-shrink-0 w-[32px]"
+                      onClick={() => {
+                        if (selectedImage === image) {
+                          setSelectedImage(null);
+                        } else {
+                          setSelectedImage(image);
+                        }
+                      }}
+                    >
                       <ImageItemClosed image={image} onDragEnd={onDragEnd} />
                     </div>
                     <div>
                       <FaArrowAltCircleDown
                         onClick={() => removeImageFromCategory(image)}
-                        className="text-2xl cursor-pointer dark:text-black"
+                        className="text-2xl ml-3 mr-3 cursor-pointer dark:text-black"
                       />
                     </div>
                   </div>
@@ -435,9 +506,9 @@ const ImageDragFolder = ({
             </div>
             {/* Image Preview Taking Up Rest of the Space */}
             <div
-              className={`relative  flex flex-wrap flex-row flex-grow ml-3 ${
+              className={`relative  flex flex-wrap flex-row flex-grow  ${
                 selectedImage
-                  ? 'h-[300px] w-[300px] min-h-[300px] min-w-[300px]'
+                  ? 'h-[400px] w-[400px] min-h-[400px] min-w-[400px]'
                   : ''
               } `}
             >
@@ -531,14 +602,13 @@ const ImageItem = ({
   return (
     <div
       ref={dragRef}
-      className={` relative p-2 h-[164px] border rounded w-full ${
+      className={` relative h-[164px]  w-full ${
         isDragging ? 'opacity-50' : 'opacity-100'
       }`}
     >
       <NextImage
         src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
         alt={`Image for ${image.created_at}`}
-        className="h-[128px]"
         layout="fill"
         objectFit="contain"
         sizes="128px"
