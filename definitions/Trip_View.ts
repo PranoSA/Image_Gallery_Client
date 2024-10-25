@@ -51,4 +51,20 @@ interface Path {
   tripid: number;
 }
 
-export type { Image, Trip, Path, Category, DaySummary };
+type History = {
+  type:
+    | 'mapWithTimeView'
+    | 'mapWithDateView'
+    | 'compareView'
+    | 'categorizeView'
+    | 'undatedView'
+    | 'unLocatedView'
+    | 'PlainView';
+  tripId: string;
+  scrolled_date: Date | null;
+  setZoom: number | null;
+  setCenter: { lat: number; lng: number } | null;
+  link: string;
+};
+
+export type { Image, Trip, Path, Category, DaySummary, History };

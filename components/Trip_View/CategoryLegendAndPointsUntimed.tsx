@@ -71,8 +71,13 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
 
   addSource,
 }) => {
-  const { filtered_categories, filtering_images, selected_date } =
-    useTripViewStore();
+  const {
+    filtered_categories,
+    filtering_images,
+    selected_date,
+    show_categories_on_map,
+    show_convex_hull,
+  } = useTripViewStore();
 
   const { id } = useContext(TripContext);
 
@@ -163,6 +168,14 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
       addSource(convexHullSource.current);
     }
 
+    /*if (!show_categories_on_map) {
+      //set an empty vector source
+      convexHullSource.current.clear();
+      addSource(convexHullSource.current);
+      return;
+      null;
+    }*/
+
     //clear the previous convex hull
     convexHullSource.current.clear();
 
@@ -172,14 +185,6 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
       const images_filtered = imagesState.data?.filter((image) => {
         return image.category === category.category;
       });
-
-      if (!filtering_images) {
-        //set an empty vector source
-        convexHullSource.current.clear();
-        addSource(convexHullSource.current);
-        return;
-        null;
-      }
 
       if (!images_filtered) {
         return;
@@ -255,6 +260,97 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
 
       console.log('images in extent', images_in_extent.length);
 
+      if (show_convex_hull) {
+        //if the max_diff is less than 10% of the extent, then don't draw the convex hull
+        if (max_diff < 0.1 * max_extent) {
+          too_small = true;
+        }
+
+        //if length is less than 2 - draw a circle
+        if (points.length == 1 || too_small) {
+          //draw a circle around point with the color of the category
+
+          const new_feature = new Feature({
+            geometry: new Point(fromLonLat(points[0])),
+          });
+
+          //Draw the Point with a color circle that is not filled in around it
+          new_feature.setStyle(
+            new Style({
+              fill: new Fill({
+                color: `${category.color}`,
+              }),
+              stroke: new Stroke({
+                color: category.color,
+                width: 5,
+              }),
+              image: new CircleStyle({
+                radius: 10,
+                fill: new Fill({
+                  color: category.color,
+                }),
+              }),
+            })
+          );
+
+          convexHullSource.current.addFeature(new_feature);
+        }
+
+        // draw convex hull with margin and color for each category
+        if (points.length == 2 && !too_small) {
+          //just draw 2 circles
+          console.log('drawing 2 circles');
+
+          const point1 = fromLonLat(points[0]);
+
+          const point2 = fromLonLat(points[1]);
+
+          const feature1 = new Feature({
+            geometry: new Point(point1),
+          });
+
+          feature1.setStyle(
+            new Style({
+              image: new CircleStyle({
+                radius: 10,
+                fill: new Fill({
+                  color: category.color,
+                }),
+                stroke: new Stroke({
+                  color: category.color,
+                  width: 2,
+                }),
+              }),
+            })
+          );
+
+          // Draw the second point
+          const feature2 = new Feature({
+            geometry: new Point(point2),
+          });
+
+          feature2.setStyle(
+            new Style({
+              image: new CircleStyle({
+                radius: 8,
+                fill: new Fill({
+                  color: category.color,
+                }),
+                stroke: new Stroke({
+                  color: category.color,
+                  width: 2,
+                }),
+              }),
+            })
+          );
+
+          //add the features to the source
+          convexHullSource.current.addFeature(feature1);
+
+          convexHullSource.current.addFeature(feature2);
+        }
+      }
+
       // what is a number too big maybe -> maybe 40?
 
       //In the future - maybe if there is more than 40 images -> Draw a Heat Map
@@ -280,31 +376,33 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
         point_size = 9;
       }
 
-      //draw the points
-      points.forEach((point_untransformed) => {
-        const point = fromLonLat(point_untransformed);
+      if (show_categories_on_map) {
+        //draw the points
+        points.forEach((point_untransformed) => {
+          const point = fromLonLat(point_untransformed);
 
-        const feature1 = new Feature({
-          geometry: new Point(point),
+          const feature1 = new Feature({
+            geometry: new Point(point),
+          });
+
+          feature1.setStyle(
+            new Style({
+              image: new CircleStyle({
+                radius: point_size,
+                fill: new Fill({
+                  color: category.color,
+                }),
+                stroke: new Stroke({
+                  color: category.color,
+                  width: 2,
+                }),
+              }),
+            })
+          );
+          //add the feature to the source
+          convexHullSource.current.addFeature(feature1);
         });
-
-        feature1.setStyle(
-          new Style({
-            image: new CircleStyle({
-              radius: point_size,
-              fill: new Fill({
-                color: category.color,
-              }),
-              stroke: new Stroke({
-                color: category.color,
-                width: 2,
-              }),
-            }),
-          })
-        );
-        //add the feature to the source
-        convexHullSource.current.addFeature(feature1);
-      });
+      }
     });
 
     //add the convex hull layer to the map
@@ -319,6 +417,8 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     imagesState.data,
     map,
     selected_date,
+    show_categories_on_map,
+    show_convex_hull,
     zoom,
   ]);
 

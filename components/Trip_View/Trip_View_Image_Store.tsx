@@ -20,6 +20,7 @@ import {
 } from '@/definitions/Trip_View';
 
 import axios from 'axios';
+import { Coordinate } from 'ol/coordinate';
 
 const getBearerFromLocalStorage = () => {
   if (typeof localStorage === 'undefined') {
@@ -718,14 +719,21 @@ type StoreState = {
   //whether map is open or not
   map_open: boolean;
 
+  show_convex_hull: boolean;
+
   //for the time view -> Store scroll position
   scroll_position: number;
 
   //to show the form modal
   adding_images: boolean;
 
+  show_categories_on_map: boolean;
+
   //adding paths
   adding_path: boolean;
+
+  force_zoom: number | null;
+  force_center: Coordinate | null;
 
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
@@ -762,6 +770,10 @@ const viewport_bigger_than_600 =
 
 export const tripViewStore = new Store<StoreState>({
   //selected_trip_id: '',
+
+  //
+  show_categories_on_map: false,
+
   filtering_images: init_state.filtering_images || false,
   selecting_category: false,
   filtered_categories: [],
@@ -773,6 +785,7 @@ export const tripViewStore = new Store<StoreState>({
   date_or_time_view: 'date',
   scroll_position: 0,
   editingImage: null,
+  show_convex_hull: false,
   viewed_image_index: null,
   day_by_day_banners: init_state.day_by_day_banners ?? true,
   zoom_on_day_change: init_state.zoom_on_day_change ?? true,
@@ -782,6 +795,9 @@ export const tripViewStore = new Store<StoreState>({
   horizontally_tabbed:
     init_state.horizontally_tabbed ?? viewport_bigger_than_600,
   scroll_to_image: null,
+
+  force_zoom: null,
+  force_center: null,
 
   adding_images: false,
 
@@ -863,6 +879,8 @@ const StoringSate: Listener = () => {
     day_by_day_banners: tripViewStore.state.day_by_day_banners,
     map_open: tripViewStore.state.map_open,
     horizontally_tabbed: tripViewStore.state.horizontally_tabbed,
+    show_convex_hull: tripViewStore.state.show_convex_hull,
+    show_categories_on_map: tripViewStore.state.show_categories_on_map,
   };
 
   //serialize the object
@@ -885,4 +903,7 @@ type PersistedSettings = {
   day_by_day_banners: boolean;
   map_open: boolean;
   horizontally_tabbed: boolean;
+  show_convex_hull: boolean;
+  //information on categories
+  show_categories_on_map: boolean;
 };

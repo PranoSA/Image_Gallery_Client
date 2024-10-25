@@ -131,7 +131,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         }
       }
     });
-  }, [mapInstanceRef.current]);
+  }, [imageState.data]);
 
   //get information about the day, the image_location
   // for the purpose of filtering paths and stuff and mapopen
@@ -143,9 +143,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     zoom_on_day_change,
     image_heat_map,
     paths_open,
-    selecting_category,
-    filtered_categories,
-    filtering_images,
     scroll_to_image,
   } = useTripViewStore();
 
@@ -218,7 +215,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
       //set scrollToImage function
     }
-  }, [mapRef.current]);
+  }, []);
 
   const zoomLater = (image: Image) => {
     setTimeout(() => {
@@ -305,6 +302,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     // make a "maximum zoom" depending on distance
 
+    const previous_zoom = mapInstanceRef.current.getView().getZoom();
+
     const current_zoom = Math.min(
       mapInstanceRef.current.getView().getZoom() || 10,
       max_zoom
@@ -324,17 +323,24 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       previousZoomCoordinate.current[1] === transformed_point[1]
     ) {
       mapInstanceRef.current.getView().animate({
-        zoom: current_zoom + 3,
-        duration: 2000,
+        zoom: current_zoom + 4,
+        duration: 1000,
         center: transformed_point,
       });
     } else {
       //animate the map to the point
-      mapInstanceRef.current.getView().animate({
-        center: transformed_point,
-        duration: 2000,
-        zoom: Math.ceil(current_zoom),
-      });
+      mapInstanceRef.current.getView().animate(
+        {
+          center: transformed_point,
+          duration: 2000,
+          zoom: Math.ceil(current_zoom),
+        },
+        {
+          zoom: previous_zoom,
+          duration: 2000,
+          center: transformed_point,
+        }
+      );
     }
 
     previousZoomCoordinate.current = transformed_point;

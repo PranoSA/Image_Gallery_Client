@@ -56,6 +56,8 @@ import {
   SessionProvider,
 } from 'next-auth/react';
 import { FaHome } from 'react-icons/fa';
+import SideTab from '@/components/SideTab';
+import { Coordinate } from 'ol/coordinate';
 //process.env.NEXT_PUBLIC_API_URL
 
 //create provider next-auth
@@ -224,7 +226,7 @@ function Page() {
       trip?.start_date || '1970-01-01',
       images || []
     );
-  }, [selected_date, trip, images]);
+  }, [get_images_for_day, selected_date, trip?.start_date, images]);
 
   //add interactivity to the map
 
@@ -233,6 +235,13 @@ function Page() {
     x: number;
     y: number;
   }>({ x: 0, y: 0 });
+
+  const [center, setCenter] = useState<Coordinate | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number | null>(null);
+
+  /**
+   * useEff
+   */
 
   //store computed Banner Component
   const bannerComponent = useMemo(() => {
@@ -408,6 +417,7 @@ function Page() {
   if (horizontally_tabbed) {
     return (
       <div className="page-container h-screen">
+        <SideTab />
         <div
           className="z-100 absolute top-0 left-0"
           style={{ zIndex: 214748364 }}
@@ -483,6 +493,8 @@ function Page() {
 
   return (
     <div className="page-container">
+      <SideTab />
+
       {/** Make Trip Dropdown Menu not take up any "space" - position absolutely on the page */}
 
       <div

@@ -251,20 +251,20 @@ const SelectionComponentGallery = () => {
             {openCalendar && (
               <div className="fixed inset-0 flex items-center justify-center z-50">
                 <div className="absolute inset-0 bg-black opacity-50"></div>
-                <div className="relative bg-white p-4 rounded-lg shadow-lg z-50">
+                <div className="relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50">
                   <div className="flex justify-end">
                     <FaTimes
                       onClick={() => setOpenCalendar(false)}
-                      className="cursor-pointer"
+                      className="cursor-pointer dark:text-neon-green hover:dark:text-neon-red"
+                      size={30}
                     />
                   </div>
                   <Calendar
                     onChange={(value, event) => {
-                      console.log(value);
-                      console.log('event', event);
                       handleDateChange(value as Date);
                       setOpenCalendar(false);
                     }}
+                    className={'cursor-pointer font-bold dark:text-black '}
                     tileDisabled={tileDisabled}
                     value={CompareViewStore.state.untimed_trips_selected_date}
                     onActiveStartDateChange={(date) => {

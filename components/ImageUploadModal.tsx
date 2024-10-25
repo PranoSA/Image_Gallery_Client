@@ -72,7 +72,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ tripId }) => {
   };
 
   const [totalSize, setTotalSize] = useState(0);
-  const maxSize = 100 * 1024 * 1024; // 100 MB in bytes
+  const maxSize = 1000 * 1024 * 1024; // 1000 MB in bytes
 
   const handleFileChange = (event: { target: { files: any } }) => {
     const files = event.target.files;

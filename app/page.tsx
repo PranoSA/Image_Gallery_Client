@@ -47,6 +47,7 @@ import { FaPlus } from 'react-icons/fa';
 import { FaImage } from 'react-icons/fa';
 
 import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';
+import SideTab from '@/components/SideTab';
 
 // get server session
 
@@ -600,6 +601,7 @@ const TripListCompontent = () => {
 
   return (
     <div className=" flex flex-wrap w-full   p-5">
+      <SideTab />
       <div className="w-full z-100 flex justify-between ">
         {inviteForm && (
           <InviteUserToTripForm
@@ -618,6 +620,7 @@ const TripListCompontent = () => {
           editTrip && editTripModal(editedTrip || trips[0])
         }
       </div>
+      <SideTab />
       <div className="w-full flex flex-wrap flex-row">
         {trips.map((trip) => (
           <div

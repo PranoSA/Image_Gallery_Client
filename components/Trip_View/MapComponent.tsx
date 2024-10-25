@@ -75,9 +75,6 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
     zoom_on_day_change,
     image_heat_map,
     paths_open,
-    selecting_category,
-    filtered_categories,
-    filtering_images,
     scroll_to_image,
   } = useTripViewStore();
 
