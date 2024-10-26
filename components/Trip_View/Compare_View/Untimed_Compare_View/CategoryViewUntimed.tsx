@@ -17,6 +17,7 @@ import {
   FaFolder,
   FaPen,
   FaPlus,
+  FaTimes,
 } from 'react-icons/fa';
 
 import { Image } from '@/definitions/Trip_View';
@@ -444,11 +445,24 @@ const ImageDragFolder = ({
                 {images.map((image) => (
                   <div
                     key={image.id}
-                    className="flex w-full justify-between items-center border rounded "
+                    className={`flex w-full justify-between items-center border rounded  ${
+                      selectedImage?.id === image.id
+                        ? 'border-4 dark:border-neon-green'
+                        : ''
+                    }  `}
                   >
                     {editingImage?.id !== image.id ? (
                       <div className="flex flex-row flex-grow ml-3">
-                        <p className="text-black font-bold text-sm dark:text-white ">
+                        <p
+                          className="text-black font-bold text-sm dark:text-white "
+                          onClick={() => {
+                            if (selectedImage === image) {
+                              setSelectedImage(null);
+                            } else {
+                              setSelectedImage(image);
+                            }
+                          }}
+                        >
                           {image.name}
                         </p>
                         <FaPen
@@ -495,9 +509,9 @@ const ImageDragFolder = ({
                       <ImageItemClosed image={image} onDragEnd={onDragEnd} />
                     </div>
                     <div>
-                      <FaArrowAltCircleDown
+                      <FaTimes
                         onClick={() => removeImageFromCategory(image)}
-                        className="text-2xl ml-3 mr-3 cursor-pointer dark:text-black"
+                        className="text-2xl ml-3 mr-3 cursor-pointer dark:text-white hover:text-red-500"
                       />
                     </div>
                   </div>

@@ -637,6 +637,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     //add images for that day to the vector source
     if (!images || !currentDay || !trip) return;
 
+    if (!image_heat_map) return;
+
     images
       .filter((i) => i.lat && i.long)
       .filter((i) => parseFloat(i.lat) !== 0 || parseFloat(i.long) !== 0)
