@@ -58,14 +58,12 @@ const SideTab = () => {
         className="fixed top-0 left-0 h-full transition-transform duration-300"
         style={{ zIndex: 1000 }}
       >
-        <div
-          className="absolute top-0 left-0 h-full w-8 cursor-pointer flex items-center justify-center"
-          onClick={toggleTab}
-        >
+        <div className="absolute top-0 left-0 h-full w-8 cursor-pointer flex items-center justify-center">
           <FaArrowRight
             className="text-white dark:text-neon-purple cursor-pointer hover:text-neon-blue"
             size={30}
             title="Settings"
+            onClick={toggleTab}
           />
         </div>
       </div>

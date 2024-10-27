@@ -391,7 +391,7 @@ const Page = () => {
           <ImageUploadModal tripId={id} />
           {/* Plus Icon To Add New Image */}
           <div className="pl-4 pr-4">
-            <div className="flex flex-row items-center justify-center gap-1">
+            <div className="flex flex-row items-center rounded-lg px-4 py-2 justify-center gap-1 hover:bg-blue-600 dark:bg-blue-800">
               <FaPlus
                 onClick={() => {
                   tripViewStore.setState((state) => {
@@ -402,6 +402,7 @@ const Page = () => {
                 title="Add Images"
                 size={30}
               />
+              <div className="text-white pl-2">Add Images</div>
             </div>
           </div>
           <button

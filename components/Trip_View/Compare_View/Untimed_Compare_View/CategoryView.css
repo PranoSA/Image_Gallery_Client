@@ -1,0 +1,23 @@
+/* Custom scrollbar styling for Chrome, Edge, and Safari */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 24px; /* Increased width of the scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Background of the scrollbar track */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #888; /* Color of the scrollbar thumb */
+  border-radius: 12px; /* Rounded corners for the scrollbar thumb */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Color of the scrollbar thumb on hover */
+}
+
+/* Custom scrollbar styling for Firefox */
+.custom-scrollbar {
+  scrollbar-width: 24px; /* Makes the scrollbar thicker */
+  scrollbar-color: #888 #f1f1f1; /* Color of the scrollbar thumb and track */
+}

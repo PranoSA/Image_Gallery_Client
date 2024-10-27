@@ -11,8 +11,11 @@ import {
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
+import '@/components/Trip_View/Compare_View/Untimed_Compare_View/CategoryView.css';
+
 import {
   FaArchway,
+  FaCaretDown,
   FaChevronUp,
   FaFolder,
   FaPen,
@@ -20,7 +23,7 @@ import {
   FaTimes,
 } from 'react-icons/fa';
 
-import { Image } from '@/definitions/Trip_View';
+import { Image, Category } from '@/definitions/Trip_View';
 import React from 'react';
 import NextImage from 'next/image';
 import { FaChevronDown } from 'react-icons/fa';
@@ -82,31 +85,27 @@ const CategoryView = () => {
     }
   }, [images, untimed_trips_selected_date]);
 
-  const addImage = useAddImage();
   const editImage = UpdateImage();
 
-  const start_date = useMemo(() => {
-    let new_start_date = new Date('1970-01-01T00:00:00Z');
+  const addImageToFolder = async (image: Image, folderName: string) => {
+    const new_image = {
+      ...image,
+      category: folderName,
+    };
 
-    // now -> if there ARE images, then set the start date to the first image
-    if (images && images.length > 0) {
-      new_start_date = new Date(images[0].created_at);
-    }
+    if (!trip) return;
 
-    // now -> if there is a trip, then set the start date to the trip start date
-  }, [images]);
+    const res = await editImage.mutate({
+      image: new_image,
+      trip,
+    });
 
-  const end_date = useMemo(() => {
-    let end_date = new Date('1970-01-01T00:00:00Z');
-
-    // now -> if there ARE images, then set the start date to the first image
-    if (images && images.length > 0) {
-      end_date = new Date(images[images.length - 1].created_at);
-    }
-
-    // now -> if there is a trip, then set the start date to the trip start date
-    return end_date;
-  }, [images]);
+    setLocalImages((prevImages) =>
+      prevImages.map((img) =>
+        img.id === image.id ? { ...img, category: folderName } : img
+      )
+    );
+  };
 
   const imagesForDay = useMemo(() => {
     if (!images || !trip) return [];
@@ -227,25 +226,36 @@ const CategoryView = () => {
     );
   };
 
+  const found_folder: { name: string } | undefined = folders.find(
+    (folders) => folders.name === openCategoryFolder
+  );
+
   return (
     <div>
       <div className="flex justify-center space-x-4 w-full">
         {/* Button to add a category */}
-        <div className="flex justify-center space-x-4">
-          <FaPlus
-            onClick={() => {
-              CompareViewStore.setState((state) => {
-                return {
-                  ...state,
-                  add_category_modal_open: true,
-                };
-              });
-            }}
-            className="text-2xl cursor-pointer"
-            title="Add Category"
-          />
-          <label className="flex items-center cursor-pointer">
-            <div className="relative">
+        <div className="flex justify-center m-3  ">
+          <div className="flex items-center p-2 cursor-pointer w-1/2 rounded-lg hover:bg-blue-800">
+            <FaPlus
+              onClick={() => {
+                CompareViewStore.setState((state) => {
+                  return {
+                    ...state,
+                    add_category_modal_open: true,
+                  };
+                });
+              }}
+              className="text-2xl cursor-pointer"
+              title="Add Category"
+            />
+            <div className="m-3">Add Category</div>
+          </div>
+
+          <label className="flex items-center cursor-pointer w-1/2">
+            <div
+              className="relative"
+              title={dayByDay ? 'All Images' : 'Day By Day'}
+            >
               <input
                 type="checkbox"
                 checked={dayByDay}
@@ -259,7 +269,9 @@ const CategoryView = () => {
                 }`}
               ></div>
             </div>
-            <span className="ml-3 text-white">Day By Day</span>
+            <span className="ml-3 text-white">
+              {dayByDay ? 'Day By Day' : 'All Images'}
+            </span>
           </label>
         </div>
         {add_category_modal_open && <AddCategoryForm />}
@@ -269,25 +281,38 @@ const CategoryView = () => {
 
         {dayByDay && <Banner_Component />}
         <div className="flex flex-wrap w-full flex-row justify-around">
-          {folders
-            .sort((a, b) =>
-              //make sure that the opened folder is at LAST
-              a.name === openCategoryFolder ? 1 : -1
-            )
-            .map((folder) => (
-              <ImageDragFolder
-                key={folder.name}
-                folder={folder}
-                images={(images || []).filter(
-                  (img) => img.category === folder.name
-                )}
-                onDropImage={handleDropImage}
-                onDragEnd={handleDragEnd}
-                opened={openCategoryFolder === folder.name}
-                setOpen={(name: string | null) => setOpenCategoryFolder(name)}
-              />
-            ))}
+          {folders.map((folder) => (
+            <ImageDragFolder
+              key={folder.name}
+              folder={folder}
+              images={(images || []).filter(
+                (img) => img.category === folder.name
+              )}
+              onDropImage={handleDropImage}
+              onDragEnd={handleDragEnd}
+              opened={false}
+              setOpen={(name: string | null) => setOpenCategoryFolder(name)}
+            />
+          ))}
         </div>
+        <div className="flex flex-wrap w-full flex-row justify-around mt-10 ml-5 items-center">
+          {found_folder ? (
+            <ImageDragFolder
+              key={found_folder.name}
+              folder={found_folder}
+              images={(images || []).filter(
+                (img) => img.category === found_folder.name
+              )}
+              onDropImage={handleDropImage}
+              onDragEnd={handleDragEnd}
+              opened={true}
+              setOpen={(name: string | null) => setOpenCategoryFolder(name)}
+            />
+          ) : (
+            <h1 className="text-2xl text-gray-500">No Folder Opened</h1>
+          )}
+        </div>
+
         {images_for_day_and_unassigned.length == 0 && (
           <div className="flex justify-center items-center w-full h-96">
             <h1 className="text-2xl text-gray-500">No images for date</h1>
@@ -296,6 +321,8 @@ const CategoryView = () => {
         <ImageGallery
           images={images_for_day_and_unassigned}
           onDragEnd={handleDragEnd}
+          folders={folders}
+          addImageToFolder={addImageToFolder}
         />
       </DndProvider>
     </div>
@@ -305,10 +332,20 @@ const CategoryView = () => {
 const ImageGallery = ({
   images,
   onDragEnd,
+  folders,
+  addImageToFolder,
 }: {
   images: Image[];
   onDragEnd: (id: string) => void;
+  folders: { name: string }[];
+  addImageToFolder: (image: Image, folderName: string) => void;
 }) => {
+  const [dropdownImage, setDropdownImage] = useState<Image | null>(null);
+  const handleFolderSelect = (folderName: string) => {
+    addImageToFolder(dropdownImage as Image, folderName);
+    setDropdownImage(null);
+  };
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2 mt-10">
       {images.map((image) => (
@@ -316,6 +353,26 @@ const ImageGallery = ({
           className="flex-col items-center border dark:border-white rounded p-1"
           key={image.id}
         >
+          <div className="relative">
+            <FaCaretDown
+              className="text-2xl cursor-pointer dark:text-white"
+              onClick={() => setDropdownImage(image)}
+              size={30}
+            />
+            {dropdownImage === image && (
+              <div className="absolute overflow-y-auto max-h-[150px] top-8 left-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded shadow-lg z-10">
+                {folders.map((folder) => (
+                  <div
+                    key={folder.name}
+                    className="px-4 py-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
+                    onClick={() => handleFolderSelect(folder.name)}
+                  >
+                    {folder.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <ImageItem image={image} onDragEnd={onDragEnd} />
           <h3 className="text-center text-sm dark:text-white">{image.name}</h3>
         </div>
@@ -441,7 +498,7 @@ const ImageDragFolder = ({
           {/* Mow -> The Open Folder Contains List of images*/}
           <div className="w-full flex flex-row overflow-x-auto">
             <div className="flex flex-row min-w-[400px] max-w-[400px]  items-start">
-              <div className="w-full flex flex-col items-start max-h-[420px] overflow-y-auto">
+              <div className="w-full flex flex-col items-start max-h-[420px] overflow-y-auto custom-scrollbar">
                 {images.map((image) => (
                   <div
                     key={image.id}
