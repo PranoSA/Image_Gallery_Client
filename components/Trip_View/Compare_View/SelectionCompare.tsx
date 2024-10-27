@@ -45,6 +45,7 @@ import ImagePreview from '../ImagePreview';
 
 //check mark icon
 import { FaCheck } from 'react-icons/fa';
+import PlainViewTimed from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Plain_View_Timed';
 
 const SelectAndCompare = () => {
   const [selectionOrCompare, setSelectionOrCompare] = useState<
@@ -100,12 +101,17 @@ const SelectAndCompare = () => {
     });
   };
 
+  console.log('Viewed Image Index: ', viewed_image_index);
+  console.log('Preview Image: ', [viewed_image_index]);
+
   const setPreviewImage = (image: Image) => {
     if (!images) return;
     tripViewStore.setState((state) => {
       return {
         ...state,
-        viewed_image_index: images.findIndex((img) => img.id === image.id),
+        viewed_image_index: selected_images.findIndex(
+          (img) => img.id === image.id
+        ),
       };
     });
   };
@@ -124,14 +130,21 @@ const SelectAndCompare = () => {
         >
           Compare
         </button>
-        <PlainView show_selection={true} />
+        <PlainViewTimed show_selection={true} />
       </div>
     );
   }
   if (selectionOrCompare === 'Compare') {
     return (
       <div className="flex flex-col items-center space-y-4">
-        {viewed_image_index && <ImagePreview />}
+        {viewed_image_index !== null && (
+          <ImagePreview
+            preset_images={{
+              images: selected_images || [],
+              preset: true,
+            }}
+          />
+        )}
         {editingImage && <EditImageModal />}
         <button
           onClick={() => setSelectionOrCompare('Select')}

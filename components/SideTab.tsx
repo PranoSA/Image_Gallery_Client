@@ -5,6 +5,8 @@ import {
   FaArrowLeft,
   FaArrowDown,
   FaArrowUp,
+  FaMoon,
+  FaSun,
 } from 'react-icons/fa';
 import {
   useFetchMyTrips,
@@ -42,11 +44,45 @@ const SampleHistories: History[] = [
 const SideTab = () => {
   const [isOpen, setIsOpen] = useState(false);
 
+  const [darkMode, setDarkMode] = useState(false);
+
   const [viewTrips, setViewTrips] = useState(false);
 
   const [openMapSettings, setOpenMapSettings] = useState(false);
 
   const [openHistory, setOpenHistory] = useState(false);
+
+  //on -mount -
+  useEffect(() => {
+    //test if the "dark mode key" is in local storage
+    const isDark = localStorage.getItem('dark');
+    console.log('isDark', isDark);
+
+    //if the key either does not exist, or is true, set the dark mode to true
+    if (!isDark || isDark === 'true') {
+      setDarkMode(true);
+    } else {
+      setDarkMode(false);
+    }
+
+    //if the key does not exist - set it to true
+    if (!isDark) {
+      localStorage.setItem('dark', 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    localStorage.setItem('dark', (!darkMode).toString());
+  };
 
   const toggleTab = () => {
     setIsOpen(!isOpen);
@@ -60,7 +96,7 @@ const SideTab = () => {
       >
         <div className="absolute top-0 left-0 h-full w-8 cursor-pointer flex items-center justify-center">
           <FaArrowRight
-            className="text-white dark:text-neon-purple cursor-pointer hover:text-neon-blue"
+            className="text-black dark:text-neon-purple cursor-pointer hover:text-neon-blue"
             size={30}
             title="Settings"
             onClick={toggleTab}
@@ -81,6 +117,24 @@ const SideTab = () => {
         <div className="flex flex-row items-start">
           <div className="flex flex-col w-72 p-4 ">
             <div className="flex flex-col space-y-4 dark:text-white  ">
+              <div className="relative border-b border-gray-600 pb-2 flex-row">
+                <button
+                  onClick={toggleDarkMode}
+                  className="flex items-center p-2 bg-gray-200 dark:bg-gray-800 text-black dark:text-white rounded-full shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none"
+                >
+                  {darkMode ? (
+                    <>
+                      <FaSun className="text-yellow-500 mr-2" />
+                      <span>Switch to Light Mode</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaMoon className="text-blue-500 mr-2" />
+                      <span>Switch to Dark Mode</span>
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="relative border-b border-gray-600 pb-2 flex-row mt-20">
                 <h2 className="text-lg font-bold dark:text-white">TRIPS</h2>
                 {viewTrips ? (

@@ -23,8 +23,18 @@ import {
   useQueryTripImages,
   UpdateImage,
 } from './Trip_View_Image_Store';
+import { Image } from '@/definitions/Trip_View';
 
-const ImagePreview: React.FC = () => {
+type ImagePreviewProps = {
+  preset_images?: {
+    preset: boolean;
+    images: Image[];
+  };
+};
+
+const ImagePreview: React.FC<ImagePreviewProps> = ({
+  preset_images = { preset: false, images: [] },
+}) => {
   const {
     viewed_image_index,
     get_images_for_day,
@@ -141,33 +151,49 @@ const ImagePreview: React.FC = () => {
   };
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-30 h-full w-full ">
-      <div className="relative w-full h-full flex items-center justify-center max-h-full ">
-        <FaTimes
-          className="absolute top-4 right-4 z-40 text-white text-3xl cursor-pointer"
-          onClick={clearPreviewImage}
-        />
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75  h-full w-full "
+      style={{
+        zIndex: 1000,
+      }}
+    >
+      <div
+        className="relative w-full h-full flex items-center justify-center max-h-full "
+        style={{
+          zIndex: 100000,
+        }}
+        onClick={clearPreviewImage}
+      >
+        <FaTimes className="absolute top-4 right-4 z-40 text-white text-3xl cursor-pointer" />
 
         <FaChevronLeft
           className="absolute z-50 left-4 text-white text-3xl cursor-pointer "
-          onClick={() => {
-            if (viewed_image_index < 1) return;
+          aria-disabled={viewed_image_index === 0}
+          style={{
+            zIndex: 10000000,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            //check if preset
+            if (preset_images.preset) {
+              if (viewed_image_index < 1) return;
+            } else {
+              if (viewed_image_index < 1) return;
+            }
 
             setEditingCurrentImage(false);
+            //go back one image
+
+            setPreviewImage(viewed_image_index - 1);
+
+            //if preset, return
+            if (preset_images.preset) return;
 
             //detect a day change
             const currenn_day = new Date(images[viewed_image_index].created_at);
             const previous_day = new Date(
               images[viewed_image_index - 1].created_at
             );
-
-            //go back one image
-            tripViewStore.setState((state) => {
-              return {
-                ...state,
-                viewed_image_index: viewed_image_index - 1,
-              };
-            });
 
             if (currenn_day.getDate() !== previous_day.getDate()) {
               tripViewStore.setState((state) => {
@@ -177,19 +203,23 @@ const ImagePreview: React.FC = () => {
                 };
               });
             }
-
-            setPreviewImage(viewed_image_index - 1);
           }}
         />
-        <div className="flex flex-col flex-grow items-center justify-center h-full">
-          <div className="relative flex-grow flex items-center justify-center h-full w-full ">
+        <div className="flex flex-col flex-grow items-center justify-center h-full mt-10">
+          <div className="relative flex-grow flex items-center justify-center h-full w-full lg:w-3/4 xl:w-1/2 ">
             {/*<img
               src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${images[viewed_image_index].file_path}`}
               alt={`Image for ${images[viewed_image_index].created_at}`}
               className="object-contain max-h-full"
             />*/}
             <NextImage
-              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${images[viewed_image_index].file_path}`}
+              onClick={(e) => e.stopPropagation()}
+              className="border-2 border-white rounded-lg"
+              src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${
+                preset_images.preset
+                  ? preset_images.images[viewed_image_index].file_path
+                  : images[viewed_image_index].file_path
+              }`}
               alt={`Image for ${images[viewed_image_index].created_at}`}
               fill
               //ensure it keeps the aspect ratio
@@ -231,17 +261,21 @@ const ImagePreview: React.FC = () => {
 
         <FaChevronRight
           className="absolute right-4 text-white text-3xl cursor-pointer"
-          onClick={() => {
-            if (viewed_image_index === images.length - 1) return;
+          size={0}
+          style={{
+            zIndex: 10000000,
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            //check if preset
+            if (preset_images.preset) {
+              if (viewed_image_index === preset_images.images.length - 1)
+                return;
+            } else {
+              if (viewed_image_index === images.length - 1) return;
+            }
 
             setEditingCurrentImage(false);
-
-            //detect a day change
-            const currenn_day = new Date(images[viewed_image_index].created_at);
-
-            const next_day = new Date(
-              images[viewed_image_index + 1].created_at
-            );
 
             tripViewStore.setState((state) => {
               return {
@@ -249,6 +283,16 @@ const ImagePreview: React.FC = () => {
                 viewed_image_index: viewed_image_index + 1,
               };
             });
+
+            //if preset, return
+            if (preset_images.preset) return;
+
+            //detect a day change
+            const currenn_day = new Date(images[viewed_image_index].created_at);
+
+            const next_day = new Date(
+              images[viewed_image_index + 1].created_at
+            );
 
             if (currenn_day.getDate() !== next_day.getDate()) {
               tripViewStore.setState((state) => {
@@ -260,6 +304,11 @@ const ImagePreview: React.FC = () => {
             }
           }}
           //disabled={viewed_image_index === images.length - 1}
+          aria-disabled={
+            preset_images.preset
+              ? viewed_image_index === preset_images.images.length - 1
+              : viewed_image_index === images.length - 1
+          }
         />
       </div>
     </div>
