@@ -735,6 +735,10 @@ type StoreState = {
   force_zoom: number | null;
   force_center: Coordinate | null;
 
+  show_uncategorized_images: boolean;
+
+  photo_center_move_method: 'shift' | 'flight';
+
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
 
@@ -804,6 +808,8 @@ export const tripViewStore = new Store<StoreState>({
   adding_path: false,
   done_comparing: false,
 
+  show_uncategorized_images: true,
+  photo_center_move_method: 'shift',
   map_open: init_state.map_open ?? true,
   get_images_for_time: (images: Image[]) => {
     //return images order by time

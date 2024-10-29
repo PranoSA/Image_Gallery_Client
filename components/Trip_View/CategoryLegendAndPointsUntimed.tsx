@@ -77,6 +77,7 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     selected_date,
     show_categories_on_map,
     show_convex_hull,
+    photo_center_move_method,
   } = useTripViewStore();
 
   const { id } = useContext(TripContext);
@@ -527,6 +528,8 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     const zoom_prev = map.getView().getZoom();
     console.log('zoom_prev', zoom_prev);
 
+    //check if "flight" or "shift " is the
+
     //zoom to the center
     map.getView().animate({
       center: fromLonLat(center.geometry.coordinates as Coordinate),
@@ -549,13 +552,6 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
         duration: 2000,
       });
     }, 2000);
-
-    //zoom to the center
-    /*map.getView().animate({
-      center: fromLonLat(center.geometry.coordinates as Coordinate),
-      zoom,
-      duration: 2000,
-    });*/
 
     //set the zoom level
     setZoom(zoom);

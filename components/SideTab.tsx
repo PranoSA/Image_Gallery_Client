@@ -7,6 +7,8 @@ import {
   FaArrowUp,
   FaMoon,
   FaSun,
+  FaPlane,
+  FaArrowsAlt,
 } from 'react-icons/fa';
 import {
   useFetchMyTrips,
@@ -347,6 +349,14 @@ const MapSettingPanel = () => {
    * This Should Model Closely to the Map Settings Panel
    */
 
+  const toggleMethod = () => {
+    tripViewStore.setState((state) => ({
+      ...state,
+      photo_center_move_method:
+        state.photo_center_move_method === 'flight' ? 'shift' : 'flight',
+    }));
+  };
+
   const {
     comparing_photos,
     paths_open,
@@ -358,6 +368,8 @@ const MapSettingPanel = () => {
     filtering_images,
     show_convex_hull,
     show_categories_on_map,
+    show_uncategorized_images,
+    photo_center_move_method,
   } = useTripViewStore();
 
   return (
@@ -497,6 +509,48 @@ const MapSettingPanel = () => {
             className="form-checkbox h-5 w-5 text-neon-green bg-gray-800 border-gray-700"
           />
           <span className="text-neon-green text-sm">Categories On Map</span>
+        </label>
+        {/* Show Uncategorised Images */}
+        <label className="flex items-center space-x-3 mb-2">
+          <input
+            type="checkbox"
+            checked={show_uncategorized_images}
+            onChange={() =>
+              tripViewStore.setState((state) => ({
+                ...state,
+                show_uncategorized_images: !state.show_uncategorized_images,
+              }))
+            }
+            className="form-checkbox h-5 w-5 text-neon-green bg-gray-800 border-gray-700"
+          />
+          <span className="text-neon-green text-sm">
+            Show Uncategorized Images
+          </span>
+        </label>
+        {/* Flight Icon for flight and target icon for shift*/}
+        {/* Photo Center Move Method */}
+        <label className="flex items-center space-x-3 mb-2">
+          <div
+            onClick={toggleMethod}
+            className="relative inline-flex items-center cursor-pointer"
+          >
+            <div className="w-12 h-6 bg-gray-800 rounded-full shadow-inner"></div>
+            <div
+              className={`absolute left-1  w-18  h-6 rounded-full transition-transform transform ${
+                photo_center_move_method === 'flight'
+                  ? 'translate-x-6 bg-green-800'
+                  : 'bg-gray-700'
+              }`}
+              title={photo_center_move_method === 'flight' ? 'Flight' : 'Shift'}
+            >
+              {photo_center_move_method === 'flight' ? (
+                <FaPlane className="text-white" />
+              ) : (
+                <FaArrowsAlt className="text-white" />
+              )}
+            </div>
+          </div>
+          <span className="text-neon-green text-sm">Image Map Zoom Method</span>
         </label>
       </div>
     </div>

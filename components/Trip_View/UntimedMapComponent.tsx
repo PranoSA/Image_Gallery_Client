@@ -19,7 +19,7 @@ import OSM from 'ol/source/OSM';
 
 import { fromLonLat } from 'ol/proj';
 import { Feature } from 'ol';
-import { Point } from 'ol/geom';
+import { LineString, Point } from 'ol/geom';
 import { Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
@@ -144,6 +144,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     image_heat_map,
     paths_open,
     scroll_to_image,
+    photo_center_move_method,
   } = useTripViewStore();
 
   //GOAL : Destroy every reference to "selected_date" and "untimed_trips_selected_date"
@@ -241,6 +242,11 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
   const previousZoomCoordinate = useRef<Coordinate | null>(null);
 
+  const flightPathVectorLayer = useRef<VectorLayer>();
+  const flightPathVectorSource = useRef(new VectorSource());
+
+  const previousSelectedImageLocation = useRef<Image | null>(null);
+
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -317,33 +323,169 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     mapInstanceRef.current.getView().setZoom(current_zoom);
 
-    if (
-      previousZoomCoordinate.current &&
-      previousZoomCoordinate.current[0] === transformed_point[0] &&
-      previousZoomCoordinate.current[1] === transformed_point[1]
-    ) {
-      mapInstanceRef.current.getView().animate({
-        zoom: current_zoom + 4,
-        duration: 1000,
-        center: transformed_point,
-      });
-    } else {
-      //animate the map to the point
-      mapInstanceRef.current.getView().animate(
-        {
+    if (photo_center_move_method === 'shift') {
+      if (
+        previousZoomCoordinate.current &&
+        previousZoomCoordinate.current[0] === transformed_point[0] &&
+        previousZoomCoordinate.current[1] === transformed_point[1]
+      ) {
+        mapInstanceRef.current.getView().animate({
+          zoom: current_zoom + 4,
+          duration: 1000,
           center: transformed_point,
-          duration: 2000,
-          zoom: Math.ceil(current_zoom),
-        },
+        });
+      } else {
+        //animate the map to the point
+        mapInstanceRef.current.getView().animate(
+          {
+            center: transformed_point,
+            duration: 2000,
+            zoom: Math.ceil(current_zoom),
+          },
+          {
+            zoom: previous_zoom,
+            duration: 2000,
+            center: transformed_point,
+          }
+        );
+      }
+
+      previousZoomCoordinate.current = transformed_point;
+    } else {
+      const oldCenter = mapInstanceRef.current.getView().getCenter();
+      const newCenter = transformed_point;
+      const zoom_level = mapInstanceRef.current.getView().getZoom();
+
+      if (!oldCenter) return;
+
+      // Calculate the bounding box to fit both points
+      const extent = [
+        Math.min(oldCenter[0], newCenter[0]),
+        Math.min(oldCenter[1], newCenter[1]),
+        Math.max(oldCenter[0], newCenter[0]),
+        Math.max(oldCenter[1], newCenter[1]),
+      ];
+
+      const view = mapInstanceRef.current.getView();
+
+      //check if current extent is already in view
+      const current_extent = view.calculateExtent(
+        mapInstanceRef.current.getSize()
+      );
+
+      //if the current extent is already in view, zoom in
+      const is_in_view =
+        extent[0] > current_extent[0] &&
+        extent[1] > current_extent[1] &&
+        extent[2] < current_extent[2] &&
+        extent[3] < current_extent[3];
+
+      if (!is_in_view) {
+        // Zoom out to fit both points
+        view.fit(extent, {
+          duration: 1000,
+          padding: [50, 50, 50, 50],
+        });
+      }
+      // Create a line feature between the old center and the new center
+      const line = new LineString([oldCenter, newCenter]);
+      const lineFeature = new Feature({
+        geometry: line,
+      });
+
+      // Style for the line
+      const lineStyle = new Style({
+        stroke: new Stroke({
+          color: 'blue',
+          width: 2,
+        }),
+      });
+
+      lineFeature.setStyle(lineStyle);
+
+      // Animate the drawing of the line
+      const duration = 2000;
+      const start = Date.now();
+
+      const map = mapInstanceRef.current;
+
+      // Create a vector layer to display the line
+      flightPathVectorSource.current.clear();
+      flightPathVectorLayer.current = new VectorLayer({
+        source: flightPathVectorSource.current,
+      });
+
+      flightPathVectorSource.current.addFeature(lineFeature);
+
+      map.addLayer(flightPathVectorLayer.current);
+
+      let reference_center = oldCenter;
+
+      if (previousSelectedImageLocation.current) {
+        reference_center = fromLonLat([
+          parseFloat(previousSelectedImageLocation.current.long),
+          parseFloat(previousSelectedImageLocation.current.lat),
+        ]);
+      }
+
+      const animateLine = () => {
+        const elapsed = Date.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
+
+        /* const currentPoint = [
+          oldCenter[0] + (newCenter[0] - oldCenter[0]) * progress,
+          oldCenter[1] + (newCenter[1] - oldCenter[1]) * progress,
+        ];*/
+
+        const currentPoint = [
+          reference_center[0] + (newCenter[0] - reference_center[0]) * progress,
+          reference_center[1] + (newCenter[1] - reference_center[1]) * progress,
+        ];
+
+        line.setCoordinates([reference_center, currentPoint]);
+
+        if (progress < 1) {
+          setTimeout(animateLine, 25); // Roughly 60 frames per second
+        } else {
+          // Zoom to the new center after the line is drawn
+          view.animate({
+            center: newCenter,
+            //zoom: previous_zoom,
+            duration: 1000,
+          });
+
+          // Remove the line after the animation is complete
+          setTimeout(() => {
+            if (flightPathVectorLayer.current) {
+              flightPathVectorSource.current.clear();
+              map.removeLayer(flightPathVectorLayer.current);
+            }
+          }, 1000);
+        }
+      };
+
+      animateLine();
+
+      if (!mapInstanceRef.current) return;
+      //mapInstanceRef.current.addLayer(flightPathVectorLayer.current);
+
+      // Animate the drawing of the line using OpenLayers' built-in animation
+
+      /*view.animate(
         {
+          center: newCenter,
           zoom: previous_zoom,
           duration: 2000,
-          center: transformed_point,
+        },
+        () => {
+          if (!mapInstanceRef.current) return;
+          // Remove the line after the animation is complete
+          mapInstanceRef.current.removeLayer(vectorLayer);
         }
-      );
-    }
+      );*/
 
-    previousZoomCoordinate.current = transformed_point;
+      //requestAnimationFrame(animateLine);
+    }
 
     //reset scroll to image
     tripViewStore.setState((state) => {
@@ -353,8 +495,10 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       };
     });
 
+    previousSelectedImageLocation.current = image;
+
     //mapInstanceRef.current.getView().setCenter(transformed_point);
-  }, [scroll_to_image]);
+  }, [photo_center_move_method, scroll_to_image]);
 
   //use Effect that runs every 3 seconds and resets the zoom if the zoom has been changed
 
