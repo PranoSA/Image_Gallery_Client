@@ -530,6 +530,10 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
 
     //check if "flight" or "shift " is the
 
+    if (photo_center_move_method === 'shift') {
+    } else {
+    }
+
     //zoom to the center
     map.getView().animate({
       center: fromLonLat(center.geometry.coordinates as Coordinate),

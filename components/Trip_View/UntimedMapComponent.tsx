@@ -22,7 +22,7 @@ import { Feature } from 'ol';
 import { LineString, Point } from 'ol/geom';
 import { Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource } from 'ol/source';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
 import { KML } from 'ol/format';
 
@@ -428,6 +428,58 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         ]);
       }
 
+      const arrowFeature = new Feature({
+        geometry: new Point(newCenter),
+      });
+      //new ICON in the public folder "airplane-svgrepo-com.svg"
+
+      /**
+       *
+       * angle of rotation
+       *
+       * for one, the rotation = 0 is really at 90 degrees (Due North)
+       *
+       * So take away PI/2 from the rotation
+       *
+       * here is how to get arc tan to work - because arctan ranges from -PI/2 to PI/2
+       *
+       * If its to the East (longitude of target is greater than longitude of reference)
+       * Then the angle is arctan(long_diff/lat_diff) - PI/2
+       *
+       * If its to the West (longitude of target is less than longitude of reference)
+       * Then the angle is arctan(long_diff/lat_diff) + PI/2
+       *
+       *
+       */
+
+      const angle_of_rotation =
+        reference_center[0] < newCenter[0] //if the target is to the east
+          ? Math.atan(
+              (newCenter[1] - reference_center[1]) /
+                (newCenter[0] - reference_center[0])
+            ) -
+            Math.PI / 2
+          : Math.atan(
+              //if the target is to the west
+              (newCenter[1] - reference_center[1]) /
+                (newCenter[0] - reference_center[0])
+            ) +
+            Math.PI / 2;
+
+      console.log('Angle of Rotation', angle_of_rotation);
+
+      const arrowStyle = new Style({
+        image: new Icon({
+          src: '/airplane-svgrepo-com.svg',
+          scale: 0.05,
+          rotateWithView: false,
+          rotation: -angle_of_rotation,
+        }),
+      });
+
+      arrowFeature.setStyle(arrowStyle);
+      flightPathVectorSource.current.addFeature(arrowFeature);
+
       const animateLine = () => {
         const elapsed = Date.now() - start;
         const progress = Math.min(elapsed / duration, 1);
@@ -443,6 +495,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         ];
 
         line.setCoordinates([reference_center, currentPoint]);
+        arrowFeature.setGeometry(new Point(currentPoint));
 
         if (progress < 1) {
           setTimeout(animateLine, 25); // Roughly 60 frames per second
