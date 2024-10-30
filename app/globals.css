@@ -49,3 +49,10 @@ body.dark {
     text-wrap: balance;
   }
 }
+
+.ol-zoom,
+.ol-rotate,
+.ol-attribution {
+  pointer-events: none !important;
+  z-index: 1 !important; /* Ensure they are below the map */
+}

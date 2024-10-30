@@ -6,6 +6,7 @@
  * and primarily from  the tanstack query
  *
  */
+import '@/globals.css';
 
 import PathLegend from '@/components/PathLegend';
 
@@ -202,12 +203,16 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     }
 
     if (mapRef.current && !mapInstanceRef.current) {
+      const OSM_Layer = new TileLayer({
+        source: new OSM(),
+      });
+
+      OSM_Layer.setZIndex(0);
+
       mapInstanceRef.current = new Map({
         target: mapRef.current,
         layers: [
-          new TileLayer({
-            source: new OSM(),
-          }),
+          OSM_Layer,
           new VectorLayer({
             source: imageVectorSource.current,
             zIndex: 1000,
@@ -1075,6 +1080,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
           extent[2] < current_extent[2] &&
           extent[3] < current_extent[3];
 
+        const previous_zoom = mapInstanceRef.current?.getView().getZoom();
+
         if (!is_in_view) {
           // Zoom out to fit both points
           view?.fit(extent, {
@@ -1101,6 +1108,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
             // Zoom to the new center after the line is drawn
             mapInstanceRef.current?.getView().animate({
               center: newCenter,
+              zoom: previous_zoom,
               duration: 1000,
             });
 
