@@ -22,7 +22,7 @@ import { fromLonLat } from 'ol/proj';
 import { Feature } from 'ol';
 import { LineString, Point, Circle as CircleGeom } from 'ol/geom';
 import { Vector as VectorLayer } from 'ol/layer';
-import { Vector as VectorSource } from 'ol/source';
+import { Cluster, Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style';
 import { Heatmap } from 'ol/layer';
 import { KML } from 'ol/format';
@@ -878,7 +878,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       },
     });
 
-    const fetchOptimizedImageUrl = async (image: Image) => {
+    const fetchOptimizedImageUrl = (image: Image) => {
       const path = `${process.env.NEXT_PUBLIC_STATIC_IMAGE_THUMBNAIL_URL}/${image.file_path}?height=70&width=70`;
       //this wil lbe used for image src
       return path;
@@ -901,19 +901,20 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         });
 
         //fetch the optimized image url
-        const url = await fetchOptimizedImageUrl(image);
+        const url = fetchOptimizedImageUrl(image);
 
         feature.setStyle(
           new Style({
             image: new Icon({
               src: url,
-              scale: 0.5,
+              scale: 1,
             }),
           })
         );
         iconVectorSource.current.addFeature(feature);
       });
     };
+    console.log(iconVectorSource.current.getFeatures());
 
     //clear iconVectorSource and imageClusterSource and imageClusterLayer
     iconVectorSource.current.clear();
@@ -941,7 +942,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
           style = new Style({
             image: new Icon({
-              src: image_url,
+              src: fetchOptimizedImageUrl(images[0]),
               scale: 0.5,
             }),
           });
@@ -949,9 +950,91 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       },
     });
 
+    const clusterSource = new Cluster({
+      distance: 30,
+      source: iconVectorSource.current,
+    });
+
+    imageClusterLayer.current = new VectorLayer({
+      source: clusterSource,
+      style: (feature) => {
+        const num_features = feature.get('features').length;
+        let style;
+
+        //grab the first feature
+        //grab the image_url from it
+        // use that as the src for the icon
+        const first_feature = feature.get('features')[0];
+
+        if (first_feature) {
+          const image_url = first_feature.get('image_url');
+
+          style = new Style({
+            image: new Icon({
+              src: image_url,
+              scale: 0.5,
+            }),
+          });
+        }
+
+        return style;
+      },
+    });
+
+    // if (!new_vector_layer) return;
+
+    //create cluster source
+    /* const newCluster = new Cluster({
+      distance: 30,
+      source: new_vector_layer.getSource() || undefined,
+      //add image_url to a property
+      // so that it can be used in the style function
+      // for the icon
+    });*/
+
+    //console.log('New Cluster Points', newCluster.getFeatures());
+
+    //create cluster layer
+    /*imageClusterLayer.current = new VectorLayer({
+      source: newCluster,
+      style: (feature) => {
+        const num_features = feature.get('features').length;
+        let style;
+
+        console.log('CLuster Features', feature.get('features'));
+        //grab the first feature
+        //grab the image_url from it
+        // use that as the src for the icon
+        const first_feature = feature.get('features')[0];
+
+        console.log('First Feature', first_feature);
+
+        if (first_feature) {
+          const image_url = first_feature.get('image_url');
+
+          console.log('Cluster Feature Image URL', image_url);
+
+          if (!image_url) {
+            console.log('NOOOOOOOOOO IMAGE URL!!!!!!!!!!!!!!');
+            return;
+          }
+
+          style = new Style({
+            image: new Icon({
+              src: image_url,
+              scale: 1,
+            }),
+          });
+        }
+
+        return style;
+      },
+    });
+
     //add to map
     mapInstanceRef.current?.addLayer(imageClusterLayer.current);
-
+    */
+    mapInstanceRef.current?.addLayer(imageClusterLayer.current);
     //add to map
     mapInstanceRef.current?.addLayer(imageHeatMapLayer.current);
   }, [
