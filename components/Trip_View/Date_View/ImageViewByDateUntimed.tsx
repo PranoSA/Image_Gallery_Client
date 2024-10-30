@@ -22,7 +22,7 @@ import {
   UpdateImage,
 } from '@/components/Trip_View/Trip_View_Image_Store';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useState, useContext, useMemo } from 'react';
+import { useState, useContext, useMemo, useRef, useEffect } from 'react';
 
 import EditImageForm from '@/components/Trip_View/EditImageForm';
 import ImagePreview from '@/components/Trip_View/ImagePreview';
@@ -36,6 +36,7 @@ import {} from '@/components/Trip_View/Time_View/Time_View_Gallery';
 
 import { AiFillDelete } from 'react-icons/ai';
 import { useCompareViewStore } from '../Compare_View/CompareStore';
+import { FaPencil } from 'react-icons/fa6';
 
 type ImageViewByDateProps = {
   scrollToImage?: (image: Image) => void;
@@ -131,8 +132,19 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
         }),
       };
     };
+
+    const imagesGroupedForDay = groupImagesByDay(images);
+
+    ////change the selected_image_location to the first image for the day
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        selected_image_location: imagesGroupedForDay.images[0],
+      };
+    });
+
     return groupImagesByDay(images);
-  }, [trip, untimed_trips_selected_date]);
+  }, [images, trip, untimed_trips_selected_date]);
 
   //set up mutation for updating the image
   if (error) {
@@ -206,13 +218,13 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
   return (
     <div className="w-full h-full">
       {/* Make Scrollable */}
-      <div className="gallery mt-4 w-full justify-center bg-white rounded-b-lg shadow-lg border border-gray-300"></div>
-      <div className="w-full h-full scrollable-container overflow-y-auto  p-4 bg-white rounded-b-lg shadow-lg border border-gray-300">
+      <div className="gallery mt-4 w-full justify-center bg-white dark:bg-black rounded-b-lg shadow-lg border border-gray-300"></div>
+      <div className="w-full h-full scrollable-container overflow-y-auto  p-4 bg-white dark:bg-black rounded-b-lg shadow-lg border border-gray-300 ">
         {bannerComponent}
         <GroupImagesByTime
           images={groupedOrderedImagesByDay.images}
           date={groupedOrderedImagesByDay.date}
-          scrollToImage={scrollToImage}
+          //scrollToImage={scrollToImage}
         />
       </div>
       <ImagePreview />
@@ -226,24 +238,35 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
 type SubRangeOfImages = {
   start_hour: number; // 0..23
   end_hour: number; // 0..23
-  images: (Image & { index: number })[];
+  images: Image[];
 };
 
 type groupImagesByTimeProps = {
-  images: (Image & { index: number })[];
+  images: Image[];
   date: Date;
-  scrollToImage: (image: Image) => void;
 };
 
-const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
+export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   images,
   date,
-  scrollToImage = (image: Image) => {},
 }) => {
   // group images into SubRangeOfImages
   const { selected_image_location, horizontally_tabbed } = useTripViewStore();
 
   const deleteImageMutation = useDeleteImage();
+
+  const [editingImageName, setEditingImageName] = useState<Image | null>(null);
+  const [editedName, setEditedName] = useState('');
+
+  const id = useContext(TripContext).id;
+
+  const {
+    data: trip,
+    isLoading: tripLoading,
+    isError: tripError,
+  } = useQueryTrip(id);
+
+  const editImage = UpdateImage();
 
   const deleteImage = async (image: Image) => {
     //use mutation to delete image
@@ -251,7 +274,7 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   };
 
   const groupedSubRangeImages = (
-    images: (Image & { index: number })[],
+    images: Image[],
     date: Date
   ): SubRangeOfImages[] => {
     let current_hour = 0;
@@ -344,6 +367,8 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     return groupedSubRangeImages(images, date);
   }, [images, date]);
 
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
   //use store to set the selected image preview and editing image
   const store = tripViewStore;
 
@@ -366,15 +391,18 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [editingImageName]);
+
   // set the selected image location
-  const setSelectedImageLocation = (image: Image, force = true) => {
+  const setSelectedImageLocation = (image: Image, force = false) => {
     //check if the image is already selected
     if (
       selected_image_location &&
       selected_image_location.id === image.id &&
       !force
     ) {
-      console.log('clearing');
       tripViewStore.setState((state) => {
         return {
           ...state,
@@ -410,14 +438,42 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     });
   };
 
-  //child size should be 1/3 of the parent
+  const handleNameSubmit = async (
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    const image = editingImageName;
+
+    if (!image) return;
+    if (!trip) return;
+
+    const new_image = await editImage.mutateAsync({
+      image: {
+        ...image,
+        id: image.id,
+        name: editedName,
+      },
+      trip: trip,
+    });
+
+    setEditingImageName(null);
+    setEditedName('');
+  };
 
   //return gallery based on subranges
   return (
-    <div className="" id="2312">
+    <div className="p-4 dark:bg-black">
       {subranges.map((subrange) => {
+        const startHour = new Date(subrange.start_hour).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const endHour = new Date(subrange.end_hour).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
         return (
-          <div key={date.toDateString() + subrange.start_hour} className="">
+          <div key={date.toDateString() + subrange.start_hour} className="mb-4">
             <div className="text-lg font-semibold mb-2">
               {subrange.start_hour > 12
                 ? `${subrange.start_hour - 12}PM`
@@ -427,68 +483,111 @@ const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                 ? `${subrange.end_hour - 12}PM`
                 : `${subrange.end_hour}AM`}
             </div>
-            <div className="flex flex-wrap flex-row items-stretch justify-around items-center gap-y-1 parent-container">
+            <div className="flex flex-wrap flex-row justify-around items-center gap-y-1">
               {subrange.images.map((image, i) => {
                 return (
                   <div
                     key={image.id}
-                    className={`relative flex flex-col  h-100% bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200] ${
-                      selected_image_location
-                        ? 'border-8 border-blue-800 dark:border-red-700'
-                        : ''
+                    className={`relative flex flex-col  h-100% bg-white rounded-lg shadow-lg border border-gray-300 min-w-[200]  ${
+                      selected_image_location?.id === image.id
+                        ? 'border-8 border-blue-800 dark:border-neon-purple'
+                        : 'border-2 border-gray-300 dark:border-gray-700'
                     }`}
                   >
                     <div
                       key={image.id}
-                      className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300"
+                      style={{
+                        width: '250px',
+                      }}
+                      className="relative w-full h-full flex flex-col  p-4 bg-white rounded-lg shadow-lg border border-gray-300 h-[300px] w-[220px]"
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
-                        className="relative flex flex-grow items-center justify-center bg-gray-100 p-1 border h-[200px] min-w-[200px] "
+                        className="relative flex flex-grow items-center justify-center bg-gray-100 border h-[200px] w-[200px]"
                       >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}
-                          width={164}
-                          height={164}
-                          className="object-contain rounded-lg"
+                          height={200}
+                          width={200}
+                          className=" rounded-lg"
                           style={{
                             cursor: 'pointer',
-                            margin: '10px',
                             //allign self to center
                             justifySelf: 'flex-end',
+                            maxHeight: '200px',
+                            maxWidth: '200px',
+                            objectFit: 'contain',
                           }}
                         />
                       </div>
                       <div className="absolute top-1 right-1 flex ">
                         <AiFillDelete
                           onClick={() => deleteImage(image)}
-                          className="cursor-pointer"
-                          size={24}
+                          className="cursor-pointer dark:text-red-500 "
+                          size={30}
                           style={{ marginRight: '10px' }}
                         />
                         <HiOutlinePencil
                           onClick={() => setEditingImage(image)}
-                          className="cursor-pointer"
-                          size={24}
+                          className="cursor-pointer dark:text-blue-800 font-semibold"
+                          size={30}
                           style={{ marginRight: '10px' }}
                         />
                         <HiEye
-                          onClick={() => setPreviewImage(image.index)}
-                          className="cursor-pointer"
-                          size={24}
+                          onClick={() =>
+                            setPreviewImage(
+                              images.findIndex((img) => img.id === image.id)
+                            )
+                          }
+                          className="cursor-pointer dark:text-blue-800 font-semibold"
+                          size={30}
                         />
                         <HiMap
                           onClick={() => {
                             setSelectedImageLocation(image, true);
                             setShowOnMap(image);
                           }}
-                          className="cursor-pointer ml-2 z-40"
-                          size={24}
+                          className="cursor-pointer ml-2 dark:text-black font-semibold"
+                          size={30}
                         />
                       </div>
                       <div className="mt-2 text-center text-sm font-medium text-gray-700 justify-self-end">
-                        {image.name}
+                        {editingImageName &&
+                        editingImageName.id === image.id ? (
+                          <textarea
+                            ref={inputRef}
+                            value={editedName}
+                            onChange={(event) =>
+                              setEditedName(event.target.value)
+                            }
+                            onBlur={() => {
+                              setEditingImageName(null);
+                              setEditedName('');
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter') {
+                                //use the mutation to update the image name
+                                handleNameSubmit(event);
+                              }
+                              if (event.key === 'Escape') {
+                                setEditedName('');
+                                setEditingImageName(null);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="flex flex-row">
+                            <p className="w-[80%]">{image.name}</p>
+                            <FaPencil
+                              size={20}
+                              onClick={() => {
+                                setEditingImageName(image);
+                                setEditedName(image.name);
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -16,6 +16,7 @@ import '@/components/Trip_View/Compare_View/Untimed_Compare_View/CategoryView.cs
 import {
   FaArchway,
   FaCaretDown,
+  FaCaretUp,
   FaChevronUp,
   FaFolder,
   FaPen,
@@ -358,11 +359,20 @@ const ImageGallery = ({
           key={image.id}
         >
           <div className="relative">
-            <FaCaretDown
-              className="text-2xl cursor-pointer dark:text-white"
-              onClick={() => setDropdownImage(image)}
-              size={30}
-            />
+            {dropdownImage != image ? (
+              <FaCaretDown
+                className="text-2xl cursor-pointer dark:text-white"
+                onClick={() => setDropdownImage(image)}
+                size={30}
+              />
+            ) : (
+              <FaCaretUp
+                className="text-2xl cursor-pointer dark:text-white"
+                onClick={() => setDropdownImage(null)}
+                size={30}
+              />
+            )}
+
             {dropdownImage === image && (
               <div className="absolute overflow-y-auto max-h-[150px] top-8 left-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded shadow-lg z-10">
                 {folders.map((folder) => (

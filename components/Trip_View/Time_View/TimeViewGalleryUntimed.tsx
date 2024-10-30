@@ -173,11 +173,24 @@ const TimeViewGallery: React.FC = () => {
       return imagesByDate;
     };
 
-    return groupImagesByDay(images);
+    const grouped_images = groupImagesByDay(images);
+
+    console.log('Grouped Images', grouped_images);
+    ////change the selected_image_location to the first image for the day
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        selected_image_location: grouped_images[0]?.images[0],
+      };
+    });
+
+    return grouped_images;
   }, [candidate_dates, images, trip, filtered_categories]);
 
   const selectedDate = useMemo(() => {
     if (!trip) return new Date().toDateString();
+
+    //change the selected_image_location to the first image for the day
 
     return untimed_trips_selected_date.toDateString();
   }, [trip, untimed_trips_selected_date]);

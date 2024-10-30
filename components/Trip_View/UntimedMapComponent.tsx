@@ -19,7 +19,7 @@ import OSM from 'ol/source/OSM';
 
 import { fromLonLat } from 'ol/proj';
 import { Feature } from 'ol';
-import { LineString, Point } from 'ol/geom';
+import { LineString, Point, Circle as CircleGeom } from 'ol/geom';
 import { Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource } from 'ol/source';
 import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style';
@@ -41,7 +41,10 @@ import { dateFromString } from './Time_Functions';
 
 import CategoryLegendAndPoints from '@/components/Trip_View/Time_View/CategoryLegendAndPoints';
 import CategoryLegendAndPointsUntimed from './CategoryLegendAndPointsUntimed';
-import { CompareViewStore } from './Compare_View/CompareStore';
+import {
+  CompareViewStore,
+  useCompareViewStore,
+} from './Compare_View/CompareStore';
 import { Coordinate } from 'ol/coordinate';
 
 type MapProps = {
@@ -146,6 +149,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     scroll_to_image,
     photo_center_move_method,
   } = useTripViewStore();
+
+  const { untimed_trips_selected_date } = useCompareViewStore();
 
   //GOAL : Destroy every reference to "selected_date" and "untimed_trips_selected_date"
   // ANd to "currentDay" and "currentDayDate"
@@ -375,6 +380,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
       //if the current extent is already in view, zoom in
       const is_in_view =
+        current_extent &&
         extent[0] > current_extent[0] &&
         extent[1] > current_extent[1] &&
         extent[2] < current_extent[2] &&
@@ -466,7 +472,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
             ) +
             Math.PI / 2;
 
-      console.log('Angle of Rotation', angle_of_rotation);
+      console.log('Angle of Rotation THIRD', angle_of_rotation);
 
       const arrowStyle = new Style({
         image: new Icon({
@@ -872,6 +878,15 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     selected_date,
   ]);
 
+  const animateDayChangeLayer = useRef<VectorLayer | null>(null);
+  const animateDayChangeSource = useRef<VectorSource | null>(null);
+
+  const previousDayCenter = useRef<Coordinate | null>(null);
+
+  const untimed_trips_selcted_date_Day = useMemo(() => {
+    return untimed_trips_selected_date.toDateString();
+  }, [untimed_trips_selected_date]);
+
   //set center of view when the selected date changes
   useEffect(() => {
     //check if "zoom_on_day_change" is true
@@ -881,18 +896,63 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     const trip = tripsState.data;
     const images = imageState.data;
-    if (!trip || !currentDay) return;
+    if (!trip || !images) return;
 
-    const startDate = new Date(trip.start_date);
-    const selectedDate = new Date(startDate);
-    selectedDate.setDate(startDate.getDate() + selected_date);
+    //log all of the useEffect dependencies
+    console.log('Useeffect Trip', trip);
+
+    console.log('Useeffect Images', images);
+    console.log('Useeffect Selected Date', selected_date);
+    console.log(
+      'Useeffect Untimed Trips Selected Date',
+      untimed_trips_selcted_date_Day
+    );
+    console.log('Useeffect Zoom On Day Change', zoom_on_day_change);
+    console.log('Useeffect --------------------------------------------');
+
+    //get untimed_trips_selected_date
 
     //get images for the day
-    const imagesForDay = get_images_for_day(
-      selected_date,
-      tripsState.data?.start_date || '1970-01-01',
-      imageState.data || []
-    );
+    const imagesForDay = images.filter((image) => {
+      //check if same date as untimed_trips_selected_date
+      //const image_date = new Date(image.created_at);
+      //check if same DATE as untimed_trips_selected_date
+
+      /*
+         const images_today = images.filter((image) => {
+        const image_date = new Date(image.created_at);
+
+        console.log('Image Date', image_date.toDateString());
+        console.log(
+          'Selected Date',
+          untimed_trips_selected_date.toDateString()
+        );
+
+        const AreEqual =
+          image_date.toDateString() ===
+          untimed_trips_selected_date.toDateString();
+        console.log('Date are Equal', AreEqual);
+
+        return AreEqual;
+
+        return (
+          image_date.toDateString() ===
+          untimed_trips_selected_date.toDateString()
+        );
+      });
+
+      console.log("Date's Images", images_today);
+
+      return images_today;
+      */
+      const image_date = new Date(image.created_at);
+
+      return image_date.toDateString() === untimed_trips_selcted_date_Day;
+    });
+
+    animateDayChangeSource.current?.clear();
+
+    console.log('Images for Day', imagesForDay);
 
     if (imagesForDay.length > 0) {
       //set center of view to the center of the images
@@ -911,6 +971,265 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         (acc, image) => acc + parseFloat(image.long),
         0
       );
+
+      //if candidateImages is empty, return
+      if (candidateImages.length === 0) return;
+
+      const oldCenter = previousDayCenter.current
+        ? previousDayCenter.current
+        : mapInstanceRef.current?.getView().getCenter();
+
+      const first_day_coordinates = fromLonLat([
+        parseFloat(candidateImages[0].long),
+        parseFloat(candidateImages[0].lat),
+      ]);
+
+      /*const newCenter = fromLonLat([
+        total_long / candidateImages.length,
+        total_lat / candidateImages.length,
+      ]);*/
+
+      const centerOfImages = fromLonLat([
+        total_long / candidateImages.length,
+        total_lat / candidateImages.length,
+      ]);
+
+      const newCenter = first_day_coordinates;
+
+      if (oldCenter) {
+        //draw a line and animate the map to the new center
+        const line = new LineString([oldCenter, newCenter]);
+        const lineFeature = new Feature({
+          geometry: line,
+        });
+
+        //icon
+        const arrowFeature = new Feature({
+          geometry: new Point(newCenter),
+        });
+
+        const angle_of_rotation =
+          oldCenter[0] < newCenter[0] //if the target is to the east
+            ? Math.atan(
+                (newCenter[1] - oldCenter[1]) / (newCenter[0] - oldCenter[0])
+              ) -
+              Math.PI / 2
+            : Math.atan(
+                //if the target is to the west
+                (newCenter[1] - oldCenter[1]) / (newCenter[0] - oldCenter[0])
+              ) +
+              Math.PI / 2;
+
+        console.log('Angle of Rotation', angle_of_rotation);
+
+        const arrowStyle = new Style({
+          image: new Icon({
+            src: '/airplane-svgrepo-com.svg',
+            scale: 0.05,
+            rotateWithView: false,
+            rotation: -angle_of_rotation,
+          }),
+        });
+
+        arrowFeature.setStyle(arrowStyle);
+
+        animateDayChangeSource.current?.addFeature(lineFeature);
+
+        animateDayChangeSource.current?.addFeature(arrowFeature);
+
+        //add to the map
+        if (!animateDayChangeLayer.current) {
+          animateDayChangeSource.current = new VectorSource();
+          animateDayChangeLayer.current = new VectorLayer({
+            source: animateDayChangeSource.current,
+          });
+
+          mapInstanceRef.current?.addLayer(animateDayChangeLayer.current);
+        }
+
+        // Animate the drawing of the line using OpenLayers' built-in animation
+        const duration = 2000;
+
+        const start = Date.now();
+
+        // zoom out for extents with padding to include the old center and the new center
+        const extent = [
+          Math.min(oldCenter[0], newCenter[0]),
+          Math.min(oldCenter[1], newCenter[1]),
+          Math.max(oldCenter[0], newCenter[0]),
+          Math.max(oldCenter[1], newCenter[1]),
+        ];
+
+        const view = mapInstanceRef.current?.getView();
+
+        //check if current extent is already in view
+        const current_extent = view?.calculateExtent(
+          mapInstanceRef.current?.getSize()
+        );
+
+        //if the current extent is not in view, zoom to the extent
+        const is_in_view =
+          current_extent &&
+          extent[0] > current_extent[0] &&
+          extent[1] > current_extent[1] &&
+          extent[2] < current_extent[2] &&
+          extent[3] < current_extent[3];
+
+        if (!is_in_view) {
+          // Zoom out to fit both points
+          view?.fit(extent, {
+            duration: 1000,
+            padding: [50, 50, 50, 50],
+          });
+        }
+
+        const animateLine = () => {
+          const elapsed = Date.now() - start;
+          const progress = Math.min(elapsed / duration, 1);
+
+          const currentPoint = [
+            oldCenter[0] + (newCenter[0] - oldCenter[0]) * progress,
+            oldCenter[1] + (newCenter[1] - oldCenter[1]) * progress,
+          ];
+
+          line.setCoordinates([oldCenter, currentPoint]);
+          arrowFeature.setGeometry(new Point(currentPoint));
+
+          if (progress < 1) {
+            setTimeout(animateLine, 25); // Roughly 60 frames per second
+          } else {
+            // Zoom to the new center after the line is drawn
+            mapInstanceRef.current?.getView().animate({
+              center: newCenter,
+              duration: 1000,
+            });
+
+            // Remove the line after the animation is complete
+            setTimeout(() => {
+              animateDayChangeSource.current?.clear();
+
+              // GET 3857 extents of all the images
+
+              const points: Coordinate[] = candidateImages.map((image) => {
+                return fromLonLat([
+                  parseFloat(image.long),
+                  parseFloat(image.lat),
+                ]);
+              });
+
+              const total_lat = points.reduce(
+                (acc, point) => acc + point[1],
+                0
+              );
+
+              const total_long = points.reduce(
+                (acc, point) => acc + point[0],
+                0
+              );
+
+              const center_of_images = [
+                total_long / candidateImages.length,
+                total_lat / candidateImages.length,
+              ];
+
+              const max_lat = points.reduce(
+                (acc, point) => Math.max(acc, point[1]),
+                -Infinity
+              );
+
+              const min_lat = points.reduce(
+                (acc, point) => Math.min(acc, point[1]),
+                Infinity
+              );
+
+              const max_long = points.reduce(
+                (acc, point) => Math.max(acc, point[0]),
+                -Infinity
+              );
+
+              const min_long = points.reduce(
+                (acc, point) => Math.min(acc, point[0]),
+                Infinity
+              );
+
+              const center = [
+                (min_long + max_long) / 2,
+                (min_lat + max_lat) / 2,
+              ];
+
+              //draw a light gray inscribing circle around the candidate images
+              //add to animateDayChangeSource
+              const circle = new CircleGeom(
+                // centerOfImages,
+                //center_of_images,
+                center,
+                Math.max(max_lat - min_lat, max_long - min_long)
+              );
+              const circleFeature = new Feature({
+                geometry: circle,
+              });
+
+              //print extent of the circle
+              console.log('Circle Extent', circle.getExtent());
+
+              // Define the coordinates for the four corners
+              /* const cornersFeature = new Feature({
+                geometry: new LineString(corners),
+              });
+
+              // Style for the corners
+              const cornersStyle = new Style({
+                stroke: new Stroke({
+                  color: 'red',
+                  width: 4,
+                }),
+              });
+
+              cornersFeature.setStyle(cornersStyle);
+
+              animateDayChangeSource.current?.addFeature(cornersFeature);
+*/
+              // Style for the circle
+              const circleStyle = new Style({
+                fill: new Fill({
+                  //color: 'blue',
+
+                  color: 'rgba(211, 211, 211, 0.5)', // Light gray with 50% transparency
+                }),
+                stroke: new Stroke({
+                  //color: 'blue',
+                  color: 'rgba(211, 211, 211, 0.8)', // Light gray with 80% transparency
+                  width: 10,
+                }),
+              });
+
+              circleFeature.setStyle(circleStyle);
+
+              // Add the circle feature to the source
+              animateDayChangeSource.current?.addFeature(circleFeature);
+              //add to layer
+              animateDayChangeLayer.current?.setSource(
+                animateDayChangeSource.current
+              );
+            }, 1000);
+          }
+        };
+
+        animateLine();
+
+        //previousDayCenter.current = newCenter;
+        previousDayCenter.current = centerOfImages;
+
+        //mapInstanceRef.current?.getView().setCenter(newCenter);
+
+        //animate transition to new center
+        /*mapInstanceRef.current
+          ?.getView()
+          .animate({ center: newCenter, duration: 2000 });
+*/
+        //animate zoom to just including the two point
+        return;
+      }
 
       //set the center of the map to the center of the trip
       mapInstanceRef.current
@@ -963,9 +1282,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     selected_date,
     tripsState.data,
     imageState.data,
-    currentDay,
     zoom_on_day_change,
-    get_images_for_day,
+    untimed_trips_selcted_date_Day,
   ]);
 
   //if selecting category is true, show a legend on the bottom right of the map
