@@ -739,6 +739,10 @@ type StoreState = {
 
   photo_center_move_method: 'shift' | 'flight';
 
+  //This Determines whether you should show category points on the map for the given day only
+  //also, will eventually be used
+  filter_for_this_day: boolean;
+
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
 
@@ -806,6 +810,8 @@ export const tripViewStore = new Store<StoreState>({
   adding_images: false,
 
   adding_path: false,
+
+  filter_for_this_day: false,
   done_comparing: false,
 
   show_uncategorized_images: true,

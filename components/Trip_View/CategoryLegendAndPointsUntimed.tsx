@@ -34,6 +34,7 @@ import VectorSource from 'ol/source/Vector';
 //magnifying glass
 import { FaSearchPlus } from 'react-icons/fa';
 import CircleStyle from 'ol/style/Circle';
+import { useCompareViewStore } from './Compare_View/CompareStore';
 
 type CategoryLegendProps = {
   map: Map;
@@ -78,7 +79,10 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     show_categories_on_map,
     show_convex_hull,
     photo_center_move_method,
+    filter_for_this_day,
   } = useTripViewStore();
+
+  const { untimed_trips_selected_date } = useCompareViewStore();
 
   const { id } = useContext(TripContext);
 
@@ -184,7 +188,13 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     coloredCategories.categories.forEach((category) => {
       // get related images
       const images_filtered = imagesState.data?.filter((image) => {
-        return image.category === category.category;
+        return (
+          image.category === category.category &&
+          (filter_for_this_day
+            ? image.created_at.toDateString() ===
+              untimed_trips_selected_date.toDateString()
+            : true)
+        );
       });
 
       if (!images_filtered) {
@@ -463,6 +473,8 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
     show_categories_on_map,
     show_convex_hull,
     zoom,
+    filter_for_this_day,
+    untimed_trips_selected_date,
   ]);
 
   if (!filtering_images) {

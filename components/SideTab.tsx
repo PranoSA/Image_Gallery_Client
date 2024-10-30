@@ -370,6 +370,7 @@ const MapSettingPanel = () => {
     show_categories_on_map,
     show_uncategorized_images,
     photo_center_move_method,
+    filter_for_this_day,
   } = useTripViewStore();
 
   return (
@@ -527,6 +528,24 @@ const MapSettingPanel = () => {
             Show Uncategorized Images
           </span>
         </label>
+        {/* Filter For This Day */}
+        <label className="flex items-center space-x-3 mb-2">
+          <input
+            type="checkbox"
+            checked={filter_for_this_day}
+            onChange={() =>
+              tripViewStore.setState((state) => ({
+                ...state,
+                filter_for_this_day: !state.filter_for_this_day,
+              }))
+            }
+            className="form-checkbox h-5 w-5 text-neon-green bg-gray-800 border-gray-700"
+          />
+          <span className="text-neon-green text-sm">
+            Map Points For Day Onlys
+          </span>
+        </label>
+
         {/* Flight Icon for flight and target icon for shift*/}
         {/* Photo Center Move Method */}
         <label className="flex items-center space-x-3 mb-2">
