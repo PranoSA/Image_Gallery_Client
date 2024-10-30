@@ -203,6 +203,8 @@ const TimeViewGallery: React.FC = () => {
 
     const new_date = new Date(date);
 
+    //find the first im
+
     CompareViewStore.setState((state) => {
       return {
         ...state,
@@ -327,6 +329,7 @@ const TimeViewGallery: React.FC = () => {
                 }`}
                 onClick={() => {
                   //scrollToGroup(group.date.toDateString() -> doesn't work -- to long scrolling
+
                   setSelectedDate(group.date.toDateString());
                 }}
               >

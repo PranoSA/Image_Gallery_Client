@@ -494,13 +494,25 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
 
     //filter out images with 0,0 coordinates
     const images = images_category.filter((image) => {
-      return image.lat != '0' && image.long != '0';
+      return (
+        image.lat != '0' &&
+        image.long != '0' &&
+        image.lat != '' &&
+        image.long != ''
+      );
     });
+
+    //return if no images
+    if (images.length == 0) {
+      return;
+    }
 
     //get the coordinates for the images
     const coordinates = images.map((image) => {
       return [parseFloat(image.long), parseFloat(image.lat)];
     });
+
+    //return if no
 
     //get the center of the coordinates
     const center = turf.center(turf.points(coordinates));

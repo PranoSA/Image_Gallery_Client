@@ -784,6 +784,11 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       }
     }
   });
+
+  const iconVectorSource = useRef<VectorSource>(new VectorSource());
+  const imageClusterLayer = useRef<VectorLayer | null>(null);
+  const imageClusterSource = useRef<VectorSource | null>(null);
+
   // What is this for??
   mapInstanceRef.current?.on('click', (event) => {
     //get the feature at the clicked location
@@ -872,6 +877,80 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         return 1;
       },
     });
+
+    const fetchOptimizedImageUrl = async (image: Image) => {
+      const path = `${process.env.NEXT_PUBLIC_STATIC_IMAGE_THUMBNAIL_URL}/${image.file_path}?height=70&width=70`;
+      //this wil lbe used for image src
+      return path;
+    };
+
+    const addImageFeatures = async (images: Image[]) => {
+      //clear the source
+      imageVectorSource.current.clear();
+
+      //add features to the source
+      images.forEach(async (image) => {
+        const feature = new Feature({
+          geometry: new Point(
+            fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
+          ),
+          ol_uid: image.id,
+          id: image.id,
+          Id: image.id,
+          image_url: fetchOptimizedImageUrl(image),
+        });
+
+        //fetch the optimized image url
+        const url = await fetchOptimizedImageUrl(image);
+
+        feature.setStyle(
+          new Style({
+            image: new Icon({
+              src: url,
+              scale: 0.5,
+            }),
+          })
+        );
+        iconVectorSource.current.addFeature(feature);
+      });
+    };
+
+    //clear iconVectorSource and imageClusterSource and imageClusterLayer
+    iconVectorSource.current.clear();
+    imageClusterSource.current?.clear();
+    //imageClusterLayer.current?.getSource().clear();
+
+    ///add image features
+    addImageFeatures(images);
+
+    //cluster the images -> Selecting one ofthe images in that cluster
+    // at hot points (within )
+    imageClusterLayer.current = new VectorLayer({
+      source: iconVectorSource.current,
+      style: (feature) => {
+        const num_features = feature.get('features').length;
+        let style;
+
+        //grab the first feature
+        //grab the image_url from it
+        // use that as the src for the icon
+        const first_feature = feature.get('features')[0];
+
+        if (first_feature) {
+          const image_url = first_feature.get('image_url');
+
+          style = new Style({
+            image: new Icon({
+              src: image_url,
+              scale: 0.5,
+            }),
+          });
+        }
+      },
+    });
+
+    //add to map
+    mapInstanceRef.current?.addLayer(imageClusterLayer.current);
 
     //add to map
     mapInstanceRef.current?.addLayer(imageHeatMapLayer.current);
