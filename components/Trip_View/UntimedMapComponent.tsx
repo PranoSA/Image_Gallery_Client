@@ -23,7 +23,14 @@ import { Feature } from 'ol';
 import { LineString, Point, Circle as CircleGeom } from 'ol/geom';
 import { Vector as VectorLayer } from 'ol/layer';
 import { Cluster, Vector as VectorSource } from 'ol/source';
-import { Circle as CircleStyle, Fill, Icon, Stroke, Style } from 'ol/style';
+import {
+  Circle as CircleStyle,
+  Fill,
+  Icon,
+  Stroke,
+  Style,
+  Text,
+} from 'ol/style';
 import { Heatmap } from 'ol/layer';
 import { KML } from 'ol/format';
 
@@ -149,6 +156,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     paths_open,
     scroll_to_image,
     photo_center_move_method,
+    show_clustered_images_on_map,
+    filter_for_this_day,
+    filtered_categories,
   } = useTripViewStore();
 
   const { untimed_trips_selected_date } = useCompareViewStore();
@@ -789,6 +799,245 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   const imageClusterLayer = useRef<VectorLayer | null>(null);
   const imageClusterSource = useRef<VectorSource | null>(null);
 
+  /**
+   *
+   * This Use Effect Will draw the Clusteed Images on the Map
+   * IF show_clustered_images_on_map is enabled
+   *
+   */
+  useEffect(() => {
+    if (
+      !mapInstanceRef.current ||
+      !show_clustered_images_on_map ||
+      !imageState.data
+    ) {
+      return;
+    }
+
+    //determine if filter_for_this_day and filter by the filtered_categories
+
+    const images = imageState.data;
+
+    const tempImageVectorSource = new VectorSource();
+
+    const filtered_images = images
+      .filter((image) => {
+        return !filtered_categories.includes(image.category || '');
+      })
+      .filter((image) => {
+        //return true if !filter_for_this_day
+        if (!filter_for_this_day) {
+          return true;
+        }
+
+        // return untimed_trips_selected_date.toDateString() === image.created_at.toDateString();
+        return (
+          untimed_trips_selected_date.toDateString() ===
+          image.created_at.toDateString()
+        );
+      });
+
+    //Now Build The Clustered Image Layer
+    images
+      .filter((i) => i.lat && i.long)
+      .filter((i) => parseFloat(i.lat) !== 0 || parseFloat(i.long) !== 0)
+
+      //.filter((i) => i.created_at.split('T')[0] === currentDay)
+      .forEach((image) => {
+        const feature = new Feature({
+          geometry: new Point(
+            fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
+          ),
+          ol_uid: image.id,
+          id: image.id,
+          Id: image.id,
+        });
+        tempImageVectorSource.addFeature(feature);
+      });
+
+    const fetchOptimizedImageUrl = (image: Image) => {
+      const path = `${process.env.NEXT_PUBLIC_STATIC_IMAGE_THUMBNAIL_URL}/${image.file_path}?height=70&width=70`;
+      //this wil lbe used for image src
+      return path;
+    };
+
+    const addImageFeatures = async (images: Image[]) => {
+      //clear the source
+      imageVectorSource.current.clear();
+
+      //add features to the source
+      images.forEach(async (image) => {
+        const feature = new Feature({
+          geometry: new Point(
+            fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
+          ),
+          ol_uid: image.id,
+          id: image.id,
+          Id: image.id,
+          image_url: fetchOptimizedImageUrl(image),
+        });
+
+        //fetch the optimized image url
+        const url = fetchOptimizedImageUrl(image);
+
+        feature.setStyle(
+          new Style({
+            image: new Icon({
+              src: url,
+              scale: 1,
+            }),
+          })
+        );
+        iconVectorSource.current.addFeature(feature);
+      });
+    };
+
+    //clear iconVectorSource and imageClusterSource and imageClusterLayer
+    iconVectorSource.current.clear();
+    imageClusterSource.current?.clear();
+    //imageClusterLayer.current?.getSource().clear();
+
+    ///add image features
+    addImageFeatures(filtered_images);
+
+    //cluster the images -> Selecting one ofthe images in that cluster
+    // at hot points (within )
+    imageClusterLayer.current = new VectorLayer({
+      source: iconVectorSource.current,
+      style: (feature) => {
+        const num_features = feature.get('features').length;
+        let style;
+
+        //grab the first feature
+        //grab the image_url from it
+        // use that as the src for the icon
+        const first_feature = feature.get('features')[0];
+
+        if (first_feature) {
+          const image_url = first_feature.get('image_url');
+
+          style = new Style({
+            image: new Icon({
+              src: fetchOptimizedImageUrl(images[0]),
+              scale: 0.5,
+            }),
+          });
+        }
+      },
+    });
+
+    const clusterSource = new Cluster({
+      distance: 70,
+      source: iconVectorSource.current,
+    });
+
+    imageClusterLayer.current = new VectorLayer({
+      source: clusterSource,
+      style: (feature) => {
+        const num_features: number = feature.get('features').length;
+        let style;
+
+        console.log('# of Features', num_features);
+
+        //grab the first feature
+        //grab the image_url from it
+        // use that as the src for the icon
+        const first_feature = feature.get('features')[0];
+
+        if (first_feature) {
+          const image_url = first_feature.get('image_url');
+
+          style = new Style({
+            image: new Icon({
+              src: image_url,
+              scale: 0.75,
+            }),
+            text: new Text({
+              text: num_features.toString(),
+              font: 'bold 16px Arial', // Make the text thicker, bolder, and larger
+              fill: new Fill({
+                color: '#fff',
+              }),
+              stroke: new Stroke({
+                color: '#000',
+                width: 3,
+              }),
+              backgroundFill: new Fill({
+                color: '#000', // Black background
+              }),
+              padding: [2, 2, 2, 2], // Padding around the text
+              offsetX: 12, // Position the text at the corner of the icon
+              offsetY: -14, // Position the text at the corner of the icon
+            }),
+          });
+        }
+
+        return style;
+      },
+    });
+
+    // if (!new_vector_layer) return;
+
+    //create cluster source
+    /* const newCluster = new Cluster({
+    distance: 30,
+    source: new_vector_layer.getSource() || undefined,
+    //add image_url to a property
+    // so that it can be used in the style function
+    // for the icon
+  });*/
+
+    //console.log('New Cluster Points', newCluster.getFeatures());
+
+    //create cluster layer
+    /*imageClusterLayer.current = new VectorLayer({
+    source: newCluster,
+    style: (feature) => {
+      const num_features = feature.get('features').length;
+      let style;
+
+      console.log('CLuster Features', feature.get('features'));
+      //grab the first feature
+      //grab the image_url from it
+      // use that as the src for the icon
+      const first_feature = feature.get('features')[0];
+
+      console.log('First Feature', first_feature);
+
+      if (first_feature) {
+        const image_url = first_feature.get('image_url');
+
+        console.log('Cluster Feature Image URL', image_url);
+
+        if (!image_url) {
+          console.log('NOOOOOOOOOO IMAGE URL!!!!!!!!!!!!!!');
+          return;
+        }
+
+        style = new Style({
+          image: new Icon({
+            src: image_url,
+            scale: 1,
+          }),
+        });
+      }
+
+      return style;
+    },
+  });
+
+  //add to map
+  mapInstanceRef.current?.addLayer(imageClusterLayer.current);
+  */
+    mapInstanceRef.current?.addLayer(imageClusterLayer.current);
+  }, [
+    show_clustered_images_on_map,
+    filtered_categories,
+    filter_for_this_day,
+    imageState.data,
+    untimed_trips_selected_date,
+  ]);
+
   // What is this for??
   mapInstanceRef.current?.on('click', (event) => {
     //get the feature at the clicked location
@@ -831,7 +1080,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   //Add Heat Map Layer
   useEffect(() => {
     //create imageVectorSource based on the current day
-    const tempImageVectorSource = new VectorSource();
 
     //Remember - this vector source doesn't need to be displayed, its only for
     //the heatmap for the day
@@ -852,20 +1100,37 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     if (!image_heat_map) return;
 
-    images
+    const tempImageVectorSource = new VectorSource();
+
+    // filtered images
+    const filtered_images = images
+      .filter((image) => {
+        return !filtered_categories.includes(image.category || '');
+      })
+      .filter((image) => {
+        //return true if !filter_for_this_day
+        if (!filter_for_this_day) {
+          return true;
+        }
+
+        // return untimed_trips_selected_date.toDateString() === image.created_at.toDateString();
+        return (
+          untimed_trips_selected_date.toDateString() ===
+          image.created_at.toDateString()
+        );
+      });
+
+    //Now add the images to the vector source
+    filtered_images
       .filter((i) => i.lat && i.long)
       .filter((i) => parseFloat(i.lat) !== 0 || parseFloat(i.long) !== 0)
-
-      //.filter((i) => i.created_at.split('T')[0] === currentDay)
       .forEach((image) => {
         const feature = new Feature({
           geometry: new Point(
             fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
           ),
-          ol_uid: image.id,
-          id: image.id,
-          Id: image.id,
         });
+
         tempImageVectorSource.addFeature(feature);
       });
 
@@ -878,163 +1143,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       },
     });
 
-    const fetchOptimizedImageUrl = (image: Image) => {
-      const path = `${process.env.NEXT_PUBLIC_STATIC_IMAGE_THUMBNAIL_URL}/${image.file_path}?height=70&width=70`;
-      //this wil lbe used for image src
-      return path;
-    };
-
-    const addImageFeatures = async (images: Image[]) => {
-      //clear the source
-      imageVectorSource.current.clear();
-
-      //add features to the source
-      images.forEach(async (image) => {
-        const feature = new Feature({
-          geometry: new Point(
-            fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
-          ),
-          ol_uid: image.id,
-          id: image.id,
-          Id: image.id,
-          image_url: fetchOptimizedImageUrl(image),
-        });
-
-        //fetch the optimized image url
-        const url = fetchOptimizedImageUrl(image);
-
-        feature.setStyle(
-          new Style({
-            image: new Icon({
-              src: url,
-              scale: 1,
-            }),
-          })
-        );
-        iconVectorSource.current.addFeature(feature);
-      });
-    };
-    console.log(iconVectorSource.current.getFeatures());
-
-    //clear iconVectorSource and imageClusterSource and imageClusterLayer
-    iconVectorSource.current.clear();
-    imageClusterSource.current?.clear();
-    //imageClusterLayer.current?.getSource().clear();
-
-    ///add image features
-    addImageFeatures(images);
-
-    //cluster the images -> Selecting one ofthe images in that cluster
-    // at hot points (within )
-    imageClusterLayer.current = new VectorLayer({
-      source: iconVectorSource.current,
-      style: (feature) => {
-        const num_features = feature.get('features').length;
-        let style;
-
-        //grab the first feature
-        //grab the image_url from it
-        // use that as the src for the icon
-        const first_feature = feature.get('features')[0];
-
-        if (first_feature) {
-          const image_url = first_feature.get('image_url');
-
-          style = new Style({
-            image: new Icon({
-              src: fetchOptimizedImageUrl(images[0]),
-              scale: 0.5,
-            }),
-          });
-        }
-      },
-    });
-
-    const clusterSource = new Cluster({
-      distance: 30,
-      source: iconVectorSource.current,
-    });
-
-    imageClusterLayer.current = new VectorLayer({
-      source: clusterSource,
-      style: (feature) => {
-        const num_features = feature.get('features').length;
-        let style;
-
-        //grab the first feature
-        //grab the image_url from it
-        // use that as the src for the icon
-        const first_feature = feature.get('features')[0];
-
-        if (first_feature) {
-          const image_url = first_feature.get('image_url');
-
-          style = new Style({
-            image: new Icon({
-              src: image_url,
-              scale: 0.5,
-            }),
-          });
-        }
-
-        return style;
-      },
-    });
-
-    // if (!new_vector_layer) return;
-
-    //create cluster source
-    /* const newCluster = new Cluster({
-      distance: 30,
-      source: new_vector_layer.getSource() || undefined,
-      //add image_url to a property
-      // so that it can be used in the style function
-      // for the icon
-    });*/
-
-    //console.log('New Cluster Points', newCluster.getFeatures());
-
-    //create cluster layer
-    /*imageClusterLayer.current = new VectorLayer({
-      source: newCluster,
-      style: (feature) => {
-        const num_features = feature.get('features').length;
-        let style;
-
-        console.log('CLuster Features', feature.get('features'));
-        //grab the first feature
-        //grab the image_url from it
-        // use that as the src for the icon
-        const first_feature = feature.get('features')[0];
-
-        console.log('First Feature', first_feature);
-
-        if (first_feature) {
-          const image_url = first_feature.get('image_url');
-
-          console.log('Cluster Feature Image URL', image_url);
-
-          if (!image_url) {
-            console.log('NOOOOOOOOOO IMAGE URL!!!!!!!!!!!!!!');
-            return;
-          }
-
-          style = new Style({
-            image: new Icon({
-              src: image_url,
-              scale: 1,
-            }),
-          });
-        }
-
-        return style;
-      },
-    });
-
-    //add to map
-    mapInstanceRef.current?.addLayer(imageClusterLayer.current);
-    */
-    mapInstanceRef.current?.addLayer(imageClusterLayer.current);
     //add to map
     mapInstanceRef.current?.addLayer(imageHeatMapLayer.current);
   }, [
@@ -1043,6 +1151,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     imageState.data,
     image_heat_map,
     selected_date,
+    filter_for_this_day,
+    filtered_categories,
+    untimed_trips_selected_date,
   ]);
 
   const animateDayChangeLayer = useRef<VectorLayer | null>(null);

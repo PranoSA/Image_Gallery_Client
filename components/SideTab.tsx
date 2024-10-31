@@ -371,6 +371,7 @@ const MapSettingPanel = () => {
     show_uncategorized_images,
     photo_center_move_method,
     filter_for_this_day,
+    show_clustered_images_on_map,
   } = useTripViewStore();
 
   return (
@@ -545,10 +546,28 @@ const MapSettingPanel = () => {
             Map Points For Day Onlys
           </span>
         </label>
+        {/* Show Clustered Images On Map */}
+        <label className="flex items-center space-x-3 mb-2">
+          <input
+            type="checkbox"
+            checked={show_clustered_images_on_map}
+            onChange={() =>
+              tripViewStore.setState((state) => ({
+                ...state,
+                show_clustered_images_on_map:
+                  !state.show_clustered_images_on_map,
+              }))
+            }
+            className="form-checkbox h-5 w-5 text-neon-green bg-gray-800 border-gray-700"
+          />
+          <span className="text-neon-green text-sm">
+            Show Clustered Images On Map
+          </span>
+        </label>
 
         {/* Flight Icon for flight and target icon for shift*/}
         {/* Photo Center Move Method */}
-        <label className="flex items-center space-x-3 mb-2">
+        <label className="flex it>ems-center space-x-3 mb-2">
           <div
             onClick={toggleMethod}
             className="relative inline-flex items-center cursor-pointer"

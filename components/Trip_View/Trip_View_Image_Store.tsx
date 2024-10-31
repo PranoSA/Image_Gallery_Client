@@ -737,11 +737,35 @@ type StoreState = {
 
   show_uncategorized_images: boolean;
 
+  /**
+   *
+   * This will be used when moving between days
+   *
+   * Shift is much less jarring, but flight is "cool"
+   */
   photo_center_move_method: 'shift' | 'flight';
 
   //This Determines whether you should show category points on the map for the given day only
   //also, will eventually be used
   filter_for_this_day: boolean;
+
+  /**
+   * I will Seperate Out this from the Heat Map
+   * Ideally the user will want to use EITHER the heat map,this, or show_categories_on_map
+   * But its up to the end user in the end
+   *
+   */
+  show_clustered_images_on_map: boolean;
+
+  /**
+   *
+   * Speed up
+   * Should Range from 1 to 10
+   *
+   * The time of flight will be 2/SpeedUp seconds
+   *
+   */
+  speed_up: number;
 
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
@@ -807,12 +831,16 @@ export const tripViewStore = new Store<StoreState>({
   force_zoom: null,
   force_center: null,
 
+  speed_up: 1,
+
   adding_images: false,
 
   adding_path: false,
 
   filter_for_this_day: false,
   done_comparing: false,
+
+  show_clustered_images_on_map: false,
 
   show_uncategorized_images: true,
   photo_center_move_method: 'shift',
