@@ -21,6 +21,7 @@ import {
 
 import axios from 'axios';
 import { Coordinate } from 'ol/coordinate';
+import { init } from 'next/dist/compiled/webpack/webpack';
 
 const getBearerFromLocalStorage = () => {
   if (typeof localStorage === 'undefined') {
@@ -767,6 +768,9 @@ type StoreState = {
    */
   speed_up: number;
 
+  //inscribing circle on the map
+  show_day_inscribing_circle: boolean;
+
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
 
@@ -837,13 +841,15 @@ export const tripViewStore = new Store<StoreState>({
 
   adding_path: false,
 
-  filter_for_this_day: false,
+  filter_for_this_day: init_state.filter_for_this_day ?? false,
   done_comparing: false,
 
-  show_clustered_images_on_map: false,
+  show_day_inscribing_circle: init_state.show_day_inscribing_circle ?? true,
 
-  show_uncategorized_images: true,
-  photo_center_move_method: 'shift',
+  show_clustered_images_on_map: init_state.show_clustered_images_on_map ?? true,
+
+  show_uncategorized_images: init_state.show_uncategorized_images ?? true,
+  photo_center_move_method: init_state.photo_center_move_method ?? 'shift',
   map_open: init_state.map_open ?? true,
   get_images_for_time: (images: Image[]) => {
     //return images order by time
@@ -921,6 +927,13 @@ const StoringSate: Listener = () => {
     horizontally_tabbed: tripViewStore.state.horizontally_tabbed,
     show_convex_hull: tripViewStore.state.show_convex_hull,
     show_categories_on_map: tripViewStore.state.show_categories_on_map,
+    show_uncategorized_images: tripViewStore.state.show_uncategorized_images,
+    show_clustered_images_on_map:
+      tripViewStore.state.show_clustered_images_on_map,
+    date_or_time_view: tripViewStore.state.date_or_time_view,
+    filter_for_this_day: tripViewStore.state.filter_for_this_day,
+    photo_center_move_method: tripViewStore.state.photo_center_move_method,
+    show_day_inscribing_circle: tripViewStore.state.show_day_inscribing_circle,
   };
 
   //serialize the object
@@ -946,4 +959,10 @@ type PersistedSettings = {
   show_convex_hull: boolean;
   //information on categories
   show_categories_on_map: boolean;
+  show_uncategorized_images: boolean;
+  show_clustered_images_on_map: boolean;
+  date_or_time_view: 'date' | 'time';
+  filter_for_this_day: boolean;
+  photo_center_move_method: 'shift' | 'flight';
+  show_day_inscribing_circle: boolean;
 };

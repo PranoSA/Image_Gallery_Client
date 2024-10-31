@@ -361,7 +361,7 @@ const MapSettingPanel = () => {
     comparing_photos,
     paths_open,
     map_open,
-    day_by_day_banners,
+
     horizontally_tabbed,
     zoom_on_day_change,
     image_heat_map,

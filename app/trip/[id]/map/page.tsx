@@ -490,11 +490,12 @@ function Page() {
 
         <div className="content-container-horizontal h-screen flex h-max-full ">
           <div className="MapComponent flex-grow">
-            {trip?.untimed_trips ? (
-              <UntimedMapComponent height={`calc(100vh)`} />
-            ) : (
-              <MapComponent height={`calc(100vh)`} />
-            )}
+            {typeof document !== 'undefined' &&
+              (trip?.untimed_trips ? (
+                <UntimedMapComponent height={`calc(100vh)`} />
+              ) : (
+                <MapComponent height={`calc(100vh)`} />
+              ))}
           </div>
 
           <Resizable
@@ -572,11 +573,14 @@ function Page() {
           className="MapComponent flex-grow"
           style={{ height: `calc(100vh - ${galleryHeight}px)` }}
         >
-          {trip?.untimed_trips ? (
-            <UntimedMapComponent height={`calc(100vh - ${galleryHeight}px)`} />
-          ) : (
-            <MapComponent height={`calc(100vh - ${galleryHeight}px)`} />
-          )}
+          {typeof document !== 'undefined' &&
+            (trip?.untimed_trips ? (
+              <UntimedMapComponent
+                height={`calc(100vh - ${galleryHeight}px)`}
+              />
+            ) : (
+              <MapComponent height={`calc(100vh - ${galleryHeight}px)`} />
+            ))}
         </div>
 
         <Resizable

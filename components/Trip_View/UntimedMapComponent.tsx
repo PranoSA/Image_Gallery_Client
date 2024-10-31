@@ -811,6 +811,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       !show_clustered_images_on_map ||
       !imageState.data
     ) {
+      //clear the source
+      imageVectorSource.current.clear();
+      iconVectorSource.current.clear();
       return;
     }
 
@@ -1478,9 +1481,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
                   color: 'rgba(211, 211, 211, 0.5)', // Light gray with 50% transparency
                 }),
                 stroke: new Stroke({
-                  //color: 'blue',
-                  color: 'rgba(211, 211, 211, 0.8)', // Light gray with 80% transparency
-                  width: 10,
+                  color: 'blue',
+                  //color: 'rgba(211, 211, 211, 0.8)', // Light gray with 80% transparency
+                  width: 2,
                 }),
               });
 
