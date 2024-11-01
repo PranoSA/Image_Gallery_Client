@@ -50,7 +50,10 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   //get td from context
   const { id } = useContext(TripContext);
 
-  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<HTMLDivElement>(
+    document.createElement('div')
+  ) as React.MutableRefObject<HTMLDivElement>;
+
   const mapInstanceRef = useRef<Map | null>(null);
 
   //get the paths and loading state
@@ -121,9 +124,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   //which holds the actual map - the mapRef.current is the div target
   useEffect(() => {
     //check document is loaded - Don't run on the Serverside
-    if (typeof document === "undefined"){
-      return;
-    }
+    if (!document) return;
 
     if (mapRef.current && !mapInstanceRef.current) {
       mapInstanceRef.current = new Map({

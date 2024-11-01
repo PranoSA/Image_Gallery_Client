@@ -17,7 +17,14 @@ import { Banner_Component } from '@/components/Trip_View/Banner_Component';
 import { Banner_Component as Banner_Component_Untimed } from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Banner_Component';
 
 import MapComponent from '@/components/Trip_View/MapComponent';
-import UntimedMapComponent from '@/components/Trip_View/UntimedMapComponent';
+//import UntimedMapComponent from '@/components/Trip_View/UntimedMapComponent';
+
+//import UntimedMapComponent with no ssr
+import dynamic from 'next/dynamic';
+const UntimedMapComponent = dynamic(
+  () => import('@/components/Trip_View/UntimedMapComponent'),
+  { ssr: false }
+);
 
 import AddPathsForm from '@/components/Trip_View/AddPathsForm';
 import axios from 'axios';
@@ -470,6 +477,7 @@ function Page() {
   if (horizontally_tabbed) {
     return (
       <div className="page-container h-screen">
+        {' '}
         <SideTab />
         <div
           className="z-100 absolute top-0 left-0"
@@ -489,7 +497,6 @@ function Page() {
             <TripDropdownMenu />
           </div>
         </div>
-
         <div className="content-container-horizontal h-screen flex h-max-full ">
           <div className="MapComponent flex-grow">
             {typeof document !== 'undefined' &&
@@ -509,8 +516,8 @@ function Page() {
               console.log('Dragged Width:', d.width);
 
               /*setGalleryWidth(
-                Math.max(150, prevGalleryWidth.current + d.width)
-              );*/
+            Math.max(150, prevGalleryWidth.current + d.width)
+          );*/
               const newWidth = prevGalleryWidth.current + d.width;
 
               const atLeast100 = Math.max(100, newWidth);
