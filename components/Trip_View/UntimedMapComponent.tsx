@@ -93,11 +93,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   //get td from context
   const { id } = useContext(TripContext);
 
-  /*const mapRef = useRef<HTMLDivElement>(
+  const mapRef = useRef<HTMLDivElement>(
     document.createElement('div')
   ) as React.MutableRefObject<HTMLDivElement>;
-*/
-  const mapRef = useRef<HTMLDivElement | null>(null);
 
   const mapInstanceRef = useRef<Map | null>(null);
 
