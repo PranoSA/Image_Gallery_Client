@@ -121,7 +121,7 @@ export default function MapComponent<MapProps>({ height = '50vh' }) {
   //which holds the actual map - the mapRef.current is the div target
   useEffect(() => {
     //check document is loaded - Don't run on the Serverside
-    if (!document) {
+    if (typeof document === "undefined"){
       return;
     }
 

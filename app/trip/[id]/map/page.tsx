@@ -269,7 +269,9 @@ function Page() {
   const [menu, showMenu] = useState<boolean>(false);
 
   // map to find the path id from the feature
-  const pathFromFeature = useRef<Map>(new Map());
+  //key value pair
+  // it is not an Open Layer Map
+  const pathFromFeature = useRef<{ [key: string]: string }>({});
 
   const imagesForDay: Image[] = useMemo(() => {
     return get_images_for_day(
@@ -325,7 +327,7 @@ function Page() {
       const featureId = feature.ol_uid || feature.getId();
 
       //get the path id from the feature
-      const pathId = pathFromFeature.current.get(featureId);
+      const pathId = pathFromFeature.current[featureId];
 
       //find it in the trip.paths
       if (!paths) return;

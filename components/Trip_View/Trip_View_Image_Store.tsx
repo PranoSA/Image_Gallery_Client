@@ -760,6 +760,12 @@ type StoreState = {
 
   /**
    *
+   * This will replace the timed and untimed trip separation in the future
+   */
+  skip_empty_days: boolean;
+
+  /**
+   *
    * Speed up
    * Should Range from 1 to 10
    *
@@ -840,6 +846,8 @@ export const tripViewStore = new Store<StoreState>({
   adding_images: false,
 
   adding_path: false,
+
+  skip_empty_days: false,
 
   filter_for_this_day: init_state.filter_for_this_day ?? false,
   done_comparing: false,

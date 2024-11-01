@@ -55,6 +55,18 @@ import {
 } from './Compare_View/CompareStore';
 import { Coordinate } from 'ol/coordinate';
 
+//Related to Day Shift Animated Effects
+const base_flight_duration = 2000;
+const base_shift_duration = 2000;
+
+//Related to "MAP" image selection
+const base_zoom_animation = 1000;
+
+//Related To Displaying
+const base_icon_image_height = 70;
+const base_icon_image_width = 70;
+const base_icon_image_scale = 1;
+
 type MapProps = {
   height?: string;
 };
@@ -94,9 +106,82 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
   const categoryImageLayer = useRef<VectorLayer>(new VectorLayer());
 
-  const [zoom, setZoom] = useState<number>(0);
+  //get information about the day, the image_location
+  // for the purpose of filtering paths and stuff and mapopen
+  const {
+    selected_date,
+    selected_image_location,
+    map_open,
+    get_images_for_day,
+    zoom_on_day_change,
+    image_heat_map,
+    paths_open,
+    scroll_to_image,
+    photo_center_move_method,
+    show_clustered_images_on_map,
+    filter_for_this_day,
+    filtered_categories,
+  } = useTripViewStore();
 
-  //when map loads, add a click listener to the map
+  const { untimed_trips_selected_date } = useCompareViewStore();
+
+  const filtered_images = useMemo(() => {
+    /**
+     * Entails filtering the images based on the selected categories
+     * And if filter_for_this_day is enabled, then filter based on the untimed_trips_selected_date
+     */
+
+    const images = imageState.data;
+
+    if (!images) return [];
+
+    return images
+      .filter((image) => {
+        return !filtered_categories.includes(image.category || '');
+      })
+      .filter((image) => {
+        //return true if !filter_for_this_day
+        if (!filter_for_this_day) {
+          return true;
+        }
+
+        // return untimed_trips_selected_date.toDateString() === image.created_at.toDateString();
+        return (
+          untimed_trips_selected_date.toDateString() ===
+          image.created_at.toDateString()
+        );
+      });
+  }, [
+    imageState.data,
+    filtered_categories,
+    filter_for_this_day,
+    untimed_trips_selected_date,
+  ]);
+
+  //GOAL : Destroy every reference to "selected_date" and "untimed_trips_selected_date"
+  // ANd to "currentDay" and "currentDayDate"
+  const currentDay = useMemo<string>(() => {
+    //selected_date is a number after the start date
+    const start_date = tripsState.data?.start_date;
+
+    if (!start_date) {
+      return '1970-01-01';
+    }
+
+    const date = new Date(start_date);
+
+    date.setDate(date.getDate() + selected_date);
+
+    return date.toISOString().split('T')[0];
+  }, [tripsState.data?.start_date, selected_date]);
+
+  /**
+   *
+   * WHen Map Loads - Add Listener to the Map
+   *
+   * When the map is clicked, get the feature at the clicked location
+   * [Later Add Functionality to find based on ICONs, for now - just find the feature based on selected_image_location]
+   */
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -108,18 +193,14 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         (feature) => feature
       );
 
-      console.log('Feature', feature);
-
       if (feature) {
         //show the modal
-        //set the path to the selected path
-        //set the modal to open
 
-        //see if there is an image at the clicked location
-        const images = imageState.data;
+        const images = filtered_images;
 
-        if (!images) return;
+        if (images.length === 0) return;
 
+        // Find the feature in images
         const image = images.find((image) => {
           const point = [parseFloat(image.long), parseFloat(image.lat)];
           const transformed_point = fromLonLat(point);
@@ -142,43 +223,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         }
       }
     });
-  }, [imageState.data]);
-
-  //get information about the day, the image_location
-  // for the purpose of filtering paths and stuff and mapopen
-  const {
-    selected_date,
-    selected_image_location,
-    map_open,
-    get_images_for_day,
-    zoom_on_day_change,
-    image_heat_map,
-    paths_open,
-    scroll_to_image,
-    photo_center_move_method,
-    show_clustered_images_on_map,
-    filter_for_this_day,
-    filtered_categories,
-  } = useTripViewStore();
-
-  const { untimed_trips_selected_date } = useCompareViewStore();
-
-  //GOAL : Destroy every reference to "selected_date" and "untimed_trips_selected_date"
-  // ANd to "currentDay" and "currentDayDate"
-  const currentDay = useMemo<string>(() => {
-    //selected_date is a number after the start date
-    const start_date = tripsState.data?.start_date;
-
-    if (!start_date) {
-      return '1970-01-01';
-    }
-
-    const date = new Date(start_date);
-
-    date.setDate(date.getDate() + selected_date);
-
-    return date.toISOString().split('T')[0];
-  }, [tripsState.data?.start_date, selected_date]);
+  }, [filtered_images]);
 
   //Vector Source To Store Image Location, pretty much the "selected_image_location" corresponding data
   const imageVectorSource = useRef(new VectorSource());
@@ -208,9 +253,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   //which holds the actual map - the mapRef.current is the div target
   useEffect(() => {
     //check document is loaded - Don't run on the Serverside
-    if (!document) {
-      return;
-    }
+    if (!document) return;
 
     if (mapRef.current && !mapInstanceRef.current) {
       const OSM_Layer = new TileLayer({
@@ -237,28 +280,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       //set scrollToImage function
     }
   }, []);
-
-  const zoomLater = (image: Image) => {
-    setTimeout(() => {
-      const point = [parseFloat(image.long), parseFloat(image.lat)];
-      const transformed_point = fromLonLat(point);
-
-      if (!mapInstanceRef.current) return;
-      const current_zoom = mapInstanceRef.current.getView().getZoom();
-
-      console.log('zooming in', current_zoom);
-
-      //if (!current_zoom) return;
-
-      //const next_zoom = Math.max(current_zoom, Math.min(current_zoom + 3, 15));
-
-      mapInstanceRef.current.getView().animate({
-        center: transformed_point,
-        zoom: 15,
-        duration: 2000,
-      });
-    }, 2000);
-  };
 
   const previousZoomCoordinate = useRef<Coordinate | null>(null);
 
@@ -299,29 +320,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         (current_center[1] - transformed_point[1]) ** 2
     );
 
-    //this is the projected distance in meters (not actual distance)
-
-    //  zoom -> 13 [the max distance is 20km]
-    //  zoom -> 14 [the max distance is 10km]
-    //  zoom -> 15 [the max distance is 3km]
-    //  zoom -> 16 [the max distance is 1km]
-    //  zoom -> 17 [the max distance is 500m]
-    // 17 is the absolute maximum zoom
-    // zoom -> 12 [the max distance is 40km]
-    // zoom -> 11 [the max distance is 80km]
-    // zoom -> 10 [the max distance is 160km]
-    // zoom -> 9 [the max distance is 320km]
-    // zoom -> 8 [the max distance is 640km]
-    // zoom -> 7 [the max distance is 1280km]
-    // zoom -> 6 [the max distance is 2560km]
-    // zoom -> 5 [the max distance is 5120km]
-    // zoom -> 4 [the max distance is 10240km]
-    // zoom -> 3 [the max distance is 20480km] -- that is it
-
-    //what is maximum distance on a globe? 20,000 km?
-    // 20000/distance = 2^zoom
-    // log2(20000/distance) = zoom
-    // log2(20000/distance) = zoom
     const max_zoom = Math.ceil(Math.log2(60000000 / distance));
 
     //maybe make this a strict mathematical value in the future
@@ -574,10 +572,14 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     //mapInstanceRef.current.getView().setCenter(transformed_point);
   }, [photo_center_move_method, scroll_to_image]);
 
-  //use Effect that runs every 3 seconds and resets the zoom if the zoom has been changed
-
-  //add marker for when selected_image_location changes
-  // This places the marker on the map
+  /**
+   *
+   * Mark the Map With The Selected Image Location
+   *
+   * It seems unnecessary to add functionality to turn this off, since a user can either de-select the image
+   * or not select it in the first place
+   *
+   */
   useEffect(() => {
     if (!selected_image_location) {
       //remove the marker
@@ -734,14 +736,11 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
   //add listener
   mapInstanceRef.current?.on('click', (event) => {
-    console.log('Map Clicked');
     //get the feature at the clicked location
     const feature = mapInstanceRef.current?.forEachFeatureAtPixel(
       event.pixel,
       (feature) => feature
     );
-
-    console.log('Feature', feature);
 
     if (feature) {
       //show the modal
@@ -795,6 +794,10 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     }
   });
 
+  /**
+   *
+   * iconV
+   */
   const iconVectorSource = useRef<VectorSource>(new VectorSource());
   const imageClusterLayer = useRef<VectorLayer | null>(null);
   const imageClusterSource = useRef<VectorSource | null>(null);
@@ -802,7 +805,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   /**
    *
    * This Use Effect Will draw the Clusteed Images on the Map
-   * IF show_clustered_images_on_map is enabled
+   *
+   * Watches For Changes in filtered_images and then
+   * re-compiles the imageClusterLayer
    *
    */
   useEffect(() => {
@@ -819,29 +824,12 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     //determine if filter_for_this_day and filter by the filtered_categories
 
-    const images = imageState.data;
-
     const tempImageVectorSource = new VectorSource();
 
-    const filtered_images = images
-      .filter((image) => {
-        return !filtered_categories.includes(image.category || '');
-      })
-      .filter((image) => {
-        //return true if !filter_for_this_day
-        if (!filter_for_this_day) {
-          return true;
-        }
-
-        // return untimed_trips_selected_date.toDateString() === image.created_at.toDateString();
-        return (
-          untimed_trips_selected_date.toDateString() ===
-          image.created_at.toDateString()
-        );
-      });
+    const images = imageState.data;
 
     //Now Build The Clustered Image Layer
-    images
+    filtered_images
       .filter((i) => i.lat && i.long)
       .filter((i) => parseFloat(i.lat) !== 0 || parseFloat(i.long) !== 0)
 
@@ -908,7 +896,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     imageClusterLayer.current = new VectorLayer({
       source: iconVectorSource.current,
       style: (feature) => {
-        const num_features = feature.get('features').length;
         let style;
 
         //grab the first feature
@@ -917,8 +904,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         const first_feature = feature.get('features')[0];
 
         if (first_feature) {
-          const image_url = first_feature.get('image_url');
-
           style = new Style({
             image: new Icon({
               src: fetchOptimizedImageUrl(images[0]),
@@ -939,8 +924,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       style: (feature) => {
         const num_features: number = feature.get('features').length;
         let style;
-
-        console.log('# of Features', num_features);
 
         //grab the first feature
         //grab the image_url from it
@@ -979,66 +962,12 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       },
     });
 
-    // if (!new_vector_layer) return;
-
-    //create cluster source
-    /* const newCluster = new Cluster({
-    distance: 30,
-    source: new_vector_layer.getSource() || undefined,
-    //add image_url to a property
-    // so that it can be used in the style function
-    // for the icon
-  });*/
-
-    //console.log('New Cluster Points', newCluster.getFeatures());
-
-    //create cluster layer
-    /*imageClusterLayer.current = new VectorLayer({
-    source: newCluster,
-    style: (feature) => {
-      const num_features = feature.get('features').length;
-      let style;
-
-      console.log('CLuster Features', feature.get('features'));
-      //grab the first feature
-      //grab the image_url from it
-      // use that as the src for the icon
-      const first_feature = feature.get('features')[0];
-
-      console.log('First Feature', first_feature);
-
-      if (first_feature) {
-        const image_url = first_feature.get('image_url');
-
-        console.log('Cluster Feature Image URL', image_url);
-
-        if (!image_url) {
-          console.log('NOOOOOOOOOO IMAGE URL!!!!!!!!!!!!!!');
-          return;
-        }
-
-        style = new Style({
-          image: new Icon({
-            src: image_url,
-            scale: 1,
-          }),
-        });
-      }
-
-      return style;
-    },
-  });
-
-  //add to map
-  mapInstanceRef.current?.addLayer(imageClusterLayer.current);
-  */
     mapInstanceRef.current?.addLayer(imageClusterLayer.current);
   }, [
     show_clustered_images_on_map,
-    filtered_categories,
-    filter_for_this_day,
-    imageState.data,
     untimed_trips_selected_date,
+    filtered_images,
+    imageState.data,
   ]);
 
   // What is this for??
@@ -1168,7 +1097,11 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     return untimed_trips_selected_date.toDateString();
   }, [untimed_trips_selected_date]);
 
-  //set center of view when the selected date changes
+  /**
+   *
+   * This sets center of view when day changes
+   *
+   */
   useEffect(() => {
     //check if "zoom_on_day_change" is true
     if (!zoom_on_day_change) {
@@ -1179,18 +1112,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     const images = imageState.data;
     if (!trip || !images) return;
 
-    //log all of the useEffect dependencies
-    console.log('Useeffect Trip', trip);
-
-    console.log('Useeffect Images', images);
-    console.log('Useeffect Selected Date', selected_date);
-    console.log(
-      'Useeffect Untimed Trips Selected Date',
-      untimed_trips_selcted_date_Day
-    );
-    console.log('Useeffect Zoom On Day Change', zoom_on_day_change);
-    console.log('Useeffect --------------------------------------------');
-
     //get untimed_trips_selected_date
 
     //get images for the day
@@ -1199,41 +1120,12 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       //const image_date = new Date(image.created_at);
       //check if same DATE as untimed_trips_selected_date
 
-      /*
-         const images_today = images.filter((image) => {
-        const image_date = new Date(image.created_at);
-
-        console.log('Image Date', image_date.toDateString());
-        console.log(
-          'Selected Date',
-          untimed_trips_selected_date.toDateString()
-        );
-
-        const AreEqual =
-          image_date.toDateString() ===
-          untimed_trips_selected_date.toDateString();
-        console.log('Date are Equal', AreEqual);
-
-        return AreEqual;
-
-        return (
-          image_date.toDateString() ===
-          untimed_trips_selected_date.toDateString()
-        );
-      });
-
-      console.log("Date's Images", images_today);
-
-      return images_today;
-      */
       const image_date = new Date(image.created_at);
 
       return image_date.toDateString() === untimed_trips_selcted_date_Day;
     });
 
     animateDayChangeSource.current?.clear();
-
-    console.log('Images for Day', imagesForDay);
 
     if (imagesForDay.length > 0) {
       //set center of view to the center of the images
@@ -1253,6 +1145,30 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         0
       );
 
+      const points: Coordinate[] = candidateImages.map((image) => {
+        return fromLonLat([parseFloat(image.long), parseFloat(image.lat)]);
+      });
+
+      const max_lat = points.reduce(
+        (acc, point) => Math.max(acc, point[1]),
+        -Infinity
+      );
+
+      const min_lat = points.reduce(
+        (acc, point) => Math.min(acc, point[1]),
+        Infinity
+      );
+
+      const max_long = points.reduce(
+        (acc, point) => Math.max(acc, point[0]),
+        -Infinity
+      );
+
+      const min_long = points.reduce(
+        (acc, point) => Math.min(acc, point[0]),
+        Infinity
+      );
+
       //if candidateImages is empty, return
       if (candidateImages.length === 0) return;
 
@@ -1264,11 +1180,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         parseFloat(candidateImages[0].long),
         parseFloat(candidateImages[0].lat),
       ]);
-
-      /*const newCenter = fromLonLat([
-        total_long / candidateImages.length,
-        total_lat / candidateImages.length,
-      ]);*/
 
       const centerOfImages = fromLonLat([
         total_long / candidateImages.length,
@@ -1300,8 +1211,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
                 (newCenter[1] - oldCenter[1]) / (newCenter[0] - oldCenter[0])
               ) +
               Math.PI / 2;
-
-        console.log('Angle of Rotation', angle_of_rotation);
 
         const arrowStyle = new Style({
           image: new Icon({
@@ -1393,49 +1302,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
               animateDayChangeSource.current?.clear();
 
               // GET 3857 extents of all the images
-
-              const points: Coordinate[] = candidateImages.map((image) => {
-                return fromLonLat([
-                  parseFloat(image.long),
-                  parseFloat(image.lat),
-                ]);
-              });
-
-              const total_lat = points.reduce(
-                (acc, point) => acc + point[1],
-                0
-              );
-
-              const total_long = points.reduce(
-                (acc, point) => acc + point[0],
-                0
-              );
-
-              const center_of_images = [
-                total_long / candidateImages.length,
-                total_lat / candidateImages.length,
-              ];
-
-              const max_lat = points.reduce(
-                (acc, point) => Math.max(acc, point[1]),
-                -Infinity
-              );
-
-              const min_lat = points.reduce(
-                (acc, point) => Math.min(acc, point[1]),
-                Infinity
-              );
-
-              const max_long = points.reduce(
-                (acc, point) => Math.max(acc, point[0]),
-                -Infinity
-              );
-
-              const min_long = points.reduce(
-                (acc, point) => Math.min(acc, point[0]),
-                Infinity
-              );
-
               const center = [
                 (min_long + max_long) / 2,
                 (min_lat + max_lat) / 2,
@@ -1453,26 +1319,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
                 geometry: circle,
               });
 
-              //print extent of the circle
-              console.log('Circle Extent', circle.getExtent());
-
-              // Define the coordinates for the four corners
-              /* const cornersFeature = new Feature({
-                geometry: new LineString(corners),
-              });
-
-              // Style for the corners
-              const cornersStyle = new Style({
-                stroke: new Stroke({
-                  color: 'red',
-                  width: 4,
-                }),
-              });
-
-              cornersFeature.setStyle(cornersStyle);
-
-              animateDayChangeSource.current?.addFeature(cornersFeature);
-*/
               // Style for the circle
               const circleStyle = new Style({
                 fill: new Fill({
@@ -1504,13 +1350,6 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         //previousDayCenter.current = newCenter;
         previousDayCenter.current = centerOfImages;
 
-        //mapInstanceRef.current?.getView().setCenter(newCenter);
-
-        //animate transition to new center
-        /*mapInstanceRef.current
-          ?.getView()
-          .animate({ center: newCenter, duration: 2000 });
-*/
         //animate zoom to just including the two point
         return;
       }
@@ -1528,29 +1367,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       //set zoom level based on the size of the box
       // max_lat, min_lat, max_long, min_long
 
-      const max_lat = candidateImages.reduce(
-        (acc, image) => Math.max(acc, parseFloat(image.lat)),
-        -Infinity
-      );
-
-      const min_lat = candidateImages.reduce(
-        (acc, image) => Math.min(acc, parseFloat(image.lat)),
-        Infinity
-      );
-
-      const max_long = candidateImages.reduce(
-        (acc, image) => Math.max(acc, parseFloat(image.long)),
-        -Infinity
-      );
-
-      const min_long = candidateImages.reduce(
-        (acc, image) => Math.min(acc, parseFloat(image.long)),
-        Infinity
-      );
-
       const lat_diff = max_lat - min_lat;
       const long_diff = max_long - min_long;
-
       const max_diff = Math.max(lat_diff, long_diff);
 
       const zoom = Math.floor(9 - Math.log2(max_diff));
@@ -1581,7 +1399,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
   //check if any are usLoading
   if (tripsState.isLoading || pathState.isLoading || imageState.isLoading) {
-    return <div>Loading...</div>;
+    return <div className="text-center items-center flex-grow">Loading...</div>;
   }
 
   //check errors individually
