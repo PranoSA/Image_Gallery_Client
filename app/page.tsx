@@ -105,6 +105,86 @@ function Home() {
     string | null
   >(null);
 
+  //use effect -> register the service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          console.log('Registration successful');
+        })
+        .catch((error) => {
+          console.log('Service worker registration failed');
+        });
+    }
+  }, []);
+
+  //subscribe to push notifications
+  async function requestPushPermission() {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        console.log('Push notification permission granted.');
+        // Subscribe to push notifications here
+      } else {
+        console.log('Push notification permission denied.');
+      }
+    } catch (error) {
+      console.error('Error requesting push notification permission:', error);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Request push notification permission when the page loads
+    requestPushPermission();
+  });
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handleServiceWorker = async () => {
+        const register = await navigator.serviceWorker.register('/sw.js');
+
+        const subscription = await register.pushManager.subscribe({
+          userVisibleOnly: true,
+
+          applicationServerKey: `${process.env.NEXT_PUBLIC_WEBPUSH_PUBLIC_KEY}`,
+        });
+
+        console.log('Push Subscription:', subscription);
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_WEBPUSH_URL}/subscribe`,
+          {
+            method: 'POST',
+            body: JSON.stringify(subscription),
+            headers: {
+              'content-type': 'application/json',
+            },
+          }
+        );
+
+        const data = await res.json();
+        console.log(data);
+      };
+      handleServiceWorker();
+    }
+  }, []);
+
   useEffect(() => {
     //set local storage bearer token
     if (typeof window !== 'undefined' && session) {

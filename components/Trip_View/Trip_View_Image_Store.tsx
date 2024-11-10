@@ -738,6 +738,8 @@ type StoreState = {
 
   show_uncategorized_images: boolean;
 
+  daily_encompassing_circle: boolean;
+
   /**
    *
    * This will be used when moving between days
@@ -840,6 +842,8 @@ export const tripViewStore = new Store<StoreState>({
 
   force_zoom: null,
   force_center: null,
+
+  daily_encompassing_circle: false,
 
   speed_up: 1,
 

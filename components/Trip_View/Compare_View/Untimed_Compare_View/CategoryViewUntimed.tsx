@@ -281,7 +281,7 @@ const CategoryView = () => {
         {/* Buttons to Save (Calls saveImages and saveTrip)  - then sets local trip*/}
 
         {dayByDay && <Banner_Component />}
-        <div className="flex flex-wrap w-full flex-row justify-around">
+        <div className="flex flex-wrap w-full flex-row justify-left">
           {folders.map((folder) => (
             <ImageDragFolder
               key={folder.name}
@@ -470,12 +470,81 @@ const ImageDragFolder = ({
 
   const editedFieldRef = React.useRef<HTMLInputElement>(null);
 
+  const openFolderRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      console.log('Click Event', event.key);
+      console.log(document.activeElement);
+      console.log(openFolderRef.current);
+      if (selectedImage && !editingImage) {
+        switch (event.key) {
+          case 'Escape':
+            // Close the folder
+            //if there is a selected image, set it to null
+            if (selectedImage) {
+              setSelectedImage(null);
+            }
+            break;
+          case 'ArrowDown':
+            // Navigate to the next image
+            //find the next image after the current image if its not the first
+            let current_image_index_down = images.findIndex(
+              (image) => image.id === selectedImage?.id
+            );
+            if (current_image_index_down === images.length - 1) return;
+            console.log('ArrowDown key pressed');
+            setSelectedImage(images[current_image_index_down + 1]);
+            console.log('Selected Image Index', current_image_index_down + 1);
+            event.stopPropagation();
+            event.preventDefault();
+            break;
+          case 'ArrowUp':
+            // Navigate to the next image
+            //find the next image after the current image if its not the first
+            const current_image_index = images.findIndex(
+              (image) => image.id === selectedImage?.id
+            );
+            if (current_image_index === 0) return;
+            console.log('ArrowDown key pressed');
+            setSelectedImage(images[current_image_index - 1]);
+            console.log('Selected Image Index', current_image_index - 1);
+            event.stopPropagation();
+            event.preventDefault();
+            break;
+          case 'Enter':
+            //start editing the image
+            setEditingImage(selectedImage);
+            setEditedName(selectedImage.name);
+            // Focus on the input
+            setTimeout(() => {
+              editedFieldRef.current?.focus();
+            }, 500);
+
+            break;
+          default:
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [images, selectedImage]);
+
   return (
-    <div className={` ${opened ? `w-full grow-1 mb-4` : `m-1 grow-1`}`}>
+    <div
+      className={` ${
+        opened ? `w-full grow-1 mb-4` : ` w-[550px] justify-left m-1 `
+      }`}
+    >
       {!opened ? (
         <div
           ref={dropRef}
-          className="w-full h-[40px] w-[300px] grow-1 mr-6 ml-6 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
+          className="w-full h-[40px] w-[500px] mr-6 ml-6 flex-grow flex flex-wrap flex-row items-center p-1 bg-white shadow-md rounded-lg border-1 order-yellow-500"
         >
           <FaFolder className="text-6xl text-yellow-500 mr-3 ml-6" size={30} />
           <div className="flex flex-row items-center">
@@ -497,11 +566,15 @@ const ImageDragFolder = ({
         <div
           ref={dropRef}
           className="w-full grow-1 flex-grow flex flex-wrap flex-row items-center bg-white  dark:bg-gray-800 shadow-md rounded-lg border-yellow-500"
+
+          //add event listener to close the folder "escape"
+          //when folder is in focus
+          //also event listener "down" and "up" to navigate through the images
         >
-          <div className="w-full flex flex-row ">
+          <div className="w-full flex flex-row ml-6">
             <FaFolder className="text-6xl text-yellow-500 mr-2" size={24} />
             <FaChevronUp
-              className="text-2xl cursor-pointer dark:text-black"
+              className="text-2xl cursor-pointer dark:text-neon-green"
               onClick={() => setOpen(null)}
               size={24}
             />
@@ -511,21 +584,78 @@ const ImageDragFolder = ({
           </div>
           {/* Mow -> The Open Folder Contains List of images*/}
           <div className="w-full flex flex-row overflow-x-auto">
-            <div className="flex flex-row min-w-[400px] max-w-[400px]  items-start">
-              <div className="w-full flex flex-col items-start max-h-[420px] overflow-y-auto custom-scrollbar">
-                {images.map((image) => (
-                  <div
-                    key={image.id}
-                    className={`flex w-full justify-between items-center border rounded  ${
-                      selectedImage?.id === image.id
-                        ? 'border-4 dark:border-neon-green'
-                        : ''
-                    }  `}
-                  >
-                    {editingImage?.id !== image.id ? (
-                      <div className="flex flex-row flex-grow ml-3">
-                        <p
-                          className="text-black font-bold text-sm dark:text-white "
+            <div
+              className="flex flex-row min-w-[400px] max-w-[400px]  items-start"
+              ref={openFolderRef}
+            >
+              <div className="w-full flex flex-col items-start h-[420px] overflow-y-auto custom-scrollbar">
+                {images.length == 0 ? (
+                  <>
+                    <div className=" flex-grow justify-center items-center mt-20">
+                      <h1 className="text-2xl text-gray-500 text-center">
+                        No Images, Drag Image to Add it To Category or select
+                        from the dropdown menu above each image.
+                      </h1>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {images.map((image) => (
+                      <div
+                        key={image.id}
+                        className={`flex w-full justify-between items-center border rounded  ${
+                          selectedImage?.id === image.id
+                            ? 'border-4 dark:border-neon-green'
+                            : ''
+                        }  `}
+                      >
+                        {editingImage?.id !== image.id ? (
+                          <div className="flex flex-row flex-grow ml-3">
+                            <p
+                              className="text-black font-bold text-sm dark:text-white "
+                              onClick={() => {
+                                if (selectedImage === image) {
+                                  setSelectedImage(null);
+                                } else {
+                                  setSelectedImage(image);
+                                }
+                              }}
+                            >
+                              {image.name}
+                            </p>
+                            <FaPen
+                              size={20}
+                              onClick={() => {
+                                setEditingImage(image);
+                                setEditedName(image.name);
+                                setSelectedImage(image);
+                                // Focus on the input
+                                setTimeout(() => {
+                                  editedFieldRef.current?.focus();
+                                }, 500);
+                              }}
+                              className="text-2xl cursor-pointer dark:text-black ml-3 mr-3"
+                            />
+                          </div>
+                        ) : (
+                          <input
+                            ref={editedFieldRef}
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            className="w-2/3 text-black dark:text-black"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleEditImage();
+                                setEditingImage(null);
+                              }
+                              if (e.key === 'Escape') {
+                                setEditingImage(null);
+                              }
+                            }}
+                          />
+                        )}
+                        <div
+                          className="flex-shrink-0 w-[32px]"
                           onClick={() => {
                             if (selectedImage === image) {
                               setSelectedImage(null);
@@ -534,59 +664,21 @@ const ImageDragFolder = ({
                             }
                           }}
                         >
-                          {image.name}
-                        </p>
-                        <FaPen
-                          size={20}
-                          onClick={() => {
-                            setEditingImage(image);
-                            setEditedName(image.name);
-                            setSelectedImage(image);
-                            // Focus on the input
-                            setTimeout(() => {
-                              editedFieldRef.current?.focus();
-                            }, 500);
-                          }}
-                          className="text-2xl cursor-pointer dark:text-black ml-3 mr-3"
-                        />
+                          <ImageItemClosed
+                            image={image}
+                            onDragEnd={onDragEnd}
+                          />
+                        </div>
+                        <div>
+                          <FaTimes
+                            onClick={() => removeImageFromCategory(image)}
+                            className="text-2xl ml-3 mr-3 cursor-pointer dark:text-white hover:text-red-500"
+                          />
+                        </div>
                       </div>
-                    ) : (
-                      <input
-                        ref={editedFieldRef}
-                        value={editedName}
-                        onChange={(e) => setEditedName(e.target.value)}
-                        className="w-2/3 text-black dark:text-black"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleEditImage();
-                            setEditingImage(null);
-                          }
-                          if (e.key === 'Escape') {
-                            setEditingImage(null);
-                          }
-                        }}
-                      />
-                    )}
-                    <div
-                      className="flex-shrink-0 w-[32px]"
-                      onClick={() => {
-                        if (selectedImage === image) {
-                          setSelectedImage(null);
-                        } else {
-                          setSelectedImage(image);
-                        }
-                      }}
-                    >
-                      <ImageItemClosed image={image} onDragEnd={onDragEnd} />
-                    </div>
-                    <div>
-                      <FaTimes
-                        onClick={() => removeImageFromCategory(image)}
-                        className="text-2xl ml-3 mr-3 cursor-pointer dark:text-white hover:text-red-500"
-                      />
-                    </div>
-                  </div>
-                ))}
+                    ))}
+                  </>
+                )}
               </div>
             </div>
             {/* Image Preview Taking Up Rest of the Space */}
@@ -598,13 +690,13 @@ const ImageDragFolder = ({
               } `}
             >
               {selectedImage && (
-                <div className="w-full h-full ">
+                <div className="w-full h-[320px]">
                   <NextImage
                     src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${selectedImage.file_path}`}
                     alt={`Image for ${selectedImage.created_at}`}
                     layout="fill"
                     objectFit="contain"
-                    sizes="(max-width: 500px) 100vw, 500px"
+                    sizes="(max-width: 300px) 100vw, 300px"
                   />
                 </div>
               )}
