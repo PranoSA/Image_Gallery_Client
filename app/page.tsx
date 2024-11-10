@@ -134,11 +134,6 @@ function Home() {
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Request push notification permission when the page loads
-    requestPushPermission();
-  });
-
   function urlBase64ToUint8Array(base64String: string) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
@@ -155,6 +150,13 @@ function Home() {
   }
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Request push notification permission when the page loads
+      requestPushPermission();
+    });
+
     if ('serviceWorker' in navigator) {
       const handleServiceWorker = async () => {
         const register = await navigator.serviceWorker.register('/sw.js');
