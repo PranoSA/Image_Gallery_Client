@@ -40,6 +40,8 @@ import { FaCheck, FaPen, FaTimes } from 'react-icons/fa';
 import { FaDownload } from 'react-icons/fa';
 import { useCompareViewStore } from '../CompareStore';
 
+import ConfirmDeletionModal from '@/components/Trip_View/ConfirmDeletionModal';
+
 type PlainViewProps = {
   show_selection?: boolean;
 };
@@ -284,6 +286,8 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
           }
         }}
       />
+      <ConfirmDeletionModal />
+
       <div className="w-full overflow-x-auto" style={{ flexShrink: 0 }}>
         <div className="scrollmenu" ref={scrollContainerRef}>
           <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
@@ -443,7 +447,18 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   const deleteImage = async (image: Image) => {
     //use mutation to delete image
-    const rizzed = await deleteImageMutation.mutate(image);
+    //const rizzed = await deleteImageMutation.mutate(image);
+
+    //set images_to_delete to be the image
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        confirm_deletion: true,
+        images_to_delete: [image],
+      };
+    });
+
+    //set
   };
 
   const groupedSubRangeImages = (

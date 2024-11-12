@@ -740,6 +740,8 @@ type StoreState = {
 
   daily_encompassing_circle: boolean;
 
+  confirm_deletion: boolean;
+
   /**
    *
    * This will be used when moving between days
@@ -778,6 +780,8 @@ type StoreState = {
 
   //inscribing circle on the map
   show_day_inscribing_circle: boolean;
+
+  images_to_delete: Image[];
 
   // for the time view -> return a time order of the images
   get_images_for_time: (images: Image[]) => Image[];
@@ -840,6 +844,8 @@ export const tripViewStore = new Store<StoreState>({
     init_state.horizontally_tabbed ?? viewport_bigger_than_600,
   scroll_to_image: null,
 
+  confirm_deletion: false,
+
   force_zoom: null,
   force_center: null,
 
@@ -852,6 +858,8 @@ export const tripViewStore = new Store<StoreState>({
   adding_path: false,
 
   skip_empty_days: false,
+
+  images_to_delete: [],
 
   filter_for_this_day: init_state.filter_for_this_day ?? false,
   done_comparing: false,
