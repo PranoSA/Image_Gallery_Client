@@ -1164,6 +1164,16 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     //get untimed_trips_selected_date
 
+    //ignore all this if selected_image_location is already on this day
+    //this will skip scenarios that should be taken care of scrolling to
+    if (
+      selected_image_location &&
+      selected_image_location.created_at.toDateString() ===
+        untimed_trips_selcted_date_Day
+    ) {
+      return;
+    }
+
     //get images for the day
     const imagesForDay = images.filter((image) => {
       //check if same date as untimed_trips_selected_date
