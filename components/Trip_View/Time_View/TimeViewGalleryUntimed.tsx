@@ -270,13 +270,26 @@ const TimeViewGallery: React.FC = () => {
 
   useEffect(() => {
     if (selectedDateRef.current) {
+      //return if already in view
+      //aka -> if the selected date is already in view, then don't scroll
+
+      //check if selected_image_location is in the current date
+      //if it is, then don't scroll
+      if (!selected_image_location) return;
+
+      const date_of_image = selected_image_location.created_at.toDateString();
+
+      if (date_of_image === selectedDate) {
+        return;
+      }
+
       selectedDateRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
         inline: 'center',
       });
     }
-  }, [selectedDate]);
+  }, [selectedDate, selected_image_location]);
 
   if (tripLoading || imagesLoading) {
     return <div>Loading...</div>;
@@ -405,6 +418,12 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     isLoading: tripLoading,
     isError: tripError,
   } = useQueryTrip(id);
+
+  const {
+    data: tripImages,
+    isLoading: tripImagesLoading,
+    isError: tripImagesError,
+  } = useQueryTripImages(id);
 
   const editImage = UpdateImage();
 
@@ -574,6 +593,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   };
 
   const setPreviewImage = (index: number) => {
+    console.log('Setting preview image #', index);
     tripViewStore.setState((state) => {
       return {
         ...state,
@@ -692,11 +712,12 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           style={{ marginRight: '10px' }}
                         />
                         <HiEye
-                          onClick={() =>
+                          onClick={() => {
+                            if (!tripImages) return;
                             setPreviewImage(
-                              images.findIndex((img) => img.id === image.id)
-                            )
-                          }
+                              tripImages.findIndex((img) => img.id === image.id)
+                            );
+                          }}
                           className="cursor-pointer dark:text-blue-800 font-semibold"
                           size={30}
                         />

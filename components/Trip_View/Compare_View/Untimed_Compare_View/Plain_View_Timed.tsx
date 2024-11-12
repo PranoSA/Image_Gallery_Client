@@ -38,7 +38,7 @@ import { FaPencil } from 'react-icons/fa6';
 import { FaCheck, FaPen, FaTimes } from 'react-icons/fa';
 //Download Icon
 import { FaDownload } from 'react-icons/fa';
-import { useCompareViewStore } from '../CompareStore';
+import { useCompareViewStore, CompareViewStore } from '../CompareStore';
 
 import ConfirmDeletionModal from '@/components/Trip_View/ConfirmDeletionModal';
 
@@ -82,6 +82,11 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   } = useQueryDaySummaries(id);
 
   const updateDaySummary = useUpdateDaySummary();
+
+  //log changes to untimed_trips_selected_date
+  useEffect(() => {
+    console.log('Untimed Trips Selected Date', untimed_trips_selected_date);
+  }, [untimed_trips_selected_date]);
 
   const candidate_dates = useMemo(() => {
     //Pretty much, return a list of every unique date in the images
@@ -194,6 +199,13 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       return {
         ...state,
         selected_date: Math.floor(selectedDate),
+      };
+    });
+
+    CompareViewStore.setState((state) => {
+      return {
+        ...state,
+        untimed_trips_selected_date: newDate,
       };
     });
   };
@@ -766,13 +778,13 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           alt={`Image for ${image.created_at}`}
                           sizes="(max-width: 500px) 100vw, 500px"
                           onLoad={(e) => {
-                            console.log('Image Loaded', e);
+                            //console.log('Image Loaded', e);
                           }}
                           onLoadStart={(e) => {
-                            console.log('Image Loading', e);
+                            // console.log('Image Loading', e);
                           }}
                           onLoadedMetadata={(e) => {
-                            console.log('Image MetaData', e);
+                            //  console.log('Image MetaData', e);
                           }}
                           layout="fill"
                           className="object-contain rounded-lg"
