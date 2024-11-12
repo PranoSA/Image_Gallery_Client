@@ -51,7 +51,7 @@ const ConfirmDeletionModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full overflow-y-auto max-h-[75%]">
         <h2 className="text-xl font-bold mb-4 dark:text-white">
           Confirm Deletion
         </h2>
@@ -60,7 +60,9 @@ const ConfirmDeletionModal: React.FC = () => {
           <ol>
             {images_to_delete.map((image, index) => (
               <>
-                <li key={index}>{image.name}</li>
+                <li key={index} className="pt-8 mt-4">
+                  {image.name}
+                </li>
                 <div className="relative h-[100px] w-[100px]">
                   <NextImage
                     src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
@@ -76,11 +78,7 @@ const ConfirmDeletionModal: React.FC = () => {
             ))}
           </ol>
         </p>
-        <ul className="mb-4 list-disc list-inside dark:text-gray-300">
-          {images_to_delete.map((image, index) => (
-            <li key={index}>{image.name}</li>
-          ))}
-        </ul>
+
         <div className="flex justify-end space-x-4">
           <button
             onClick={confirmDeletion}

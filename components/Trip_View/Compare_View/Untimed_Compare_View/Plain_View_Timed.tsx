@@ -288,9 +288,9 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       />
       <ConfirmDeletionModal />
 
-      <div className="w-full overflow-x-auto" style={{ flexShrink: 0 }}>
-        <div className="scrollmenu" ref={scrollContainerRef}>
-          <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
+      <div className="w-full overflow-x-auto p-2" style={{ flexShrink: 0 }}>
+        <div className="scrollmenu " ref={scrollContainerRef}>
+          <ul className="inline-flex space-x-4 bg-gray-200  rounded-t-lg border-b border-gray-300">
             {groupedOrderedImagesByDay.map((group) => (
               <li
                 key={group.date.toDateString()}
@@ -299,7 +299,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
                     ? selectedDateRef
                     : null
                 }
-                className={`cursor-pointer px-4 py-2 rounded-lg shadow-md transition-colors ${
+                className={`cursor-pointer px-4 rounded-lg shadow-md transition-colors ${
                   selectedDate === group.date.toDateString()
                     ? 'bg-gray-400 text-white'
                     : 'bg-white text-black hover:bg-gray-100'
@@ -315,6 +315,9 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       <div
         className="scrollable-container overflow-y-auto h-full p-4 bg-white rounded-b-lg shadow-lg border border-gray-300 dark:bg-gray-800 dark:border-gray-700"
         onScroll={handleScroll}
+        style={{
+          height: 'calc(100vh - 150px)',
+        }}
       >
         {groupedOrderedImagesByDay.map((group) => {
           return (

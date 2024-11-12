@@ -527,7 +527,7 @@ const Page = () => {
         </div>
       </nav>
 
-      <div className="container mx-auto p-4">{renderContent()}</div>
+      <div className="container mx-auto">{renderContent()}</div>
     </div>
   );
 };

@@ -46,6 +46,7 @@ import ImagePreview from '../ImagePreview';
 //check mark icon
 import { FaCheck } from 'react-icons/fa';
 import PlainViewTimed from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Plain_View_Timed';
+import ConfirmDeletionModal from '../ConfirmDeletionModal';
 
 const SelectAndCompare = () => {
   const [selectionOrCompare, setSelectionOrCompare] = useState<
@@ -79,6 +80,33 @@ const SelectAndCompare = () => {
     viewed_image_index,
     editingImage,
   } = useTripViewStore();
+
+  //listen to selected images and change images to delete
+  //when component is unmounted, clear selected images
+  useEffect(() => {
+    //
+    const new_images_to_delete = selected_images;
+
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        images_to_delete: new_images_to_delete,
+      };
+    });
+  }, [selected_images]);
+
+  //reset when unmounted
+  useEffect(() => {
+    return () => {
+      tripViewStore.setState((state) => {
+        return {
+          ...state,
+          selected_images: [],
+          images_to_delete: [],
+        };
+      });
+    };
+  }, []);
 
   //if number of selected images is 0, then set to select
   useEffect(() => {
@@ -118,18 +146,43 @@ const SelectAndCompare = () => {
 
   if (selectionOrCompare === 'Select') {
     return (
-      <div className="flex flex-col items-center space-y-4">
-        <button
-          onClick={handleCompareClick}
-          className={`px-4 py-2 font-bold rounded-lg shadow-md ${
-            selected_images.length === 0
-              ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-700'
-          }`}
-          disabled={selected_images.length === 0}
-        >
-          Compare
-        </button>
+      <div className="flex flex-col items-center ">
+        <ConfirmDeletionModal />
+        <div className="flex flex-row space-x-4 p-2">
+          <button
+            onClick={handleCompareClick}
+            className={`px-4 py-2 font-bold rounded-lg shadow-md ${
+              selected_images.length === 0
+                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                : 'bg-blue-500 text-white hover:bg-blue-700'
+            }`}
+            disabled={selected_images.length === 0}
+          >
+            Compare
+          </button>
+
+          {/* Button to open the delete modal */}
+          <button
+            onClick={() => {
+              console.log('SSD|SDSD CLICKEd');
+              tripViewStore.setState((state) => {
+                return {
+                  ...state,
+                  confirm_deletion: true,
+                };
+              });
+            }}
+            className={`px-4 py-2 font-bold rounded-lg shadow-md ${
+              selected_images.length === 0
+                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                : 'bg-red-500 text-white hover:bg-red-700'
+            }`}
+            disabled={selected_images.length === 0}
+          >
+            Delete
+          </button>
+        </div>
+
         <PlainViewTimed show_selection={true} />
       </div>
     );
