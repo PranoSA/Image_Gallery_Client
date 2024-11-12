@@ -253,18 +253,18 @@ const CategoryView = () => {
     <div>
       <div className="flex justify-center space-x-4 w-full">
         {/* Button to add a category */}
-        <div className="flex justify-center space-x-4">
-          <button
-            onClick={() => {
-              CompareViewStore.setState((state) => {
-                return {
-                  ...state,
-                  add_category_modal_open: true,
-                };
-              });
-            }}
-            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+        <div
+          className="flex justify-center space-x-4"
+          onClick={() => {
+            CompareViewStore.setState((state) => {
+              return {
+                ...state,
+                add_category_modal_open: true,
+              };
+            });
+          }}
+        >
+          <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
             Add Category
           </button>
         </div>

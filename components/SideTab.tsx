@@ -372,6 +372,7 @@ const MapSettingPanel = () => {
     photo_center_move_method,
     filter_for_this_day,
     show_clustered_images_on_map,
+    show_day_inscribing_circle,
   } = useTripViewStore();
 
   return (
@@ -589,6 +590,23 @@ const MapSettingPanel = () => {
             </div>
           </div>
           <span className="text-neon-green text-sm">Image Map Zoom Method</span>
+        </label>
+        {/* Show Inscribing Circle */}
+        <label className="flex items-center space-x-3 mb-2">
+          <input
+            type="checkbox"
+            checked={show_day_inscribing_circle}
+            onChange={() =>
+              tripViewStore.setState((state) => ({
+                ...state,
+                show_day_inscribing_circle: !state.show_day_inscribing_circle,
+              }))
+            }
+            className="form-checkbox h-5 w-5 text-neon-green bg-gray-800 border-gray-700"
+          />
+          <span className="text-neon-green text-sm">
+            Show Day Inscribing Circle
+          </span>
         </label>
       </div>
     </div>

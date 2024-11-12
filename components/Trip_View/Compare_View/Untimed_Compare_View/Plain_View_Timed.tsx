@@ -24,6 +24,7 @@ import {
   useTripViewStore,
   tripViewStore,
 } from '@/components/Trip_View/Trip_View_Image_Store';
+
 import { Banner_Component } from '@/components/Trip_View/Compare_View/Untimed_Compare_View/Banner_Component';
 import EditImageForm from '@/components/Trip_View/EditImageForm';
 import NextImage from 'next/image';
@@ -37,6 +38,7 @@ import { FaPencil } from 'react-icons/fa6';
 import { FaCheck, FaPen, FaTimes } from 'react-icons/fa';
 //Download Icon
 import { FaDownload } from 'react-icons/fa';
+import { useCompareViewStore } from '../CompareStore';
 
 type PlainViewProps = {
   show_selection?: boolean;
@@ -61,7 +63,9 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
     isError: tripError,
   } = useQueryTrip(id);
 
-  const { selected_date, selected_images } = useTripViewStore();
+  const { selected_date, filtered_categories } = useTripViewStore();
+
+  const { untimed_trips_selected_date } = useCompareViewStore();
 
   //Create a LARGE Immage Gallery With All Images
   //It will be separated by day and by time like before
@@ -100,36 +104,13 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
     return unique_dates;
   }, [images]);
 
-  const modifyDaySummary = async (summary: string, date: Date) => {
-    //convert to date string YYYY-MM-DD
-    const date_string = date.toISOString().split('T')[0];
+  const selectedDate = useMemo(() => {
+    if (!trip) return new Date().toDateString();
 
-    if (!trip) return;
+    //change the selected_image_location to the first image for the day
 
-    const days_from_beggining =
-      new Date(trip?.start_date).getTime() - date.getTime();
-
-    const days_elapsed = days_from_beggining / (1000 * 3600 * 24);
-
-    if (!getDaySummaries) return;
-
-    //get the day summary for the date
-    const day_summary = getDaySummaries?.find((day_summary) => {
-      return day_summary.day === date_string;
-    });
-
-    if (!day_summary) return;
-
-    const new_day_summary: DaySummary = {
-      ...day_summary,
-      summary,
-    };
-
-    updateDaySummary.mutate({
-      summary: new_day_summary,
-      new_text: summary,
-    });
-  };
+    return untimed_trips_selected_date.toDateString();
+  }, [trip, untimed_trips_selected_date]);
 
   type ImagesByDay = {
     date: Date;
@@ -137,10 +118,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   };
 
   const groupedOrderedImagesByDay: ImagesByDay[] = useMemo(() => {
-    const groupImagesByDay = (
-      images: Image[] | undefined,
-      selected_date: number
-    ) => {
+    const groupImagesByDay = (images: Image[] | undefined) => {
       const grouped: ImagesByDay = {
         date: new Date(),
         images: [],
@@ -158,11 +136,15 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       return image_date.toDateString() === date.toDateString();
     });
         */
-        const imagesForDay = images.filter((image) => {
-          const image_date = new Date(image.created_at);
-          return image_date.toDateString() === date.toDateString();
-        });
-
+        const imagesForDay = images
+          .filter((image) => {
+            const image_date = new Date(image.created_at);
+            return image_date.toDateString() === date.toDateString();
+          })
+          .filter((image) => {
+            //make sure it is not one of the filtered categories
+            return !filtered_categories.includes(image.category || '');
+          });
         const newr = imagesForDay.map((image, index) => {
           return {
             ...image,
@@ -181,41 +163,19 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       return imagesByDate;
     };
 
-    return groupImagesByDay(images, selected_date);
-  }, [candidate_dates, images, selected_date, trip]);
+    const grouped_images = groupImagesByDay(images);
 
-  const selectedDate = useMemo(() => {
-    if (!trip) return new Date().toISOString();
+    console.log('Grouped Images', grouped_images);
+    ////change the selected_image_location to the first image for the day
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        selected_image_location: grouped_images[0]?.images[0],
+      };
+    });
 
-    // Parse the start date as UTC
-    const startDate = new Date(
-      Date.UTC(
-        new Date(trip.start_date).getUTCFullYear(),
-        new Date(trip.start_date).getUTCMonth(),
-        new Date(trip.start_date).getUTCDate()
-      )
-    );
-
-    // Add selected_date days to the start date
-    startDate.setUTCDate(startDate.getUTCDate() + selected_date);
-
-    // Return the date as a UTC timestamp string
-
-    //Thu, 19 Oct 2023 00:00:00 GMT
-    //Split after the 2023, 2022, 2024,  etc. and remove comma
-
-    //Thu Oct 19 2023
-    //this is the formatt I want it in
-
-    //get the Day of the week, Month, Day, Year
-
-    const day = startDate.toUTCString().split(' ')[0].replace(',', '');
-    const month = startDate.toUTCString().split(' ')[1];
-    const date = startDate.toUTCString().split(' ')[2];
-    const year = startDate.toUTCString().split(' ')[3];
-
-    return `${day} ${date} ${month} ${year}`;
-  }, [trip, selected_date]);
+    return grouped_images;
+  }, [candidate_dates, images, trip, filtered_categories]);
 
   const setSelectedDate = (date: string | null) => {
     if (!date) return;
@@ -274,7 +234,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   };
   const selectedDateRef = useRef<HTMLLIElement>(null);
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (selectedDateRef.current) {
       selectedDateRef.current.scrollIntoView({
         behavior: 'smooth',
@@ -283,7 +243,7 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
       });
     }
   }, [selectedDate]);
-
+*/
   if (tripLoading || imagesLoading) {
     return <div>Loading...</div>;
   }
@@ -308,7 +268,22 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   // Now Render the described UI
   return (
     <div className="w-full h-full">
-      <ImagePreview />
+      <ImagePreview
+        setInZoom={(image: Image) => {
+          if (!images) return;
+          // scroll to that image here
+          const index = images.findIndex((i) => i.id === image.id);
+          if (index === -1) return;
+
+          const date = images[index].created_at.toDateString();
+
+          const ref = dateRefs.current[date];
+
+          if (ref) {
+            ref.scrollIntoView({ behavior: 'smooth' });
+          }
+        }}
+      />
       <div className="w-full overflow-x-auto" style={{ flexShrink: 0 }}>
         <div className="scrollmenu" ref={scrollContainerRef}>
           <ul className="inline-flex space-x-4 bg-gray-200 p-2 rounded-t-lg border-b border-gray-300">
@@ -391,6 +366,18 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   const [editedDateSummary, setEditedDateSummary] = useState('');
 
   const id = useContext(TripContext).id;
+
+  const image_id_refs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  //use effect -> when preview image changes, scroll to the image
+  useEffect(() => {
+    if (selected_image_location) {
+      const ref = image_id_refs.current[selected_image_location.id];
+      if (ref) {
+        ref.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [selected_image_location]);
 
   const {
     data: trip,
@@ -562,27 +549,6 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
       return {
         ...state,
         editingImage: image,
-      };
-    });
-  };
-
-  // set the selected image location
-  const setSelectedImageLocation = (image: Image) => {
-    //check if the image is already selected
-    if (selected_image_location && selected_image_location.id === image.id) {
-      tripViewStore.setState((state) => {
-        return {
-          ...state,
-          selected_image_location: null,
-        };
-      });
-      return;
-    }
-
-    store.setState((state) => {
-      return {
-        ...state,
-        selected_image_location: image,
       };
     });
   };
@@ -771,7 +737,12 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                       className={`w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 p-1 min-h-[500px] ${borderClass}`}
                     >
                       {' '}
-                      <div className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]">
+                      <div
+                        ref={(el) => {
+                          image_id_refs.current[image.id] = el;
+                        }}
+                        className="relative w-full h-full flex items-center justify-center max-w-full m-5 max-h-[500px]"
+                      >
                         <NextImage
                           src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
                           alt={`Image for ${image.created_at}`}

@@ -63,6 +63,8 @@ import UnlocatedImagesView from '@/components/Trip_View/Compare_View/UnlocatedIm
 import CategoryView from '@/components/Trip_View/Compare_View/CategoryView';
 import SelectionCompare from '@/components/Trip_View/Compare_View/SelectionCompare';
 
+import PlainViewUntimed from '@/components/Trip_View/Compare_View/Plain_View_Untimed';
+
 import CategoryViewUntimedTrips from '@/components/Trip_View/Compare_View/Untimed_Compare_View/CategoryViewUntimed';
 
 import { queryClient } from '@/components/Trip_View/Trip_View_Image_Store';

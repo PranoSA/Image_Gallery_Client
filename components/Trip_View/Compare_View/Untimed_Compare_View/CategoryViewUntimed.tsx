@@ -236,19 +236,18 @@ const CategoryView = () => {
       <div className="flex justify-center space-x-4 w-full">
         {/* Button to add a category */}
         <div className="flex justify-center m-3  ">
-          <div className="flex items-center p-2 cursor-pointer w-1/2 rounded-lg hover:bg-blue-800">
-            <FaPlus
-              onClick={() => {
-                CompareViewStore.setState((state) => {
-                  return {
-                    ...state,
-                    add_category_modal_open: true,
-                  };
-                });
-              }}
-              className="text-2xl cursor-pointer"
-              title="Add Category"
-            />
+          <div
+            className="flex items-center p-2 cursor-pointer w-1/2 rounded-lg hover:bg-blue-800"
+            onClick={() => {
+              CompareViewStore.setState((state) => {
+                return {
+                  ...state,
+                  add_category_modal_open: true,
+                };
+              });
+            }}
+          >
+            <FaPlus className="text-2xl cursor-pointer" title="Add Category" />
             <div className="m-3">Add Category</div>
           </div>
 
@@ -533,7 +532,7 @@ const ImageDragFolder = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [images, selectedImage]);
+  }, [editingImage, images, selectedImage]);
 
   return (
     <div

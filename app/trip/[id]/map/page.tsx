@@ -299,6 +299,13 @@ function Page() {
   const [center, setCenter] = useState<Coordinate | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number | null>(null);
 
+  useEffect(() => {
+    console.log(
+      'Change in untimed_trips_selected_date',
+      untimed_trips_selected_date
+    );
+  }, [untimed_trips_selected_date]);
+
   /**
    * useEff
    */

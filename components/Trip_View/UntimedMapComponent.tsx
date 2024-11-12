@@ -124,6 +124,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     show_clustered_images_on_map,
     filter_for_this_day,
     filtered_categories,
+    viewed_image_index,
+    show_day_inscribing_circle,
   } = useTripViewStore();
 
   const { untimed_trips_selected_date } = useCompareViewStore();
@@ -213,6 +215,8 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
             transformed_point[1] === event.coordinate[1]
           );
         });
+
+        console.log('Click Event Image', image);
 
         if (image) {
           CompareViewStore.setState((state) => {
@@ -631,7 +635,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   }, [selected_image_location]);
 
   //This renders the relevant paths on the map
-  useEffect(() => {
+  /*useEffect(() => {
     const trip = tripsState.data;
     const paths = pathState.data;
 
@@ -736,6 +740,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
 
     fetchKMLFiles();
   }, [selected_date, tripsState.data, pathState.data, paths_open]);
+  */
 
   //add listener
   mapInstanceRef.current?.on('click', (event) => {
@@ -782,7 +787,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         );
       });
 
-      console.log('image', image);
+      console.log('click event 2 image', image);
 
       if (image) {
         CompareViewStore.setState((state) => {
@@ -1011,6 +1016,33 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       });
     }
   });
+
+  //here -> When image_preview is set-> have the map zoom to the selected_image_location
+
+  useEffect(() => {
+    if (viewed_image_index === null) return;
+
+    if (!selected_image_location) return;
+
+    //zoom to the selected image location
+    // at zoom level 15
+    const point = [
+      parseFloat(selected_image_location.long),
+      parseFloat(selected_image_location.lat),
+    ];
+
+    const transformed_point = fromLonLat(point);
+
+    if (transformed_point[0] === 0 && transformed_point[1] === 0) {
+      return;
+    }
+
+    mapInstanceRef.current?.getView().animate({
+      center: transformed_point,
+      zoom: 17,
+      duration: 1000,
+    });
+  }, [viewed_image_index, selected_image_location]);
 
   //Add Heat Map Layer
   useEffect(() => {
@@ -1310,6 +1342,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
                 (min_lat + max_lat) / 2,
               ];
 
+              //return if inscribing circle is not selected
+              if (!show_day_inscribing_circle) return;
+
               //draw a light gray inscribing circle around the candidate images
               //add to animateDayChangeSource
               const circle = new CircleGeom(
@@ -1389,6 +1424,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     imageState.data,
     zoom_on_day_change,
     untimed_trips_selcted_date_Day,
+    show_day_inscribing_circle,
   ]);
 
   //if selecting category is true, show a legend on the bottom right of the map

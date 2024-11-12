@@ -80,6 +80,9 @@ const SelectionComponentGallery = () => {
   useEffect(() => {
     if (!images) return;
 
+    //if selected_image_location -> return
+    if (tripViewStore.state.selected_image_location) return;
+
     let earliest_date = new Date(images[0].created_at);
 
     images.forEach((image) => {
@@ -89,6 +92,14 @@ const SelectionComponentGallery = () => {
         earliest_date = current_date;
       }
     });
+
+    //if earliest date is before the untimed_trips_selected_date -> return
+    if (
+      CompareViewStore.state.untimed_trips_selected_date &&
+      earliest_date < CompareViewStore.state.untimed_trips_selected_date
+    ) {
+      return;
+    }
 
     CompareViewStore.setState((state) => {
       return { ...state, untimed_trips_selected_date: earliest_date };

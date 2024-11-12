@@ -413,6 +413,19 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     const rizzed = await deleteImageMutation.mutate(image);
   };
 
+  //image id refs
+  const image_id_refs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // useEffect
+  useEffect(() => {
+    if (selected_image_location) {
+      const ref = image_id_refs.current[selected_image_location.id];
+      if (ref) {
+        ref.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [selected_image_location]);
+
   const groupedSubRangeImages = (
     images: Image[],
     date: Date
@@ -644,6 +657,9 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
+                        ref={(el) => {
+                          image_id_refs.current[image.id] = el;
+                        }}
                         className="relative flex flex-grow items-center justify-center bg-gray-100 border h-[200px] w-[200px]"
                       >
                         <NextImage

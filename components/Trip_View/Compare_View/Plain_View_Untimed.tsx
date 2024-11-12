@@ -39,7 +39,9 @@ type PlainViewProps = {
   show_selection?: boolean;
 };
 
-const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
+const PlainViewUntimed: React.FC<PlainViewProps> = ({
+  show_selection = false,
+}) => {
   const [mode, setMode] = useState<
     'no_categories' | 'only_categories' | 'categories_and_uncategorised'
   >('no_categories');
@@ -58,7 +60,8 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
     isError: tripError,
   } = useQueryTrip(id);
 
-  const { selected_date, selected_images } = useTripViewStore();
+  const { selected_date, selected_images, filtered_categories } =
+    useTripViewStore();
 
   //Create a LARGE Immage Gallery With All Images
   //It will be separated by day and by time like before
@@ -74,114 +77,103 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
 
   const updateDaySummary = useUpdateDaySummary();
 
-  const modifyDaySummary = async (summary: string, date: Date) => {
-    //convert to date string YYYY-MM-DD
-    const date_string = date.toISOString().split('T')[0];
-
-    if (!trip) return;
-
-    const days_from_beggining =
-      new Date(trip?.start_date).getTime() - date.getTime();
-
-    const days_elapsed = days_from_beggining / (1000 * 3600 * 24);
-
-    if (!getDaySummaries) return;
-
-    //get the day summary for the date
-    const day_summary = getDaySummaries?.find((day_summary) => {
-      return day_summary.day === date_string;
-    });
-
-    if (!day_summary) return;
-
-    const new_day_summary: DaySummary = {
-      ...day_summary,
-      summary,
-    };
-
-    updateDaySummary.mutate({
-      summary: new_day_summary,
-      new_text: summary,
-    });
-  };
-
   type ImagesByDay = {
     date: Date;
     images: IndexedImage[];
   };
 
-  const groupedOrderedImagesByDay = useMemo(() => {
-    const groupImagesByDay = (
-      images: Image[] | undefined,
-      selected_date: number
-    ) => {
+  const candidate_dates = useMemo(() => {
+    //Pretty much, return a list of every unique date in the images
+
+    const unique_dates: Date[] = [];
+
+    if (!images) return [];
+
+    const filtered_images = images.filter((image) => {
+      return !filtered_categories.includes(image.category || '');
+    });
+
+    if (filtered_images.length === 0) return [];
+
+    let last_saw_date = new Date(filtered_images[0].created_at);
+
+    unique_dates.push(last_saw_date);
+
+    images
+      .filter((image) => {
+        return !filtered_categories.includes(image.category || '');
+      })
+      .forEach((image) => {
+        const current_date = new Date(image.created_at);
+
+        if (current_date.toDateString() !== last_saw_date.toDateString()) {
+          unique_dates.push(current_date);
+          last_saw_date = current_date;
+        }
+      });
+
+    return unique_dates;
+  }, [filtered_categories, images]);
+
+  const groupedOrderedImagesByDay: ImagesByDay[] = useMemo(() => {
+    const groupImagesByDay = (images: Image[] | undefined) => {
       const grouped: ImagesByDay = {
         date: new Date(),
         images: [],
       };
 
-      if (!trip) return grouped;
-      if (!images) return grouped;
+      if (!trip) return [];
+      if (!images) return [];
 
-      //iterate through dates of trip
-      const start_date = new Date(trip.start_date);
-
-      start_date.setDate(start_date.getDate() + selected_date);
-      const end_date = new Date(trip.start_date);
-      //add offset from UTC in current time-zoen - to accurately translate what it isin== UTC to the current time zone
-      const offset_minutes = start_date.getTimezoneOffset();
-      start_date.setMinutes(start_date.getMinutes() + offset_minutes);
-
-      end_date.setHours(23, 59, 59, 999);
-      end_date.setMinutes(end_date.getMinutes() + offset_minutes);
-
-      const start_index = images.findIndex((image) => {
-        return new Date(image.created_at) >= start_date;
-      });
-
-      const imagesForDay = images
-        .filter((image) => {
-          return (
-            new Date(image.created_at).toDateString() ===
-            start_date.toDateString()
-          );
-        })
-        .sort((a, b) => {
-          return (
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-        });
-
-      grouped.date = start_date;
-      grouped.images = imagesForDay.map((image, index) => {
-        return {
-          ...image,
-          index: index + start_index,
-        };
-      });
-
-      return grouped;
-    };
-    //1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 , etc.
-    // the legnth is trip.end_date - trip.start_date
-    if (!trip) return [];
-    const current_days_m = Math.floor(
-      (new Date(trip.end_date).getTime() -
-        new Date(trip.start_date).getTime()) /
-        (1000 * 3600 * 24)
-    );
-
-    console.log('# OF DAYS', current_days_m);
-    //now do 0,1,2,3,4 -> current_days_m-1
-    const current_days = Array.from(
-      { length: current_days_m + 1 },
-      (_, i) => i
-    );
-
-    return current_days.map((day) => {
-      return groupImagesByDay(images, day);
+      let current_index = 0;
+      //iterate through candidate dates
+      const imagesByDate: ImagesByDay[] = candidate_dates.map((date) => {
+        /*
+    return images.filter((image) => {
+      const image_date = new Date(image.created_at);
+      return image_date.toDateString() === date.toDateString();
     });
-  }, [images, trip]);
+        */
+        const imagesForDay = images
+          .filter((image) => {
+            const image_date = new Date(image.created_at);
+            return image_date.toDateString() === date.toDateString();
+          })
+          .filter((image) => {
+            //make sure it is not one of the filtered categories
+            return !filtered_categories.includes(image.category || '');
+          });
+        const newr = imagesForDay.map((image, index) => {
+          return {
+            ...image,
+            index: index + current_index,
+          };
+        });
+        current_index += imagesForDay.length;
+
+        const newton: ImagesByDay = {
+          date: date,
+          images: newr,
+        };
+
+        return newton;
+      });
+      return imagesByDate;
+    };
+
+    const grouped_images = groupImagesByDay(images);
+
+    console.log('Grouped Images', grouped_images);
+    ////change the selected_image_location to the first image for the day
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        selected_image_location: grouped_images[0]?.images[0],
+      };
+    });
+
+    return grouped_images;
+  }, [candidate_dates, images, trip, filtered_categories]);
 
   const selectedDate = useMemo(() => {
     if (!trip) return new Date().toISOString();
@@ -910,4 +902,4 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   );
 };
 
-export default PlainView;
+export default PlainViewUntimed;

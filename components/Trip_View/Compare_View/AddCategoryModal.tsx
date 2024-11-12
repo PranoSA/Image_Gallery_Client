@@ -155,12 +155,28 @@ const AddCategoryForm = () => {
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div
+      className="modal-overlay"
+      onClick={() => {
+        CompareViewStore.setState((state) => {
+          return {
+            ...state,
+            add_category_modal_open: false,
+          };
+        });
+      }}
+    >
+      <div
+        className="modal-content"
+        //stop propogation so inner click does not close the modal
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <div className="absolute top-5 right-5 flex ">
           <FaTimes
             size={30}
-            className="text-2xl cursor-pointer dark:text-black"
+            className="text-2xl cursor-pointer dark:text-neon-green"
             onClick={() => {
               CompareViewStore.setState((state) => {
                 return {
@@ -173,12 +189,12 @@ const AddCategoryForm = () => {
         </div>
         <form
           onSubmit={handleSubmit}
-          className="max-w-md mx-auto p-4 bg-white shadow-md rounded-lg"
+          className="max-w-md mx-auto p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg"
         >
           <div className="mb-4">
             <label
               htmlFor="category"
-              className="block text-gray-700 font-bold mb-2"
+              className="block text-gray-700 font-bold mb-2 dark:text-gray-200"
             >
               Category
             </label>
@@ -189,7 +205,7 @@ const AddCategoryForm = () => {
               placeholder="Category"
               value={category.category}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+              className={`w-full px-3 py-2  dark:text-gray-800 border rounded-lg focus:outline-none focus:ring-2 ${
                 categoryError
                   ? 'border-red-500 focus:ring-red-500'
                   : 'focus:ring-blue-500'
@@ -199,53 +215,57 @@ const AddCategoryForm = () => {
               <p className="text-red-500 text-sm mt-1">{categoryError}</p>
             )}
           </div>
-          <div className="mb-4">
-            <label
-              htmlFor="start_date"
-              className="block text-gray-700 font-bold mb-2"
-            >
-              Start Date
-            </label>
-            <input
-              type="date"
-              name="start_date"
-              id="start_date"
-              value={category.start_date}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                startDateError
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'focus:ring-blue-500'
-              }`}
-            />
-            {startDateError && (
-              <p className="text-red-500 text-sm mt-1">{startDateError}</p>
-            )}
-          </div>
-          {trip?.untimed_trips && (
-            <div className="mb-4">
-              <label
-                htmlFor="end_date"
-                className="block text-gray-700 font-bold mb-2"
-              >
-                End Date
-              </label>
-              <input
-                type="date"
-                name="end_date"
-                id="end_date"
-                value={category.end_date}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                  endDateError
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'focus:ring-blue-500'
-                }`}
-              />
-              {endDateError && (
-                <p className="text-red-500 text-sm mt-1">{endDateError}</p>
-              )}
-            </div>
+          {!trip?.untimed_trips && (
+            <>
+              <div className="mb-4">
+                <label
+                  htmlFor="start_date"
+                  className="block text-gray-700 font-bold mb-2  dark:text-gray-200"
+                >
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  name="start_date"
+                  id="start_date"
+                  value={category.start_date}
+                  onChange={handleChange}
+                  className={`w-full px-3  dark:text-gray-800 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                    startDateError
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'focus:ring-blue-500'
+                  }`}
+                />
+                {startDateError && (
+                  <p className="text-red-500 text-sm mt-1">{startDateError}</p>
+                )}
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="end_date"
+                  className="block text-gray-700 font-bold mb-2  dark:text-gray-200 "
+                >
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  name="end_date"
+                  id="end_date"
+                  value={category.end_date}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 
+                  dark:text-gray-800
+                  border rounded-lg focus:outline-none focus:ring-2 ${
+                    endDateError
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'focus:ring-blue-500'
+                  }`}
+                />
+                {endDateError && (
+                  <p className="text-red-500 text-sm mt-1">{endDateError}</p>
+                )}
+              </div>
+            </>
           )}
           <button
             type="submit"

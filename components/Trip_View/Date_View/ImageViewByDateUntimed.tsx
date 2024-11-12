@@ -51,6 +51,7 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
     selected_image_location,
     editingImage,
     filtered_categories,
+    viewed_image_index,
   } = useTripViewStore();
 
   const { untimed_trips_selected_date } = useCompareViewStore();
@@ -146,6 +147,78 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
     return groupImagesByDay(images);
   }, [images, trip, untimed_trips_selected_date]);
 
+  const setShowOnMap = (image: Image) => {
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        scroll_to_image: image,
+      };
+    });
+  };
+
+  // add listener to document
+  // that when preview image is not selected, and then selected_image_location is not null
+  // listens to "ArrowRight" and "ArrowLeft" keydown events
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      console.log('Key Down Event HERE');
+      console.log(event.key);
+      console.log('Selected Image Location', selected_image_location);
+      console.log('Viewed Image Index', viewed_image_index);
+      if (selected_image_location && viewed_image_index === null) {
+        console.log('Selected Image Location', selected_image_location);
+        if (event.key === 'ArrowRight') {
+          const index = groupedOrderedImagesByDay.images.findIndex(
+            (image) => image.id === selected_image_location.id
+          );
+
+          if (index < groupedOrderedImagesByDay.images.length - 1) {
+            tripViewStore.setState((state) => {
+              return {
+                ...state,
+                selected_image_location:
+                  groupedOrderedImagesByDay.images[index + 1],
+              };
+            });
+            scrollToImage(groupedOrderedImagesByDay.images[index]);
+          }
+        }
+
+        if (event.key === 'ArrowLeft') {
+          const index = groupedOrderedImagesByDay.images.findIndex(
+            (image) => image.id === selected_image_location.id
+          );
+
+          if (index >= 0) {
+            tripViewStore.setState((state) => {
+              return {
+                ...state,
+                selected_image_location:
+                  groupedOrderedImagesByDay.images[index - 1],
+              };
+            });
+            scrollToImage(groupedOrderedImagesByDay.images[index]);
+          }
+        }
+        //if "i" -> zoom in like clicking map
+        if (event.key === 'i') {
+          setShowOnMap(selected_image_location);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [
+    selected_image_location,
+    groupedOrderedImagesByDay,
+    viewed_image_index,
+    scrollToImage,
+  ]);
+
   //set up mutation for updating the image
   if (error) {
     return <div>Error: {error.message}</div>;
@@ -227,7 +300,12 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
           //scrollToImage={scrollToImage}
         />
       </div>
-      <ImagePreview />
+      <ImagePreview
+        preset_images={{
+          preset: true,
+          images: groupedOrderedImagesByDay.images,
+        }}
+      />
     </div>
   );
 };
@@ -272,6 +350,17 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
     //use mutation to delete image
     const rizzed = await deleteImageMutation.mutate(image);
   };
+
+  const image_id_refs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  useEffect(() => {
+    if (selected_image_location) {
+      const ref = image_id_refs.current[selected_image_location.id];
+      if (ref) {
+        ref.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [selected_image_location]);
 
   const groupedSubRangeImages = (
     images: Image[],
@@ -421,10 +510,14 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
   };
 
   const setPreviewImage = (index: number) => {
+    console.log('Preview Image', index);
+    console.log('Preview Image Selected', images[index]);
+
     tripViewStore.setState((state) => {
       return {
         ...state,
         viewed_image_index: index,
+        selected_image_location: images[index],
       };
     });
   };
@@ -503,6 +596,9 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                     >
                       <div
                         onClick={() => setSelectedImageLocation(image)}
+                        ref={(el) => {
+                          image_id_refs.current[image.id] = el;
+                        }}
                         className="relative flex flex-grow items-center justify-center bg-gray-100 border h-[200px] w-[200px]"
                       >
                         <NextImage

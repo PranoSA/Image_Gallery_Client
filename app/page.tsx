@@ -105,6 +105,7 @@ function Home() {
     string | null
   >(null);
 
+  /*
   //use effect -> register the service worker
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -186,6 +187,7 @@ function Home() {
       handleServiceWorker();
     }
   }, []);
+  */
 
   useEffect(() => {
     //set local storage bearer token
