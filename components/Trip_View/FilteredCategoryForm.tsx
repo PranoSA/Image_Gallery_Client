@@ -79,7 +79,7 @@ const FilteredCategoryForm: React.FC = () => {
       <div className="fixed inset-0 bg-black opacity-50"></div>
       <div
         id="category-modal"
-        className="relative  mx-auto p-4 bg-white shadow-md rounded-lg z-10 max-h-[50vh] flex flex-row flex-wrap"
+        className="relative   mx-auto p-4 bg-white shadow-md rounded-lg z-10 max-h-[60vh] flex flex-row flex-wrap"
       >
         <button
           className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
@@ -90,8 +90,8 @@ const FilteredCategoryForm: React.FC = () => {
         <h2 className="text-xl font-bold mt-4 w-full">Select Categories</h2>
         <div className="h-0.5 bg-gray-200 dark:bg-gray-700 mb-3 w-full"></div>
 
-        <ul>
-          <div className="w-full flex flex-col flex-wrap max-h-[40vh]">
+        <div className="w-full flex flex-col flex-wrap max-h-[30vh] overflow-y-auto  ">
+          <ul>
             {categories.map((category) => (
               <li
                 key={category.category}
@@ -107,8 +107,8 @@ const FilteredCategoryForm: React.FC = () => {
                 <span>{category.category}</span>
               </li>
             ))}
-          </div>
-        </ul>
+          </ul>
+        </div>
       </div>
     </div>
   );

@@ -187,7 +187,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
    * When the map is clicked, get the feature at the clicked location
    * [Later Add Functionality to find based on ICONs, for now - just find the feature based on selected_image_location]
    */
-  useEffect(() => {
+  /*useEffect(() => {
     if (!mapInstanceRef.current) return;
 
     //add listener
@@ -231,6 +231,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       }
     });
   }, [filtered_images]);
+  */
 
   //Vector Source To Store Image Location, pretty much the "selected_image_location" corresponding data
   const imageVectorSource = useRef(new VectorSource());
@@ -597,11 +598,17 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       return;
     }
 
-    if (selectedFeature.current?.get('id') === selected_image_location.id) {
+    if (
+      selectedFeature.current?.get('id') === selected_image_location.id &&
+      false
+    ) {
+      console.log('Selected Feature - > What is this???');
+      //@ts-ignore
       imageVectorSource.current.removeFeature(selectedFeature.current);
       //setSelectedImageLocation(null);
       selectedFeature.current = null;
     } else {
+      console.log('Selected Adding Feature', selected_image_location);
       const feature = new Feature({
         geometry: new Point(
           fromLonLat([
@@ -787,12 +794,20 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         );
       });
 
+      if (!image) return;
+
       console.log('click event 2 image', image);
 
       if (image) {
-        CompareViewStore.setState((state) => {
-          return { ...state, untimed_trips_selected_date: image.created_at };
-        });
+        //check if the date string is the same as the previous
+        const previous_date = untimed_trips_selected_date.toDateString();
+        const current_date = image.created_at.toDateString();
+
+        if (!(previous_date === current_date)) {
+          CompareViewStore.setState((state) => {
+            return { ...state, untimed_trips_selected_date: image.created_at };
+          });
+        }
 
         //also set selected image location
         tripViewStore.setState((state) => {
