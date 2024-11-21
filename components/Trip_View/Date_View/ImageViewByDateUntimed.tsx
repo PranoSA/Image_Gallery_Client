@@ -145,6 +145,7 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
 
     ////change the selected_image_location to the f'irst image for the day
     if (
+      !first_image ||
       !(parseFloat(first_image.lat) === 0 && parseFloat(first_image.long) === 0)
     ) {
       tripViewStore.setState((state) => {
@@ -366,9 +367,25 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   const editImage = UpdateImage();
 
-  const deleteImage = async (image: Image) => {
+  /* const deleteImage = async (image: Image) => {
     //use mutation to delete image
     const rizzed = await deleteImageMutation.mutate(image);
+  };*/
+
+  const deleteImage = async (image: Image) => {
+    //use mutation to delete image
+    //const rizzed = await deleteImageMutation.mutate(image);
+
+    //set images_to_delete to be the image
+    tripViewStore.setState((state) => {
+      return {
+        ...state,
+        confirm_deletion: true,
+        images_to_delete: [image],
+      };
+    });
+
+    //set
   };
 
   const image_id_refs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -643,12 +660,14 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           className="cursor-pointer dark:text-red-500 "
                           size={30}
                           style={{ marginRight: '10px' }}
+                          title="Delete Image"
                         />
                         <HiOutlinePencil
                           onClick={() => setEditingImage(image)}
                           className="cursor-pointer dark:text-blue-800 font-semibold"
                           size={30}
                           style={{ marginRight: '10px' }}
+                          title="Edit Image"
                         />
                         <HiEye
                           onClick={() =>
@@ -658,6 +677,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                           }
                           className="cursor-pointer dark:text-blue-800 font-semibold"
                           size={30}
+                          title="Preview"
                         />
                         <HiMap
                           onClick={() => {
@@ -665,6 +685,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
                             setShowOnMap(image);
                           }}
                           className="cursor-pointer ml-2 dark:text-black font-semibold"
+                          title="View On Map / Zoom In"
                           size={30}
                         />
                       </div>

@@ -362,24 +362,86 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         previousZoomCoordinate.current[1] === transformed_point[1]
       ) {
         mapInstanceRef.current.getView().animate({
-          zoom: current_zoom + 4,
+          zoom: Math.min(17, current_zoom + 6),
           duration: 1000,
           center: transformed_point,
         });
       } else {
+        //create a point from the transformed point
+        // POINT! NOT CIRCLE
+        const pointFeature = new Feature({
+          geometry: new Point(transformed_point),
+        });
+
+        //style the point with a radius of 10 pixels
+        pointFeature.setStyle(
+          new Style({
+            image: new CircleStyle({
+              radius: 10,
+              fill: new Fill({ color: 'blue' }),
+              stroke: new Stroke({
+                color: 'blue',
+                width: 5,
+              }),
+            }),
+          })
+        );
+
+        // create a new layer and add the point to it
+        const circleLayer = new VectorLayer({
+          source: new VectorSource({
+            features: [pointFeature],
+          }),
+        });
+
+        //mapInstanceRef.current.addLayer(circleLayer);
+        //this layer is not being added until the animation is complete
+
+        //wait for 50ms
+        setTimeout(() => {
+          //animate the map to the point
+          const after_zoom = Math.max(
+            previous_zoom || current_zoom,
+            current_zoom
+          );
+
+          mapInstanceRef.current?.getView().animate(
+            {
+              center: transformed_point,
+              duration: 1500,
+              zoom: Math.ceil(current_zoom),
+            },
+            {
+              zoom: after_zoom,
+              duration: 1000,
+              center: transformed_point,
+            }
+          );
+
+          //after the animation is complete, remove the circle
+          setTimeout(() => {
+            //mapInstanceRef.current?.removeLayer(circleLayer);
+          }, 1500);
+        }, 100);
+
         //animate the map to the point
-        mapInstanceRef.current.getView().animate(
+        /*mapInstanceRef.current.getView().animate(
           {
             center: transformed_point,
-            duration: 2000,
+            duration: 1500,
             zoom: Math.ceil(current_zoom),
           },
           {
             zoom: previous_zoom,
-            duration: 2000,
+            duration: 1000,
             center: transformed_point,
           }
-        );
+        );*/
+
+        //after the animation is complete, remove the circle
+        setTimeout(() => {
+          mapInstanceRef.current?.removeLayer(circleLayer);
+        }, 1500);
       }
 
       previousZoomCoordinate.current = transformed_point;
@@ -1086,7 +1148,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     mapInstanceRef.current?.getView().animate({
       center: transformed_point,
       zoom: 17,
-      duration: 1000,
+      duration: 500,
     });
   }, [viewed_image_index, selected_image_location]);
 

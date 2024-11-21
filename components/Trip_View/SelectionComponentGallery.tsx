@@ -19,6 +19,8 @@ import TimeViewGalleryUntimed from './Time_View/TimeViewGalleryUntimed';
 
 import ImageUploadModal from '@/components/ImageUploadModal';
 
+import ConfirmDeletionModal from './ConfirmDeletionModal';
+
 import { CompareViewStore } from './Compare_View/CompareStore';
 
 import Calendar from 'react-calendar';
@@ -171,6 +173,7 @@ const SelectionComponentGallery = () => {
       className="text-center w-full flex flex-wrap max-h-full h-full "
       id="outer"
     >
+      <ConfirmDeletionModal />
       {/* Should be Singular Row with justify space around*/}
       <div
         id="outer"
