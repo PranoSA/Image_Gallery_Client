@@ -393,14 +393,16 @@ const Page = () => {
           <ImageUploadModal tripId={id} />
           {/* Plus Icon To Add New Image */}
           <div className="pl-4 pr-4">
-            <div className="flex flex-row items-center rounded-lg px-4 py-2 justify-center gap-1 hover:bg-blue-600 dark:bg-blue-800">
+            <div
+              onClick={() => {
+                tripViewStore.setState((state) => {
+                  return { ...state, adding_images: true };
+                });
+              }}
+              className="cursor-pointer flex flex-row items-center rounded-lg px-4 py-2 justify-center gap-1 hover:bg-blue-600 dark:bg-blue-800"
+            >
               <FaPlus
-                onClick={() => {
-                  tripViewStore.setState((state) => {
-                    return { ...state, adding_images: true };
-                  });
-                }}
-                className="hover:text-blue-700 transition-colors duration-50"
+                className="hover:text-blue-700 transition-colors duration-50 dark:text-neon-blue"
                 title="Add Images"
                 size={30}
               />

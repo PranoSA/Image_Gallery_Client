@@ -83,7 +83,7 @@ const Image_View_ByDate: React.FC<ImageViewByDateProps> = ({
       };
 
       if (!trip) return grouped;
-      if (!images) return grouped;
+      if (!images || images.length === 0) return grouped;
 
       //iterate through dates of trip
       const start_date = new Date(trip.start_date);

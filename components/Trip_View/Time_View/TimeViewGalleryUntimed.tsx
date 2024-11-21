@@ -634,8 +634,10 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   //return gallery based on subranges
   return (
-    <div className="p-4 dark:bg-black">
-      <div className="text-2xl font-bold mb-4">{date.toDateString()}</div>
+    <div className="p-4 dark:bg-black dark:text-white">
+      <div className="text-2xl font-bold mb-4 dark:text-white">
+        {date.toDateString()}
+      </div>
       {subranges.map((subrange) => {
         const startHour = new Date(subrange.start_hour).toLocaleTimeString([], {
           hour: '2-digit',
@@ -649,11 +651,11 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
         return (
           <div key={date.toDateString() + subrange.start_hour} className="mb-4">
             <div className="text-lg font-semibold mb-2">
-              {subrange.start_hour > 12
+              {subrange.start_hour > 11
                 ? `${subrange.start_hour - 12}PM`
                 : `${subrange.start_hour}AM`}{' '}
               -{' '}
-              {subrange.end_hour > 12
+              {subrange.end_hour > 11
                 ? `${subrange.end_hour - 12}PM`
                 : `${subrange.end_hour}AM`}
             </div>

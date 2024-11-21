@@ -17,6 +17,8 @@ import TimeViewGallery from '@/components/Trip_View/Time_View/Time_View_Gallery'
 import Image_View_ByDateUntimed from './Date_View/ImageViewByDateUntimed';
 import TimeViewGalleryUntimed from './Time_View/TimeViewGalleryUntimed';
 
+import ImageUploadModal from '@/components/ImageUploadModal';
+
 import { CompareViewStore } from './Compare_View/CompareStore';
 
 import Calendar from 'react-calendar';
@@ -48,6 +50,8 @@ const SelectionComponentGallery = () => {
   const { date_or_time_view } = useTripViewStore();
   const store = tripViewStore;
 
+  const id = useContext(TripContext).id;
+
   const {
     data: trip,
     isLoading: tripLoading,
@@ -78,7 +82,7 @@ const SelectionComponentGallery = () => {
 
   //find the earliest date
   useEffect(() => {
-    if (!images) return;
+    if (!images || images.length === 0) return;
 
     //if selected_image_location -> return
     if (tripViewStore.state.selected_image_location) return;
@@ -113,7 +117,7 @@ const SelectionComponentGallery = () => {
 
     const unique_dates: Date[] = [];
 
-    if (!images) return [];
+    if (!images || images.length === 0) return [];
 
     let last_saw_date = new Date(images[0].created_at);
 
@@ -170,14 +174,14 @@ const SelectionComponentGallery = () => {
       {/* Should be Singular Row with justify space around*/}
       <div
         id="outer"
-        className="w-full flex flex-row items-center overflow-x-scroll "
+        className="w-full flex flex-row items-center overflow-x-scroll dark:bg-black bg-gray-600  "
       >
-        <div className=" flex justify-center pl-8 pr-8">
-          <div className="relative inline-flex items-center ">
+        <div className=" flex justify-center pl-8 pr-8 dark:bg-black bg-gray-600 dark:text-white">
+          <div className="relative inline-flex items-center  ">
             <input
               type="checkbox"
               id="toggle"
-              className="sr-only"
+              className="sr-only dark:bg-gray-500"
               checked={date_or_time_view === 'date'}
               onChange={handleToggle}
             />
@@ -186,7 +190,7 @@ const SelectionComponentGallery = () => {
               className="flex items-center cursor-pointer"
             >
               <div className="relative">
-                <div className="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                <div className="block  w-14 h-8 rounded-full "></div>
                 <div
                   className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition ${
                     date_or_time_view === 'date'
@@ -195,7 +199,7 @@ const SelectionComponentGallery = () => {
                   }`}
                 ></div>
               </div>
-              <div className="ml-3 text-gray-700 font-medium">
+              <div className="ml-3 text-gray-700 font-medium ">
                 {date_or_time_view === 'time' ? (
                   <div className="flex items-center gap-2 dark:text-white">
                     <FaClock size={30} className="dark:text-white" />
@@ -213,7 +217,7 @@ const SelectionComponentGallery = () => {
         </div>
         <div className="flex items-center justify-center pl-5 pr-5">
           {/* Modal to Add New Images */}
-          <AddImagesForm />
+          <ImageUploadModal tripId={id} />
           {/* Plus Icon To Add New Image */}
           <div className="flex justify-center">
             <button
@@ -222,7 +226,7 @@ const SelectionComponentGallery = () => {
                   return { ...state, adding_images: true };
                 });
               }}
-              className=" hover:text-blue-700 transition-colors duration-200"
+              className=" hover:text-blue-700 dark:text-white transition-colors duration-200"
             >
               <div className="flex flex-row items-center justify-center gap-1">
                 <span className="text-lg">Add Images</span>
@@ -243,7 +247,7 @@ const SelectionComponentGallery = () => {
                     return { ...state, selecting_category: true };
                   });
                 }}
-                className=" hover:text-blue-700 transition-colors duration-200"
+                className=" hover:text-blue-700 transition-colors duration-200 dark:text-white"
               >
                 <div className="flex flex-row items-center justify-center gap-1">
                   <span className="text-lg">Filter Categories</span>
@@ -258,7 +262,10 @@ const SelectionComponentGallery = () => {
         */}
         {trip?.untimed_trips && (
           <div className="relative w-full flex justify-center p-4">
-            <FaCalendar onClick={() => setOpenCalendar(true)} />
+            <FaCalendar
+              onClick={() => setOpenCalendar(true)}
+              className="dark:text-white"
+            />
             {openCalendar && (
               <div className="fixed inset-0 flex items-center justify-center z-50">
                 <div className="absolute inset-0 bg-black opacity-50"></div>
@@ -352,17 +359,17 @@ const SelectionComponentGallery = () => {
       {/* Display untimed or timed based on trip field */}
 
       <div
-        className={`max-h-full flex flex-col flex-wrap w-full`}
+        className={`max-h-full flex flex-col flex-wrap w-full `}
         style={{
-          maxHeight: 'calc(100% - 60px)',
+          maxHeight: 'calc(100% - 70px)',
         }}
       >
         {
           //trip.untimed_trips ? <TimeViewGalleryUntimed /> : <TimeViewGallery />
           trip?.untimed_trips ? (
             <div
-              className="  justify-center w-full h-full bg-white rounded-b-lg shadow-lg border border-gray-300"
-              style={{ maxHeight: 'calc(100vh - 60px)' }}
+              className="  justify-center w-full h-full bg-white rounded-b-lg shadow-lg "
+              style={{ maxHeight: 'calc(100vh - 80px)' }}
             >
               {date_or_time_view === 'time' ? (
                 <TimeViewGalleryUntimed />

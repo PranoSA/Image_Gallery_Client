@@ -91,7 +91,7 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
 
     const unique_dates: Date[] = [];
 
-    if (!images) return [];
+    if (!images || images.length === 0) return [];
 
     let last_saw_date = new Date(images[0].created_at);
 
@@ -112,7 +112,8 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
   const groupedOrderedImagesByDay: ImagesByDay = useMemo(() => {
     const groupImagesByDay = (images: Image[] | undefined): ImagesByDay => {
       if (!trip) return { date: new Date(), images: [] };
-      if (!images) return { date: new Date(), images: [] };
+      if (!images || images.length === 0)
+        return { date: new Date(), images: [] };
 
       //use the date of untimed_trips_selected_date
       const images_today = images.filter((image) => {
@@ -136,13 +137,32 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
 
     const imagesGroupedForDay = groupImagesByDay(images);
 
-    ////change the selected_image_location to the first image for the day
-    tripViewStore.setState((state) => {
-      return {
-        ...state,
-        selected_image_location: imagesGroupedForDay.images[0],
-      };
-    });
+    //return if the lat and lon are both equal to 0 or undefined
+    if (!imagesGroupedForDay) return imagesGroupedForDay;
+    const first_image = imagesGroupedForDay.images[0];
+
+    //change the selected_image_location to the first image for the day
+
+    ////change the selected_image_location to the f'irst image for the day
+    if (
+      !(parseFloat(first_image.lat) === 0 && parseFloat(first_image.long) === 0)
+    ) {
+      tripViewStore.setState((state) => {
+        return {
+          ...state,
+          selected_image_location: imagesGroupedForDay.images[0],
+        };
+      });
+    }
+    //else set the selected_image_location to null
+    else {
+      tripViewStore.setState((state) => {
+        return {
+          ...state,
+          selected_image_location: null,
+        };
+      });
+    }
 
     return groupImagesByDay(images);
   }, [images, trip, untimed_trips_selected_date]);
@@ -242,7 +262,7 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
   if (error) {
     return <div>Error Loading Images </div>;
   }
-  if (!images) {
+  if (!images || images.length === 0) {
     return <div>No images</div>;
   }
 
@@ -291,8 +311,8 @@ const Image_View_ByDateUntimed: React.FC<ImageViewByDateProps> = ({
   return (
     <div className="w-full h-full">
       {/* Make Scrollable */}
-      <div className="gallery mt-4 w-full justify-center bg-white dark:bg-black rounded-b-lg shadow-lg border border-gray-300"></div>
-      <div className="w-full h-full scrollable-container overflow-y-auto  p-4 bg-white dark:bg-black rounded-b-lg shadow-lg border border-gray-300 ">
+      <div className=" w-full justify-center bg-white dark:bg-black rounded-b-lg shadow-lg border-2 border-gray-300"></div>
+      <div className="w-full h-full overflow-y-auto  bg-white dark:bg-black rounded-b-lg shadow-lg  ">
         {bannerComponent}
         <GroupImagesByTime
           images={groupedOrderedImagesByDay.images}
@@ -554,7 +574,7 @@ export const GroupImagesByTime: React.FC<groupImagesByTimeProps> = ({
 
   //return gallery based on subranges
   return (
-    <div className="p-4 dark:bg-black">
+    <div className="p-4 dark:bg-black dark:text-white">
       {subranges.map((subrange) => {
         const startHour = new Date(subrange.start_hour).toLocaleTimeString([], {
           hour: '2-digit',

@@ -74,6 +74,9 @@ const CategoryView = () => {
 
     //if the images start date is more than the untimed_trips_selected_date, then set the untimed_trips_selected_date to the start date
 
+    //if no images, then return
+    if (images.length === 0) return;
+
     const first_image_date = new Date(images[0].created_at);
 
     if (first_image_date > untimed_trips_selected_date) {
@@ -247,8 +250,11 @@ const CategoryView = () => {
               });
             }}
           >
-            <FaPlus className="text-2xl cursor-pointer" title="Add Category" />
-            <div className="m-3">Add Category</div>
+            <FaPlus
+              className="text-2xl cursor-pointer dark:text-white"
+              title="Add Category"
+            />
+            <div className="m-3 dark:text-white">Add Category</div>
           </div>
 
           <label className="flex items-center cursor-pointer w-1/2">

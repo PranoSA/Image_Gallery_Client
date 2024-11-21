@@ -269,7 +269,7 @@ function Home() {
   };
 
   return (
-    <div className="flex flex-wrap flex-row justify-around ">
+    <div className="flex flex-wrap flex-row justify-around dark:bg-black">
       {/* signout icon here */}
       <div className="absolute top-5 left-5 z-50" title="Sign Out">
         <FaSignOutAlt
@@ -291,14 +291,16 @@ function Home() {
         />
       )}
       <div className="z-10 w-full items-center justify-between font-mono text-sm p-5 ">
-        <h1 className="text-2xl font-bold text-center">My Trips</h1>
+        <h1 className="text-2xl font-bold text-center dark:text-white">
+          My Trips
+        </h1>
       </div>
       <div
         className="z-10 w-full flex items-center justify-center font-mono text-sm p-5"
         onClick={() => setShowForm(true)}
       >
         <FaPlus className="text-black hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out dark:text-white" />
-        <p className="font-black  font-bold text-lg hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out m-5">
+        <p className="text-black dark:text-white dark:hover:text-gray-200 font-bold text-lg hover:text-gray-700 cursor-pointer transition duration-300 ease-in-out m-5">
           Create New Trip
         </p>
       </div>
@@ -536,7 +538,7 @@ const TripListCompontent = () => {
   const editTripModal = (trip: Trip) => {
     return (
       <div className="z-50 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <div className="z-60 bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg">
+        <div className="z-60 bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-lg ">
           {/* FORM FOR filling out trip fields, */}
 
           <form>
@@ -650,29 +652,6 @@ const TripListCompontent = () => {
   if (!trips) {
     return null;
   }
-  const handleSubmitImages = async (e: React.FormEvent<HTMLFormElement>) => {
-    //when done ... set adding_images to false
-    const formData = new FormData(e.currentTarget);
-
-    const id = selectedTripUploadImage;
-
-    if (!id) {
-      return;
-    }
-
-    try {
-      console.log('Start Add Image');
-      await addImage.mutateAsync({ formData, id });
-
-      console.log('End Add Image');
-      //add
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      alert('Failed to upload images');
-    }
-
-    setSelectedTripUploadImage(null);
-  };
 
   const closeInviteForm = () => {
     setInviteForm(null);
@@ -684,7 +663,7 @@ const TripListCompontent = () => {
   }
 
   return (
-    <div className=" flex flex-wrap w-full   p-5">
+    <div className=" flex flex-wrap w-full  p-5">
       <SideTab />
       <div className="w-full z-100 flex justify-between ">
         {inviteForm && (
@@ -705,7 +684,7 @@ const TripListCompontent = () => {
         }
       </div>
       <SideTab />
-      <div className="w-full flex flex-wrap flex-row">
+      <div className="w-full flex flex-wrap flex-row ">
         {trips.map((trip) => (
           <div
             key={trip.id}
@@ -719,7 +698,10 @@ const TripListCompontent = () => {
                 onClick={() => handleEditTrip(trip)}
                 size={30}
               />
-              <div className="w-full flex-row flex justify-around">
+              <div
+                className="w-full flex-row flex justify-around"
+                title="View Trip"
+              >
                 <Link href={`/trip/${trip.id}`} passHref>
                   <h2 className="text-xl font-bold cursor-pointer hover:text-blue-600 transition duration-300 ease-in-out dark:text-white">
                     {trip.name}
@@ -727,7 +709,7 @@ const TripListCompontent = () => {
                 </Link>
               </div>
               {!trip.untimed_trips && (
-                <p className="font-bold text-center">
+                <p className="font-bold text-center dark:text-white">
                   {trip.start_date} - {trip.end_date}
                 </p>
               )}
@@ -780,14 +762,17 @@ const ScrollableImageBar: React.FC<scrollableImageBarProps> = ({ trip_id }) => {
   }
 
   if (!images) {
-    return <p>No images found</p>;
+    return <p className="dark:text-white">No images found</p>;
   }
 
   return (
     <div className="overflow-x-scroll flex space-x-2 w-26 h-26 mb-4 scrollbar-class">
       {images.length > 0 ? (
         images.map((image, idx) => (
-          <div key={idx} className="w-24 h-24 flex-shrink-0 relative">
+          <div
+            key={idx}
+            className="w-24 h-24 flex-shrink-0 relative dark:text-white"
+          >
             <NextImage
               src={`${process.env.NEXT_PUBLIC_STATIC_IMAGE_URL}/${image.file_path}`}
               alt={`${image.name}`}
@@ -799,7 +784,7 @@ const ScrollableImageBar: React.FC<scrollableImageBarProps> = ({ trip_id }) => {
           </div>
         ))
       ) : (
-        <p>No images found</p>
+        <p className="dark:text-white">No images found</p>
       )}
     </div>
   );

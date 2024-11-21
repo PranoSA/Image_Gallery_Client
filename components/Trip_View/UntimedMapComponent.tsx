@@ -18,6 +18,9 @@ import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
 
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import { fromLonLat } from 'ol/proj';
 import { Feature } from 'ol';
 import { LineString, Point, Circle as CircleGeom } from 'ol/geom';
@@ -143,6 +146,9 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
     return images
       .filter((image) => {
         return !filtered_categories.includes(image.category || '');
+      })
+      .filter((image) => {
+        return parseFloat(image.lat) !== 0 || parseFloat(image.long) !== 0;
       })
       .filter((image) => {
         //return true if !filter_for_this_day
@@ -588,6 +594,16 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
    * or not select it in the first place
    *
    */
+
+  const notifyNoLocationData = () => {
+    //close previous toast
+    toast.dismiss();
+
+    toast.error("No location data for this image. Can't display on map", {
+      // position: toast.promise
+      autoClose: 2000, // Close after 5 seconds
+    });
+  };
   useEffect(() => {
     if (!selected_image_location) {
       //remove the marker
@@ -595,6 +611,21 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
         imageVectorSource.current.removeFeature(selectedFeature.current);
         selectedFeature.current = null;
       }
+      return;
+    }
+
+    //check if lon and lat are 0 or undefined
+    if (
+      parseFloat(selected_image_location.lat) === 0 &&
+      parseFloat(selected_image_location.long) === 0
+    ) {
+      // alert("No location data for this image. Can't display on map");
+      //notify user that there is no location data for this image
+      notifyNoLocationData();
+      //setSelectedImageLocation(null);
+      tripViewStore.setState((state) => {
+        return { ...state, selected_image_location: null };
+      });
       return;
     }
 
@@ -880,7 +911,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
       imageVectorSource.current.clear();
 
       //add features to the source
-      images.forEach(async (image) => {
+      filtered_images.forEach(async (image) => {
         const feature = new Feature({
           geometry: new Point(
             fromLonLat([parseFloat(image.long), parseFloat(image.lat)])
@@ -1500,6 +1531,7 @@ export default function UntimedMapComponent<MapProps>({ height = '50vh' }) {
   return (
     <div className="flex justify-center items-center">
       {/* MapControlWidget */}
+      <ToastContainer />
       <div
         ref={mapRef}
         style={{ width: '100%', height: `${height}` }} //'50vh' }}

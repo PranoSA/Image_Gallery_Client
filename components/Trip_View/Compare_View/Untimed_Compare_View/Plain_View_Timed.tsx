@@ -95,6 +95,8 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
 
     if (!images) return [];
 
+    if (images.length === 0) return [];
+
     let last_saw_date = new Date(images[0].created_at);
 
     unique_dates.push(last_saw_date);
@@ -269,6 +271,15 @@ const PlainView: React.FC<PlainViewProps> = ({ show_selection = false }) => {
   if (imagesError) {
     return <div>Error loading images</div>;
   }
+
+  if (!images) return <div>No Images</div>;
+
+  if (images.length === 0)
+    return (
+      <div className="w-full justify-center align-center">
+        <h2 className="dark:text-white"> No Images </h2>
+      </div>
+    );
 
   // Scroll to the corresponding date
   const scrollToGroup = (date: string) => {

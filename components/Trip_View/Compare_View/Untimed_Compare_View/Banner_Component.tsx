@@ -108,6 +108,8 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
       return image.created_at !== undefined;
     });
 
+    if (defined_images.length === 0) return true;
+
     const last_image = defined_images[defined_images.length - 1];
 
     return (
@@ -222,13 +224,13 @@ export const Banner_Component: React.FC<BanngerComponentProps> = ({
   }
 
   return (
-    <div className="flex justify-around items-center mb-4 p=5">
+    <div className="flex justify-around items-center mb-4 dark:text-white">
       {!leftArrowDisabled ? (
         <FaChevronLeft
           onClick={() => {
             handleDayChange('prev');
           }}
-          className={`cursor-pointer `}
+          className={`cursor-pointer dark:text-white `}
         />
       ) : (
         <div style={{}}> </div>

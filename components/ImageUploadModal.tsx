@@ -107,10 +107,10 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({ tripId }) => {
   return (
     <div className="modal-overlay dark:bg-black " onClick={onClose}>
       <div
-        className="modal-content dark:bg-black"
+        className="modal-content dark:bg-black dark:text-white"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2>Upload Images</h2>
+        <h2 className="dark:text-white">Upload Images</h2>
         <FaTimes
           className="absolute top-5 right-5 hover:text-red-500 cursor-pointer"
           onClick={onClose}
