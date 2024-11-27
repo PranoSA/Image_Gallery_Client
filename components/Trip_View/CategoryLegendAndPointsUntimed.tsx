@@ -211,6 +211,9 @@ const CategoryLegendAndPointsUntimed: React.FC<CategoryLegendProps> = ({
           return point[0] != 0 || point[1] != 0;
         });
 
+      //return if points length == 0
+      if (points.length === 0) return;
+
       //get extent of the map
       const extent = map.getView().calculateExtent(map.getSize());
 
