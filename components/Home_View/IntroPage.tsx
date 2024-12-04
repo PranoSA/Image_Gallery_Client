@@ -50,8 +50,12 @@ const exampleTrips = [
 
 const IntroPage = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-      <div className="text-center mb-12">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 
+   text-black dark:text-white
+    "
+    >
+      <div className="text-center mb-12 text-black">
         <h1 className="text-5xl font-bold mb-4">
           Welcome to the Image Application
         </h1>
